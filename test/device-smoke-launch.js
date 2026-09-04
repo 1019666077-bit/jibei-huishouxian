@@ -1,4 +1,5 @@
 // 一键：启动开发者工具自动化 + 模拟器冒烟（无需手动扫真机）。
+// 截图写入 test/device-shots/。已删除的 test/ui-*.png 是换皮前旧图，不得再用于提审。
 const automator = require('miniprogram-automator')
 const { spawn } = require('child_process')
 const fs = require('fs')

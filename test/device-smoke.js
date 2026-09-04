@@ -1,4 +1,5 @@
 // 开发者工具模拟器冒烟：连接 auto 端口，截图并驱动 Canvas 场景。
+// 截图写入 test/device-shots/，只反映现行原创 UI。不要再引用已删除的 test/ui-*.png。
 // 运行前：cli.bat auto --project <工程路径>
 // 运行：node device-smoke.js
 const automator = require('miniprogram-automator')

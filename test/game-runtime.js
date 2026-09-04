@@ -7,13 +7,13 @@ const events = {}
 let modalConfirm = true
 let exited = false
 
-const ctx = {
+const ctx = new Proxy({
   fillStyle: '', strokeStyle: '', lineWidth: 1, font: '', textBaseline: '', textAlign: '',
-  fillRect() {}, beginPath() {}, moveTo() {}, arcTo() {}, closePath() {}, fill() {},
-  stroke() {}, save() {}, restore() {}, rect() {}, clip() {}, setTransform() {},
-  fillText() {},
-  measureText(text) { return { width: String(text || '').length * 8 } }
-}
+  globalAlpha: 1, shadowBlur: 0, shadowColor: '',
+  measureText(text) { return { width: String(text || '').length * 8 } },
+  createLinearGradient() { return { addColorStop() {} } },
+  createRadialGradient() { return { addColorStop() {} } }
+}, { get(t, k) { return k in t ? t[k] : () => {} } })
 const canvas = {
   width: 0,
   height: 0,

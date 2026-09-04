@@ -1,6 +1,8 @@
 const engine = require('../core/engine')
 const Scroll = require('../runtime/scroll')
-const { COLORS, wrapLines } = require('../runtime/ui')
+const { COLORS, wrapLines, tierColor } = require('../runtime/ui')
+const stage = require('../runtime/stage')
+const gfx = require('../runtime/gfx')
 
 module.exports = manager => ({
   enter(params) {
@@ -48,21 +50,21 @@ module.exports = manager => ({
 
   planCard(ui, x, y, w, plan) {
     const ctx = ui.ctx
-    ctx.font = '700 14px sans-serif'
+    ctx.font = gfx.font(14, '700')
     const titleLines = wrapLines(ctx, plan.title, w - 24)
-    ctx.font = '12px sans-serif'
+    ctx.font = gfx.font(12)
     const goalLines = wrapLines(ctx, plan.goal || '', w - 24)
     const h = 46 + titleLines.length * 20 + goalLines.length * 17
-    ui.panel(x, y, w, h, { fill: '#15273a', stroke: COLORS.blue })
-    ui.wrapped(plan.title, x + 12, y + 10, w - 24, {
+    ui.panel(x, y, w, h, { fill: '#15273a', stroke: COLORS.blue, accent: COLORS.blue })
+    ui.wrapped(plan.title, x + 14, y + 10, w - 24, {
       size: 14, lineHeight: 20, weight: '700', color: COLORS.text
     })
     let ty = y + 12 + titleLines.length * 20
-    ui.wrapped(plan.goal || '', x + 12, ty, w - 24, {
+    ui.wrapped(plan.goal || '', x + 14, ty, w - 24, {
       size: 12, lineHeight: 17, color: COLORS.muted
     })
     ty += goalLines.length * 17 + 7
-    ui.text('按此方案重开', x + 12, ty, 12, COLORS.accent, '700')
+    ui.text('按此方案重开', x + 14, ty, 12, COLORS.accent, '700')
     ui.addHit(x, y, w, h, () => this.again(plan))
     return h
   },
@@ -84,79 +86,92 @@ module.exports = manager => ({
       let y = this.rect.y + 4 - this.scroll.offset
       const start = y
       const ratingColor = r.rating === 'S' ? COLORS.danger : r.rating === 'A' ? COLORS.gold : COLORS.text
-      ui.panel(x, y, w, 132, {
+      ui.panel(x, y, w, 148, {
         fill: r.escaped ? '#132820' : '#2c171b',
-        stroke: r.escaped ? '#2b6653' : '#703840'
+        stroke: r.escaped ? '#2b6653' : '#703840',
+        glow: r.escaped ? 'rgba(101,214,180,0.16)' : 'rgba(255,107,107,0.12)'
       })
-      ui.text(r.escaped ? '活着出来了' : '没能回来', x + 16, y + 16, 18,
+      stage.drawMedal(ui.ctx, x + 16, y + 36, 52, {
+        tier: r.rating === 'S' || r.rating === 'A' ? 'gold' : r.escaped ? 'green' : 'red'
+      })
+      ui.text(r.rating, x + 30, y + 50, 28, ratingColor, '700')
+      ui.text(r.escaped ? '活着出来了' : '没能回来', x + 80, y + 28, 20,
         r.escaped ? COLORS.accent : COLORS.danger, '700')
-      ui.text(`评级 ${r.rating}`, x + 16, y + 46, 36, ratingColor, '700')
-      ui.text(`${r.methodText || '未能撤离'} · ${r.loadoutName || ''}`, x + 16, y + 96, 13, COLORS.muted)
-      y += 148
+      ui.text(`评级 ${r.rating}`, x + 80, y + 60, 16, ratingColor, '700')
+      ui.text(`${r.methodText || '未能撤离'} · ${r.loadoutName || ''}`, x + 80, y + 90, 13, COLORS.muted, '600', w - 96)
+      ui.text(r.escaped ? '配给点已入账，装备押金退回' : '本趟装备投入未返还', x + 16, y + 118, 12, COLORS.muted, '600', w - 32)
+      y += 164
 
-      ui.panel(x, y, w, 100)
+      ui.panel(x, y, w, 108, { accent: COLORS.gold })
       ui.text('本局物资', x + 16, y + 14, 12, COLORS.muted)
       ui.text(`${engine.fmtVal(r.totalValue || 0)} 配给点`, x + 16, y + 36, 26, COLORS.gold, '700')
       const profit = r.netProfit || 0
       ui.text(`${profit >= 0 ? '净收益 +' : '净损失 -'}${engine.fmtVal(Math.abs(profit))} 配给点`,
-        x + 16, y + 72, 13, profit >= 0 ? COLORS.accent : COLORS.danger, '600')
-      y += 116
+        x + 16, y + 76, 13, profit >= 0 ? COLORS.accent : COLORS.danger, '600')
+      y += 124
 
       if (r.causeChain.length) {
-        ui.text('复盘', x + 2, y, 17, COLORS.text, '700')
-        y += 28
+        y = ui.section(x, y, w, '复盘')
         r.causeChain.forEach((line, index) => {
-          const h = ui.wrapped(`${index + 1}. ${line}`, x + 5, y, w - 10, {
+          const h = ui.wrapped(`${index + 1}. ${line}`, x + 8, y, w - 16, {
             size: 13, lineHeight: 20, color: COLORS.muted
           })
           y += h + 8
         })
-        y += 7
+        y += 8
       }
 
       if (r.retryPlans.length) {
-        ui.text('针对性重开', x + 2, y, 17, COLORS.text, '700')
-        y += 29
+        y = ui.section(x, y, w, '针对性重开')
         r.retryPlans.forEach(plan => {
           y += this.planCard(ui, x, y, w, plan) + 10
         })
       }
 
       if (r.medals.length) {
-        ui.text('本局勋章', x + 2, y, 17, COLORS.text, '700')
-        y += 27
+        y = ui.section(x, y, w, '本局勋章')
         r.medals.forEach(medal => {
-          const h = ui.wrapped(`${medal.icon || '◆'} ${medal.name} · ${medal.desc}`, x + 5, y, w - 10, {
-            size: 12, lineHeight: 18, color: COLORS.gold
+          ui.panel(x, y, w, 64, {
+            fill: '#1a2418',
+            stroke: tierColor(medal.tier),
+            accent: tierColor(medal.tier)
           })
-          y += h + 6
+          stage.drawMedal(ui.ctx, x + 12, y + 10, 40, medal)
+          ui.text(medal.name, x + 62, y + 12, 15, COLORS.gold, '700', w - 76)
+          ui.text(medal.desc || '', x + 62, y + 36, 12, COLORS.muted, '600', w - 76)
+          y += 74
         })
-        y += 8
+        y += 6
       }
 
       if (r.lootItems.length) {
-        ui.text(`带出物资（${r.lootItems.length}）`, x + 2, y, 17, COLORS.text, '700')
-        y += 28
+        y = ui.section(x, y, w, `带出物资（${r.lootItems.length}）`)
         r.lootItems.forEach(item => {
-          ui.text(`[${item.tierLabel || ''}] ${item.name}`, x + 5, y, 12, COLORS.text, '600', w * 0.68)
+          ui.panel(x, y, w, 44, {
+            fill: '#111925',
+            stroke: tierColor(item.tier),
+            accent: tierColor(item.tier),
+            radius: 10
+          })
+          stage.drawItemIcon(ui.ctx, x + 12, y + 10, 22, item)
+          ui.text(`[${item.tierLabel || ''}] ${item.name}`, x + 44, y + 13, 13, COLORS.text, '600', w * 0.58)
           ui.ctx.textAlign = 'right'
-          ui.text(engine.fmtVal(item.value), x + w - 5, y, 12, COLORS.muted)
+          ui.text(engine.fmtVal(item.value), x + w - 12, y + 13, 13, COLORS.gold, '700')
           ui.ctx.textAlign = 'left'
-          y += 21
+          y += 52
         })
-        y += 10
+        y += 8
       }
       if (r.lostItems.length) {
-        ui.text(`未能带出（${r.lostItems.length}）`, x + 2, y, 17, COLORS.text, '700')
-        y += 28
+        y = ui.section(x, y, w, `未能带出（${r.lostItems.length}）`)
         r.lostItems.slice(0, 8).forEach(item => {
-          const h = ui.wrapped(`${item.name}${item.reason ? ' · ' + item.reason : ''}`, x + 5, y, w - 10, {
+          const h = ui.wrapped(`${item.name}${item.reason ? ' · ' + item.reason : ''}`, x + 8, y, w - 16, {
             size: 12, lineHeight: 18, color: COLORS.muted
           })
           y += h + 6
         })
         if (r.lostItems.length > 8) {
-          ui.text(`其余 ${r.lostItems.length - 8} 件略`, x + 5, y, 12, COLORS.muted)
+          ui.text(`其余 ${r.lostItems.length - 8} 件略`, x + 8, y, 12, COLORS.muted)
           y += 22
         }
       }
@@ -167,8 +182,8 @@ module.exports = manager => ({
     const left = v.safe.left + 12
     const width = v.safe.right - v.safe.left - 24
     const y = v.safe.bottom - 48
-      ui.button(left, y, width, 44,
-        r.loadoutName ? `再出发 · ${r.loadoutName}` : '再出发',
-        () => this.again(), { fill: '#1e4f43', stroke: COLORS.accent, size: 16 })
+    ui.button(left, y, width, 44,
+      r.loadoutName ? `再出发 · ${r.loadoutName}` : '再出发',
+      () => this.again(), { fill: '#1e4f43', stroke: COLORS.accent, size: 16 })
   }
 })

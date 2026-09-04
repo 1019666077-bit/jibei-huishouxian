@@ -1,14 +1,17 @@
+const gfx = require('./gfx')
+
 const COLORS = {
-  bg: '#080c13',
-  panel: '#111925',
-  panelAlt: '#182333',
-  line: '#26364a',
+  bg: '#061018',
+  panel: '#101a26',
+  panelAlt: '#162433',
+  line: '#2a4156',
   text: '#eef4fa',
   muted: '#8fa3b8',
   accent: '#65d6b4',
   danger: '#ff6b6b',
   gold: '#ffc65c',
-  blue: '#65a9ff'
+  blue: '#65a9ff',
+  ice: '#9fd4ff'
 }
 
 function copy(text) {
@@ -16,14 +19,7 @@ function copy(text) {
 }
 
 function roundedRect(ctx, x, y, w, h, r) {
-  const radius = Math.max(0, Math.min(r || 0, w / 2, h / 2))
-  ctx.beginPath()
-  ctx.moveTo(x + radius, y)
-  ctx.arcTo(x + w, y, x + w, y + h, radius)
-  ctx.arcTo(x + w, y + h, x, y + h, radius)
-  ctx.arcTo(x, y + h, x, y, radius)
-  ctx.arcTo(x, y, x + w, y, radius)
-  ctx.closePath()
+  gfx.roundRect(ctx, x, y, w, h, r)
 }
 
 function wrapLines(ctx, text, maxWidth) {
@@ -49,6 +45,15 @@ function wrapLines(ctx, text, maxWidth) {
   return lines
 }
 
+function tierColor(tier) {
+  if (tier === 'red') return COLORS.danger
+  if (tier === 'gold') return COLORS.gold
+  if (tier === 'purple') return '#b48cff'
+  if (tier === 'blue') return COLORS.blue
+  if (tier === 'white') return '#c8d4de'
+  return COLORS.accent
+}
+
 class UI {
   constructor(ctx) {
     this.ctx = ctx
@@ -61,10 +66,16 @@ class UI {
     this.regions = []
     this.clip = null
     const ctx = this.ctx
-    ctx.fillStyle = COLORS.bg
+    ctx.fillStyle = gfx.vgrad(ctx, 0, 0, viewport.height, [
+      [0, '#07131e'],
+      [0.45, '#0a1520'],
+      [1, '#05090f']
+    ])
     ctx.fillRect(0, 0, viewport.width, viewport.height)
     ctx.textBaseline = 'top'
     ctx.textAlign = 'left'
+    gfx.noGlow(ctx)
+    gfx.resetAlpha(ctx)
   }
 
   addHit(x, y, w, h, action, enabled = true) {
@@ -110,7 +121,7 @@ class UI {
 
   text(text, x, y, size = 14, color = COLORS.text, weight = 'normal', maxWidth) {
     const ctx = this.ctx
-    ctx.font = `${weight} ${size}px sans-serif`
+    gfx.applyFont(ctx, size, weight)
     ctx.fillStyle = color
     ctx.fillText(copy(text), x, y, maxWidth)
   }
@@ -119,7 +130,7 @@ class UI {
     const ctx = this.ctx
     const size = options.size || 14
     const lineHeight = options.lineHeight || Math.round(size * 1.55)
-    ctx.font = `${options.weight || 'normal'} ${size}px sans-serif`
+    gfx.applyFont(ctx, size, options.weight || 'normal')
     ctx.fillStyle = options.color || COLORS.text
     const lines = wrapLines(ctx, text, maxWidth)
     const limit = options.maxLines || lines.length
@@ -133,46 +144,107 @@ class UI {
 
   panel(x, y, w, h, options = {}) {
     const ctx = this.ctx
-    roundedRect(ctx, x, y, w, h, options.radius == null ? 12 : options.radius)
+    const radius = options.radius == null ? 12 : options.radius
+    roundedRect(ctx, x, y, w, h, radius)
     ctx.fillStyle = options.fill || COLORS.panel
     ctx.fill()
+    if (options.glow) {
+      gfx.glow(ctx, options.glow, 10)
+      roundedRect(ctx, x, y, w, h, radius)
+      ctx.fill()
+      gfx.noGlow(ctx)
+    }
     if (options.stroke !== false) {
       ctx.strokeStyle = options.stroke || COLORS.line
-      ctx.lineWidth = 1
-      ctx.stroke()
+      ctx.lineWidth = options.lineWidth || 1
+      if (typeof ctx.stroke === 'function') ctx.stroke()
+    }
+    if (options.accent) {
+      ctx.fillStyle = options.accent
+      ctx.fillRect(x, y + 8, 4, Math.max(8, h - 16))
+    }
+    if (options.sheen !== false && h > 20) {
+      ctx.fillStyle = 'rgba(186,220,255,0.05)'
+      ctx.fillRect(x + 2, y + 2, w - 4, Math.min(14, h * 0.22))
     }
   }
 
   button(x, y, w, h, label, action, options = {}) {
     const enabled = options.enabled !== false
     this.panel(x, y, w, h, {
-      fill: enabled ? (options.fill || COLORS.panelAlt) : '#111720',
+      fill: enabled ? (options.fill || COLORS.panelAlt) : '#0d141c',
       stroke: enabled ? (options.stroke || COLORS.line) : '#1b2633',
-      radius: options.radius == null ? 10 : options.radius
+      radius: options.radius == null ? 10 : options.radius,
+      glow: options.glow || null,
+      sheen: true
     })
     const size = options.size || 14
     const ctx = this.ctx
-    ctx.font = `${options.weight || '600'} ${size}px sans-serif`
+    gfx.applyFont(ctx, size, options.weight || '600')
     const text = copy(label)
     const tw = Math.min(ctx.measureText(text).width, w - 20)
     ctx.fillStyle = enabled ? (options.color || COLORS.text) : '#536273'
-    ctx.fillText(text, x + (w - tw) / 2, y + (h - size) / 2 - 1, w - 20)
+    const ty = options.sub ? y + Math.max(6, (h - size) / 2 - 8) : y + (h - size) / 2 - 1
+    ctx.fillText(text, x + (w - tw) / 2, ty, w - 20)
+    if (options.sub) {
+      gfx.applyFont(ctx, 11, '600')
+      const sw = Math.min(ctx.measureText(options.sub).width, w - 20)
+      ctx.fillStyle = enabled ? (options.subColor || COLORS.muted) : '#3d4a56'
+      ctx.fillText(options.sub, x + (w - sw) / 2, ty + size + 4, w - 20)
+    }
     this.addHit(x, y, w, h, action, enabled)
   }
 
   bar(x, y, w, h, ratio, fill, track) {
     const r = Math.max(0, Math.min(1, Number(ratio) || 0))
-    this.panel(x, y, w, h, { fill: track || '#1a2430', stroke: false, radius: 3 })
+    this.panel(x, y, w, h, { fill: track || '#13202c', stroke: false, radius: Math.min(4, h / 2), sheen: false })
     if (r > 0) {
-      this.panel(x, y, Math.max(3, Math.round(w * r)), h, { fill: fill || COLORS.accent, stroke: false, radius: 3 })
+      this.panel(x, y, Math.max(3, Math.round(w * r)), h, {
+        fill: fill || COLORS.accent,
+        stroke: false,
+        radius: Math.min(4, h / 2),
+        sheen: false
+      })
     }
+  }
+
+  meter(x, y, w, label, value, ratio, fill) {
+    this.text(label, x, y, 10, COLORS.muted, '700')
+    gfx.applyFont(this.ctx, 12, '700')
+    const num = copy(value)
+    const nw = this.ctx.measureText(num).width
+    this.text(num, x + w - nw, y - 1, 12, fill || COLORS.text, '700')
+    this.bar(x, y + 15, w, 7, ratio, fill || COLORS.accent)
+  }
+
+  chip(x, y, w, h, label, options = {}) {
+    this.panel(x, y, w, h, {
+      fill: options.fill || '#14202c',
+      stroke: options.stroke || COLORS.line,
+      radius: options.radius == null ? 8 : options.radius,
+      sheen: false
+    })
+    const size = options.size || 11
+    gfx.applyFont(this.ctx, size, options.weight || '700')
+    const text = copy(label)
+    const tw = Math.min(this.ctx.measureText(text).width, w - 10)
+    this.ctx.fillStyle = options.color || COLORS.text
+    this.ctx.fillText(text, x + (w - tw) / 2, y + (h - size) / 2 - 1, w - 10)
+    if (options.action) this.addHit(x, y, w, h, options.action, options.enabled !== false)
+  }
+
+  section(x, y, w, title, color) {
+    this.ctx.fillStyle = color || COLORS.accent
+    this.ctx.fillRect(x, y + 4, 3, 12)
+    this.text(title, x + 10, y, 13, color || COLORS.gold, '700', w - 12)
+    return y + 20
   }
 
   header(title, subtitle, onBack) {
     const v = this.viewport
     const top = v.safe.top + 10
-    if (onBack) this.button(v.safe.left + 12, top, 58, 36, '返回', onBack, { size: 13 })
-    const x = onBack ? v.safe.left + 82 : v.safe.left + 18
+    if (onBack) this.button(v.safe.left + 12, top, 64, 40, '返回', onBack, { size: 14 })
+    const x = onBack ? v.safe.left + 86 : v.safe.left + 18
     this.text(title, x, top + 1, 22, COLORS.text, '700')
     if (subtitle) this.text(subtitle, x, top + 29, 11, COLORS.muted)
     return top + 58
@@ -181,7 +253,9 @@ class UI {
   divider(x, y, w) {
     this.ctx.fillStyle = COLORS.line
     this.ctx.fillRect(x, y, w, 1)
+    this.ctx.fillStyle = 'rgba(101,214,180,0.12)'
+    this.ctx.fillRect(x, y, Math.min(48, w), 1)
   }
 }
 
-module.exports = { UI, COLORS, copy, wrapLines }
+module.exports = { UI, COLORS, copy, wrapLines, tierColor }

@@ -60,7 +60,7 @@ module.exports = manager => ({
       let y = this.rect.y + 8 - this.scroll.offset
       const start = y
 
-      ui.panel(x, y, w, 88)
+      ui.panel(x, y, w, 88, { accent: COLORS.gold })
       ui.text(healthNotice.title + '  ·  ' + ageRating, x + 14, y + 12, 14, COLORS.gold, '700')
       ui.wrapped(healthNotice.lines[0], x + 14, y + 36, w - 28, { size: 11, lineHeight: 16, color: COLORS.text })
       ui.wrapped(healthNotice.lines[1], x + 14, y + 54, w - 28, { size: 11, lineHeight: 16, color: COLORS.muted })

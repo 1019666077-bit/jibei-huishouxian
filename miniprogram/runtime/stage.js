@@ -1,7 +1,8 @@
-// 局内场景：只用矩形和简单路径，模拟器缺接口时也能画。
+// 局内场景：矩形+路径拼楼。缺高级接口时退回色块，模拟器也能画。
 const { ZONE_POS, ZONE_SHORT } = require('./present')
+const gfx = require('./gfx')
 
-const ROOM_WALL = 0.36
+const ROOM_WALL = 0.34
 const TINT = {
   harbor: '#65d6b4',
   weather: '#65a9ff',
@@ -10,6 +11,16 @@ const TINT = {
   core: '#65d6b4',
   aurora: '#7ee0c4',
   extract: '#65d6b4'
+}
+
+const TIER_COLOR = {
+  white: '#c8d4de',
+  green: '#65d6b4',
+  blue: '#65a9ff',
+  purple: '#b48cff',
+  gold: '#ffc65c',
+  red: '#ff6b6b',
+  silver: '#d0d8e0'
 }
 
 function fill(ctx, color) {
@@ -37,52 +48,72 @@ function frame(ctx, x, y, w, h, color) {
   rect(ctx, x + w - 2, y, 2, h)
 }
 
+function sky(ctx, x, y, w, h, tick, tone) {
+  fill(ctx, gfx.vgrad(ctx, x, y, h, [
+    [0, tone === 'ember' ? '#1a100e' : '#061018'],
+    [0.42, tone === 'ember' ? '#2a1812' : '#0d2438'],
+    [1, tone === 'ember' ? '#120e10' : '#071018']
+  ]))
+  rect(ctx, x, y, w, h)
+  if (tone !== 'ember') {
+    gfx.quad(ctx, x, y + h * 0.08, x + w * 0.45, y - 4 + ((tick || 0) % 6), x + w, y + h * 0.16,
+      'rgba(101,214,180,0.16)')
+    gfx.quad(ctx, x, y + h * 0.2, x + w * 0.55, y + h * 0.08, x + w, y + h * 0.28,
+      'rgba(101,169,255,0.1)')
+  }
+  fill(ctx, 'rgba(230,240,255,0.45)')
+  for (let i = 0; i < 16; i++) {
+    rect(ctx, x + ((i * 47 + (tick || 0) * 2) % w), y + 6 + (i * 19) % Math.max(12, h * 0.55), i % 4 ? 1 : 2, i % 4 ? 1 : 2)
+  }
+}
+
 function drawHarbor(ctx, box, tick) {
   const { x, y, w, h } = box
-  fill(ctx, '#0b1622')
-  rect(ctx, x, y, w, h)
-  fill(ctx, 'rgba(70,120,150,0.28)')
-  rect(ctx, x, y + h * 0.62, w, h * 0.38)
-  fill(ctx, 'rgba(200,220,240,0.12)')
-  for (let i = 0; i < 5; i++) rect(ctx, x, y + h * (0.66 + i * 0.06), w, 2)
+  sky(ctx, x, y, w, h, tick)
+  fill(ctx, gfx.vgrad(ctx, x, y + h * 0.58, h * 0.42, [
+    [0, 'rgba(70,130,160,0.34)'],
+    [1, 'rgba(20,40,56,0.7)']
+  ]))
+  rect(ctx, x, y + h * 0.58, w, h * 0.42)
+  fill(ctx, 'rgba(200,220,240,0.14)')
+  for (let i = 0; i < 6; i++) rect(ctx, x, y + h * (0.62 + i * 0.055), w, 2)
   fill(ctx, '#132433')
   for (let i = 0; i < 5; i++) {
-    const cx = x + w * (0.06 + i * 0.18)
-    const ch = h * (0.28 + (i % 3) * 0.1)
-    rect(ctx, cx, y + h * 0.62 - ch, w * 0.14, ch)
-    windows(ctx, cx, y + h * 0.62 - ch, w * 0.14, ch, i % 2 ? 'rgba(101,214,180,0.35)' : 'rgba(255,198,92,0.28)', i)
+    const cx = x + w * (0.05 + i * 0.17)
+    const ch = h * (0.26 + (i % 3) * 0.1)
+    rect(ctx, cx, y + h * 0.58 - ch, w * 0.13, ch)
+    windows(ctx, cx, y + h * 0.58 - ch, w * 0.13, ch, i % 2 ? 'rgba(101,214,180,0.4)' : 'rgba(255,198,92,0.3)', i)
+    fill(ctx, '#0c1620')
+    rect(ctx, cx - 1, y + h * 0.58 - ch - 4, w * 0.13 + 2, 4)
   }
   fill(ctx, '#243040')
-  rect(ctx, x + w * 0.72, y + h * 0.18, 6, h * 0.44)
+  rect(ctx, x + w * 0.72, y + h * 0.16, 6, h * 0.42)
   fill(ctx, '#ffc65c')
-  rect(ctx, x + w * 0.7, y + h * 0.18, w * 0.18, 5)
-  fill(ctx, 'rgba(230,240,255,0.5)')
-  for (let i = 0; i < 18; i++) {
-    rect(ctx, x + ((i * 37 + (tick || 0) * 2) % w), y + 8 + (i * 19) % (h * 0.5), 2, 2)
-  }
+  rect(ctx, x + w * 0.68, y + h * 0.16, w * 0.2, 5)
+  fill(ctx, 'rgba(101,214,180,0.2)')
+  rect(ctx, x + w * 0.78, y + h * 0.22, 10, 10)
 }
 
 function drawWeather(ctx, box, tick) {
   const { x, y, w, h } = box
-  fill(ctx, '#0a1420')
-  rect(ctx, x, y, w, h)
+  sky(ctx, x, y, w, h, tick)
   ;[0.16, 0.42, 0.68].forEach((tx, i) => {
-    const tw = w * (0.09 + i * 0.01)
-    const th = h * (0.46 + i * 0.12)
+    const tw = w * (0.09 + i * 0.012)
+    const th = h * (0.44 + i * 0.12)
     fill(ctx, '#15263a')
     rect(ctx, x + w * tx, y + h * 0.78 - th, tw, th)
-    windows(ctx, x + w * tx, y + h * 0.78 - th, tw, th, 'rgba(101,169,255,0.4)', i)
-    fill(ctx, 'rgba(101,169,255,0.55)')
-    rect(ctx, x + w * tx + tw / 2 - 2, y + h * 0.78 - th - 12, 4, 12)
+    windows(ctx, x + w * tx, y + h * 0.78 - th, tw, th, 'rgba(101,169,255,0.42)', i)
+    fill(ctx, 'rgba(101,169,255,0.6)')
+    rect(ctx, x + w * tx + tw / 2 - 2, y + h * 0.78 - th - 14, 4, 14)
+    gfx.circle(ctx, x + w * tx + tw / 2, y + h * 0.78 - th - 16, 5, 'rgba(159,212,255,0.45)')
   })
-  fill(ctx, 'rgba(101,214,180,0.14)')
-  rect(ctx, x, y + h * 0.16 + ((tick || 0) % 12), w, 5)
+  fill(ctx, 'rgba(101,214,180,0.16)')
+  rect(ctx, x, y + h * 0.14 + ((tick || 0) % 12), w, 5)
 }
 
 function drawThermal(ctx, box, tick) {
   const { x, y, w, h } = box
-  fill(ctx, '#120e10')
-  rect(ctx, x, y, w, h)
+  sky(ctx, x, y, w, h, tick, 'ember')
   fill(ctx, '#2a1c18')
   for (let i = 0; i < 4; i++) {
     rect(ctx, x, y + h * (0.2 + i * 0.16), w, 12)
@@ -91,16 +122,17 @@ function drawThermal(ctx, box, tick) {
     fill(ctx, '#2a1c18')
   }
   const steam = (tick || 0) % 18
-  fill(ctx, 'rgba(255,140,80,0.22)')
+  fill(ctx, 'rgba(255,140,80,0.24)')
   for (let i = 0; i < 6; i++) {
     rect(ctx, x + w * (0.1 + i * 0.14), y + h * 0.28 - steam, 8, 20)
   }
+  fill(ctx, 'rgba(255,140,80,0.12)')
+  rect(ctx, x + w * 0.3, y + h * 0.7, w * 0.4, 8)
 }
 
-function drawLift(ctx, box) {
+function drawLift(ctx, box, tick) {
   const { x, y, w, h } = box
-  fill(ctx, '#0c1018')
-  rect(ctx, x, y, w, h)
+  sky(ctx, x, y, w, h, tick)
   fill(ctx, '#1b2430')
   rect(ctx, x + w * 0.16, y + 10, 10, h - 20)
   rect(ctx, x + w * 0.78, y + 10, 10, h - 20)
@@ -110,14 +142,15 @@ function drawLift(ctx, box) {
     fill(ctx, i % 2 ? '#ffc65c' : '#1a1c20')
     rect(ctx, x + w * 0.22 + i * (w * 0.07), y + h * 0.38, w * 0.07, 6)
   }
-  fill(ctx, 'rgba(255,198,92,0.35)')
+  fill(ctx, 'rgba(255,198,92,0.38)')
   rect(ctx, x + w * 0.38, y + h * 0.18, w * 0.24, 12)
+  fill(ctx, '#65d6b4')
+  rect(ctx, x + w * 0.46, y + h * 0.62 + ((tick || 0) % 10), w * 0.08, 8)
 }
 
-function drawCore(ctx, box) {
+function drawCore(ctx, box, tick) {
   const { x, y, w, h } = box
-  fill(ctx, '#0b121c')
-  rect(ctx, x, y, w, h)
+  sky(ctx, x, y, w, h, tick)
   fill(ctx, '#152033')
   const rooms = [
     [0.16, 0.16, 0.28, 0.22],
@@ -128,31 +161,30 @@ function drawCore(ctx, box) {
   ]
   rooms.forEach((r, i) => {
     rect(ctx, x + w * r[0], y + h * r[1], w * r[2], h * r[3])
-    windows(ctx, x + w * r[0], y + h * r[1], w * r[2], h * r[3], 'rgba(101,214,180,0.2)', i)
+    windows(ctx, x + w * r[0], y + h * r[1], w * r[2], h * r[3], 'rgba(101,214,180,0.22)', i)
   })
-  fill(ctx, 'rgba(101,214,180,0.22)')
+  fill(ctx, 'rgba(101,214,180,0.24)')
   rect(ctx, x + w * 0.46, y + h * 0.08, w * 0.08, h * 0.84)
 }
 
 function drawAurora(ctx, box, tick) {
   const { x, y, w, h } = box
-  fill(ctx, '#071018')
-  rect(ctx, x, y, w, h)
-  fill(ctx, 'rgba(101,214,180,0.18)')
+  sky(ctx, x, y, w, h, tick)
+  fill(ctx, 'rgba(101,214,180,0.2)')
   rect(ctx, x, y + h * 0.1 + ((tick || 0) % 8), w, 12)
-  fill(ctx, 'rgba(101,169,255,0.14)')
+  fill(ctx, 'rgba(101,169,255,0.16)')
   rect(ctx, x, y + h * 0.26, w, 8)
   fill(ctx, '#142436')
   rect(ctx, x + w * 0.36, y + h * 0.16, w * 0.28, h * 0.72)
-  windows(ctx, x + w * 0.36, y + h * 0.16, w * 0.28, h * 0.72, 'rgba(255,198,92,0.28)', 2)
+  windows(ctx, x + w * 0.36, y + h * 0.16, w * 0.28, h * 0.72, 'rgba(255,198,92,0.3)', 2)
   fill(ctx, ((tick || 0) % 8) < 4 ? '#ffc65c' : '#65d6b4')
   rect(ctx, x + w * 0.47, y + h * 0.1, 8, 8)
+  gfx.circle(ctx, x + w * 0.5, y + h * 0.12, 7, 'rgba(126,224,196,0.35)')
 }
 
-function drawExtract(ctx, box) {
+function drawExtract(ctx, box, tick) {
   const { x, y, w, h } = box
-  fill(ctx, '#0c1410')
-  rect(ctx, x, y, w, h)
+  sky(ctx, x, y, w, h, tick)
   fill(ctx, '#1a2a22')
   rect(ctx, x + w * 0.08, y + h * 0.58, w * 0.84, 14)
   fill(ctx, 'rgba(101,214,180,0.35)')
@@ -161,6 +193,8 @@ function drawExtract(ctx, box) {
   for (let i = 0; i < 3; i++) {
     rect(ctx, x + w * (0.18 + i * 0.12), y + h * 0.7, 10, 4)
   }
+  fill(ctx, ((tick || 0) % 10) < 5 ? '#ffc65c' : '#65d6b4')
+  rect(ctx, x + w * 0.68, y + h * 0.12, 8, 8)
 }
 
 const DRAW = {
@@ -190,7 +224,7 @@ function drawRoad(ctx, x, y, w, h, a, b) {
     const py = y1 + (y2 - y1) * t
     fill(ctx, '#15202c')
     rect(ctx, px - 5, py - 5, 10, 10)
-    fill(ctx, 'rgba(186,214,230,0.22)')
+    fill(ctx, 'rgba(186,214,230,0.28)')
     rect(ctx, px - 2, py - 2, 4, 4)
   }
 }
@@ -268,16 +302,15 @@ function drawSite(ctx, key, px, py, size, state) {
 function drawCityDots(ctx, box, options = {}) {
   const { x, y, w, h } = box
   const tick = options.tick || 0
-  fill(ctx, options.bg || '#071018')
-  rect(ctx, x, y, w, h)
-  fill(ctx, 'rgba(70,120,150,0.2)')
+  sky(ctx, x, y, w, h, tick)
+  fill(ctx, 'rgba(70,120,150,0.22)')
   rect(ctx, x, y + h * 0.34, w * 0.28, h * 0.24)
   const links = [
     ['harbor', 'thermal'], ['harbor', 'lift'], ['weather', 'thermal'],
     ['thermal', 'core'], ['harbor', 'core'], ['lift', 'core'],
     ['core', 'aurora'], ['weather', 'aurora'], ['lift', 'extract']
   ]
-  fill(ctx, 'rgba(186,214,230,0.28)')
+  fill(ctx, 'rgba(186,214,230,0.32)')
   links.forEach(pair => {
     const a = ZONE_POS[pair[0]]
     const b = ZONE_POS[pair[1]]
@@ -291,32 +324,40 @@ function drawCityDots(ctx, box, options = {}) {
       rect(ctx, x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, 2, 2)
     }
   })
+  const align = ctx.textAlign
+  const font = ctx.font
+  ctx.textAlign = 'center'
+  gfx.applyFont(ctx, 9, '700')
   Object.keys(ZONE_POS).forEach(key => {
     const p = ZONE_POS[key]
     const px = x + p.x * w
     const py = y + p.y * h
     const here = options.current === key
+    const reach = !options.reachable || options.reachable[key]
     const sz = here ? 8 : 5
-    fill(ctx, here ? (options.hot ? '#ff6b6b' : '#65d6b4') : (TINT[key] || '#65d6b4'))
+    fill(ctx, here ? (options.hot ? '#ff6b6b' : '#65d6b4') : (reach ? (TINT[key] || '#65d6b4') : '#2a3a48'))
     rect(ctx, px - sz / 2, py - sz / 2, sz, sz)
     if (here) {
       const pulse = 4 + (tick % 4)
       fill(ctx, 'rgba(101,214,180,0.35)')
       rect(ctx, px - pulse, py - pulse, pulse * 2, pulse * 2)
     }
+    fill(ctx, here ? '#65d6b4' : reach ? '#eef4fa' : '#6a7a88')
+    ctx.fillText(ZONE_SHORT[key] || key, px, py + 8)
   })
+  ctx.textAlign = align || 'left'
+  ctx.font = font || gfx.font(14)
 }
 
 function drawCity(ctx, box, options = {}) {
   const { x, y, w, h } = box
-  if (options.compact || h < 110) {
+  if (options.compact || h < 118) {
     drawCityDots(ctx, box, options)
     return
   }
   const tick = options.tick || 0
-  fill(ctx, options.bg || '#071018')
-  rect(ctx, x, y, w, h)
-  fill(ctx, 'rgba(70,120,150,0.16)')
+  sky(ctx, x, y, w, h, tick)
+  fill(ctx, 'rgba(70,120,150,0.18)')
   rect(ctx, x, y + h * 0.32, w * 0.3, h * 0.28)
   fill(ctx, 'rgba(230,240,255,0.35)')
   for (let i = 0; i < 22; i++) {
@@ -343,7 +384,7 @@ function drawCity(ctx, box, options = {}) {
   const align = ctx.textAlign
   const font = ctx.font
   ctx.textAlign = 'center'
-  ctx.font = h > 140 ? '11px sans-serif' : '9px sans-serif'
+  gfx.applyFont(ctx, h > 140 ? 11 : 9, '700')
   Object.keys(ZONE_POS).forEach(key => {
     const p = ZONE_POS[key]
     const px = x + p.x * w
@@ -356,16 +397,16 @@ function drawCity(ctx, box, options = {}) {
       dim: !current && !reach,
       tick
     })
-    fill(ctx, 'rgba(8,12,18,0.72)')
-    rect(ctx, px - 22, py + 6, 44, 14)
+    fill(ctx, 'rgba(8,12,18,0.78)')
+    rect(ctx, px - 24, py + 6, 48, 15)
     fill(ctx, current ? '#65d6b4' : reach ? '#eef4fa' : '#6a7a88')
     ctx.fillText(ZONE_SHORT[key] || key, px, py + 8)
   })
   fill(ctx, '#8fa3b8')
-  ctx.font = '10px sans-serif'
+  gfx.applyFont(ctx, 10, '700')
   ctx.fillText('北', x + w * 0.5, y + 4)
   ctx.textAlign = align || 'left'
-  ctx.font = font || '14px sans-serif'
+  ctx.font = font || gfx.font(14)
   const here = ZONE_POS[options.current]
   if (here && options.marker !== 'none') {
     const hx = x + here.x * w
@@ -383,10 +424,55 @@ function drawCity(ctx, box, options = {}) {
 function gem(ctx, x, y, size, color) {
   fill(ctx, color)
   rect(ctx, x, y + size * 0.22, size, size * 0.56)
-  fill(ctx, color)
   rect(ctx, x + size * 0.18, y, size * 0.64, size)
-  fill(ctx, 'rgba(255,255,255,0.35)')
+  fill(ctx, 'rgba(255,255,255,0.4)')
   rect(ctx, x + 3, y + 3, Math.max(2, size / 4), Math.max(2, size / 4))
+  fill(ctx, 'rgba(0,0,0,0.22)')
+  rect(ctx, x + size * 0.62, y + size * 0.58, size * 0.28, size * 0.28)
+}
+
+function drawItemIcon(ctx, x, y, size, item) {
+  const tier = (item && item.tier) || 'green'
+  const color = TIER_COLOR[tier] || TIER_COLOR.green
+  const name = String((item && item.name) || '')
+  fill(ctx, 'rgba(8,12,18,0.45)')
+  rect(ctx, x - 2, y + size - 3, size + 4, 5)
+  if (/晶核|阵列|冠|环/.test(name)) {
+    gem(ctx, x, y, size, color)
+    gfx.circle(ctx, x + size / 2, y + size / 2, size * 0.18, 'rgba(255,255,255,0.35)')
+    return
+  }
+  if (/主机|板|仪|盘|匣/.test(name)) {
+    fill(ctx, '#1a2430')
+    rect(ctx, x, y + 2, size, size - 4)
+    fill(ctx, color)
+    rect(ctx, x + 3, y + 5, size - 6, 4)
+    rect(ctx, x + 3, y + size * 0.42, size - 6, 3)
+    rect(ctx, x + 5, y + size * 0.62, size * 0.28, size * 0.22)
+    return
+  }
+  if (/罐|管|泵|阀|药柱|胶囊/.test(name)) {
+    fill(ctx, color)
+    rect(ctx, x + size * 0.28, y, size * 0.44, size)
+    fill(ctx, '#1a2430')
+    rect(ctx, x + size * 0.22, y + 2, size * 0.56, 5)
+    fill(ctx, 'rgba(255,255,255,0.28)')
+    rect(ctx, x + size * 0.34, y + size * 0.3, 3, size * 0.4)
+    return
+  }
+  gem(ctx, x, y, size, color)
+}
+
+function drawMedal(ctx, x, y, size, medal) {
+  const tier = (medal && medal.tier) || 'gold'
+  const color = TIER_COLOR[tier] || TIER_COLOR.gold
+  gfx.circle(ctx, x + size / 2, y + size / 2, size * 0.48, '#1a2430')
+  gfx.strokeCircle(ctx, x + size / 2, y + size / 2, size * 0.42, color, 3)
+  fill(ctx, color)
+  rect(ctx, x + size * 0.38, y + size * 0.22, size * 0.24, size * 0.56)
+  rect(ctx, x + size * 0.22, y + size * 0.38, size * 0.56, size * 0.24)
+  fill(ctx, 'rgba(255,255,255,0.35)')
+  rect(ctx, x + size * 0.42, y + size * 0.28, 4, 4)
 }
 
 function drawPerson(ctx, x, y, tick, options = {}) {
@@ -501,7 +587,10 @@ function drawProp(ctx, kind, x, y, lit, tick, hot) {
 }
 
 function drawFloor(ctx, x, y, w, h) {
-  fill(ctx, '#121820')
+  fill(ctx, gfx.vgrad(ctx, x, y, h, [
+    [0, '#141c26'],
+    [1, '#0c1218']
+  ]))
   rect(ctx, x, y, w, h)
   fill(ctx, '#0c1218')
   for (let i = 1; i < 8; i++) rect(ctx, x, y + (h * i) / 8, w, 2)
@@ -555,9 +644,9 @@ function drawRoom(ctx, zone, box, tick) {
   rect(ctx, x, y, w, wall)
   fill(ctx, '#0c1218')
   rect(ctx, x, y, w, 8)
-  const win = { x: x + w * 0.14, y: y + 12, w: w * 0.72, h: wall - 22 }
+  const win = { x: x + w * 0.12, y: y + 10, w: w * 0.76, h: wall - 20 }
   drawZone(ctx, zone, win, tick)
-  fill(ctx, 'rgba(8,12,18,0.2)')
+  fill(ctx, 'rgba(8,12,18,0.16)')
   rect(ctx, win.x, win.y, win.w, win.h)
   fill(ctx, '#1a2430')
   rect(ctx, win.x - 6, win.y - 6, win.w + 12, 6)
@@ -651,11 +740,37 @@ function drawPad(ctx, method, x, y, lit, hot) {
   rect(ctx, x - 4, y - 16, 8, 8)
 }
 
+function drawKit(ctx, x, y, size, id) {
+  if (id === 'full') {
+    fill(ctx, '#2a4a40')
+    rect(ctx, x, y + 4, size, size - 8)
+    fill(ctx, '#65d6b4')
+    rect(ctx, x + 4, y + 8, size - 8, 6)
+    rect(ctx, x + size * 0.3, y, size * 0.4, 8)
+    return
+  }
+  if (id === 'knife') {
+    fill(ctx, '#3a2e16')
+    rect(ctx, x + size * 0.15, y + size * 0.2, size * 0.7, size * 0.18)
+    fill(ctx, '#ffc65c')
+    rect(ctx, x + size * 0.42, y + size * 0.12, 5, size * 0.7)
+    return
+  }
+  fill(ctx, '#1a3048')
+  rect(ctx, x + 3, y + 6, size - 6, size - 10)
+  fill(ctx, '#65a9ff')
+  rect(ctx, x + 7, y + 10, size - 14, 5)
+}
+
 module.exports = {
   ROOM_WALL,
+  TIER_COLOR,
   drawZone,
   drawCity,
   gem,
+  drawItemIcon,
+  drawMedal,
+  drawKit,
   drawActor,
   drawProp,
   drawRoom,

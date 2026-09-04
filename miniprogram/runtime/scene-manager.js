@@ -114,7 +114,7 @@ class SceneManager {
       this.ctx.fillStyle = '#080c13'
       this.ctx.fillRect(0, 0, this.viewport.width, this.viewport.height)
       this.ctx.fillStyle = '#ffc65c'
-      this.ctx.font = '16px sans-serif'
+      this.ctx.font = require('./gfx').font(16)
       this.ctx.fillText('界面暂时无法绘制，请返回重进。', 24, 80)
     }
     if (this.fx.bits && this.fx.bits.length) {
@@ -135,7 +135,7 @@ class SceneManager {
     }
     if (this.fx.label && this.fx.flash > 0.15) {
       const ctx = this.ctx
-      ctx.font = '700 28px sans-serif'
+      ctx.font = require('./gfx').font(28, '700')
       ctx.fillStyle = this.fx.kind === 'hit' || this.fx.kind === 'dead' ? '#ff8a8a' : '#ffe08a'
       ctx.textAlign = 'center'
       ctx.globalAlpha = Math.min(1, this.fx.flash + 0.2)
