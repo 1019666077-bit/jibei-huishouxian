@@ -1,0 +1,145 @@
+// 微信小游戏 Canvas 运行时冒烟：首启协议、本地行动、清档与固定广告奖励。
+// 不依赖开发者工具，用最小 wx/Canvas mock 验证场景和存储链路。
+const assert = require('assert')
+
+const storage = {}
+const events = {}
+let modalConfirm = true
+let exited = false
+
+const ctx = {
+  fillStyle: '', strokeStyle: '', lineWidth: 1, font: '', textBaseline: '', textAlign: '',
+  fillRect() {}, beginPath() {}, moveTo() {}, arcTo() {}, closePath() {}, fill() {},
+  stroke() {}, save() {}, restore() {}, rect() {}, clip() {}, setTransform() {},
+  fillText() {},
+  measureText(text) { return { width: String(text || '').length * 8 } }
+}
+const canvas = {
+  width: 0,
+  height: 0,
+  getContext() { return ctx },
+  requestAnimationFrame(fn) { fn() }
+}
+
+global.wx = {
+  createCanvas() { return canvas },
+  getWindowInfo() {
+    return {
+      windowWidth: 390, windowHeight: 844, pixelRatio: 2,
+      safeArea: { left: 0, top: 44, right: 390, bottom: 810 }
+    }
+  },
+  getStorageSync(key) { return storage[key] || null },
+  setStorageSync(key, value) { storage[key] = value },
+  removeStorageSync(key) { delete storage[key] },
+  onTouchStart(fn) { events.touchStart = fn },
+  onTouchMove(fn) { events.touchMove = fn },
+  onTouchEnd(fn) { events.touchEnd = fn },
+  onTouchCancel(fn) { events.touchCancel = fn },
+  onWindowResize(fn) { events.resize = fn },
+  onHide(fn) { events.hide = fn },
+  onShow(fn) { events.show = fn },
+  showModal(options) {
+    options.success({ confirm: modalConfirm, cancel: !modalConfirm })
+  },
+  showToast() {},
+  exitMiniProgram() { exited = true }
+}
+
+const { createGame } = require('../miniprogram/runtime/app')
+const ads = require('../miniprogram/utils/ads')
+const present = require('../miniprogram/runtime/present')
+
+// 首次启动必须停在协议页，不能在用户确认前直接进大厅
+const manager = createGame({ adUnitId: '' })
+assert.strictEqual(manager.sceneName, 'legal', '首次启动没有先展示协议与隐私')
+assert.strictEqual(manager.scene.firstUse, true, '协议页没有进入首次确认模式')
+manager.scene.accept()
+assert.strictEqual(manager.sceneName, 'legal', '未读完协议不应进入大厅')
+manager.scene.scroll.offset = manager.scene.scroll.max
+manager.scene.accept()
+assert.strictEqual(manager.sceneName, 'index', '读完并同意后没有进入大厅')
+assert.strictEqual(storage.legal_consent_v1.version, 6, '协议确认没有写入当前条款版本')
+
+// 一局完整链路：选择能买得起的装备，之后始终选第一个可用项，必须进入本地战报
+manager.go('run')
+assert.ok(manager.scene.run.loadout, '出发后仍停在战备选择')
+assert.strictEqual(manager.scene.run.node.id, 'opener_fog', '首局没有进入雾中短戏')
+assert.ok(present.useRoom(manager.scene.run.node), '首局现场没有走进房间')
+assert.ok(present.layoutRoom(manager.scene.run.node, { x: 0, y: 0, w: 100, h: 100 }).some(item => item.kind === 'crate'), '首局房间没有柜子')
+assert.ok(manager.scene.run.node.text.length <= 16, '首局场景仍是长段说明')
+assert.ok(manager.scene.run.node.options.every(item => (item.verb || item.text).length <= 8), '首局选项没有收成短动词')
+assert.strictEqual(manager.scene.run.cost, 0, '首局进场不该扣押金')
+const meta = require('../miniprogram/core/meta')
+assert.ok(!storage.meta_v1 || storage.meta_v1.balance === meta.START_BALANCE, '首局尚未结算却已扣仓库')
+let guard = 0
+while (manager.sceneName === 'run' && guard++ < 100) {
+  const scene = manager.scene
+  const option = scene.run.node.options.find(item => !item.disabled)
+  assert.ok(option, `第 ${scene.run.step} 步没有可用选项`)
+  scene.busy = false
+  scene.pick(option.idx)
+}
+assert.ok(guard < 100, '完整行动超过 100 次选择仍未结算')
+assert.strictEqual(manager.sceneName, 'report', '行动结束后没有进入本地战报')
+assert.ok(storage.last_report, '行动结束后没有保存最近战报')
+assert.ok(storage.meta_v1 && storage.meta_v1.runs >= 1, '行动结算没有更新本地仓库')
+if (!storage.last_report.escaped) {
+  assert.strictEqual(storage.meta_v1.balance, meta.START_BALANCE, '首局阵亡把押金扣了')
+}
+
+// 设置页清档必须连协议确认和广告记录一起清除
+storage.ad_reward_v1 = { day: 'x', claimed: true, stock: 1 }
+storage.retry_preset = { loadout: 'half' }
+manager.go('settings')
+modalConfirm = true
+manager.scene.clearAll()
+for (const key of ['meta_v1', 'last_report', 'last_rid', 'retry_preset', 'ad_reward_v1', 'legal_consent_v1']) {
+  assert.strictEqual(storage[key], undefined, `一键清档漏掉 ${key}`)
+}
+assert.strictEqual(manager.sceneName, 'legal', '清档后没有立刻回到协议确认')
+assert.strictEqual(manager.scene.firstUse, true, '清档后协议页不是强制确认模式')
+
+// 不同意首启协议时应退出
+manager.go('legal', { firstUse: true })
+manager.scene.decline()
+assert.strictEqual(exited, true, '拒绝协议没有退出小游戏')
+
+// 激励视频：提前关闭不发奖，完整观看只发固定 1 份，且同日不可重复
+let closeHandler = null
+const video = {
+  onClose(fn) { closeHandler = fn },
+  offClose() {},
+  onError() {},
+  offError() {},
+  show() { return Promise.resolve() },
+  load() { return Promise.resolve() }
+}
+wx.createRewardedVideoAd = () => video
+
+async function testAds() {
+  ads.configure('adunit-test')
+  const early = ads.show().then(
+    () => assert.fail('提前关闭视频却发了奖励'),
+    error => assert.ok(error.message.includes('完整看完'), '提前关闭的错误说明不清楚')
+  )
+  closeHandler({ isEnded: false })
+  await early
+  assert.strictEqual(ads.status().stock, 0, '提前关闭视频后库存增加')
+
+  const completed = ads.show()
+  closeHandler({ isEnded: true })
+  const reward = await completed
+  assert.deepStrictEqual(reward, { medical: 1 }, '完整观看没有发固定医疗奖励')
+  assert.strictEqual(ads.status().stock, 1, '完整观看后奖励库存不是 1')
+  await assert.rejects(() => ads.show(), /今日医疗补给已领取/, '同日可以重复领取广告奖励')
+  assert.strictEqual(ads.consumeMedicalSupply(), 1, '下一局没有消费医疗奖励')
+  assert.strictEqual(ads.status().stock, 0, '医疗奖励消费后仍留在库存')
+}
+
+testAds().then(() => {
+  console.log('小游戏运行时自检通过：首启协议/完整行动/本地结算/一键清档/固定广告奖励全部正确')
+}).catch(error => {
+  console.error(error)
+  process.exitCode = 1
+})

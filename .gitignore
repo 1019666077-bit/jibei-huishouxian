@@ -1,0 +1,5 @@
+test/node_modules/
+preview-qr.png
+.DS_Store
+*.log
+.cursor/

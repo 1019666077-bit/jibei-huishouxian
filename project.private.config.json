@@ -1,0 +1,8 @@
+{
+  "description": "开发者工具私有配置",
+  "projectname": "jinyie-huishouxian",
+  "compileType": "minigame",
+  "setting": {
+    "compileHotReLoad": true
+  }
+}

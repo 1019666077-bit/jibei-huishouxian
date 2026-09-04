@@ -1,0 +1,26 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sim.js",
+  "scripts": {
+    "routes": "node routes.js",
+    "inventory": "node inventory.js",
+    "escape": "node escape.js",
+    "ammo": "node ammo.js",
+    "retry": "node retry.js",
+    "content": "node content.js",
+    "meta": "node meta.js",
+    "economy": "node economy.js 300 40",
+    "legal": "node legal.js",
+    "game-runtime": "node game-runtime.js",
+    "audit": "node audit.js 30 150",
+    "invariants": "node invariants.js 1000",
+    "sim": "node sim.js 2000 mixed",
+    "test": "npm run legal && npm run game-runtime && npm run routes && npm run inventory && npm run ammo && npm run escape && npm run retry && npm run content && npm run meta && npm run economy && npm run audit && npm run invariants && node sim.js 1000 mixed"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

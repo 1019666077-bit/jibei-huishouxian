@@ -1,0 +1,41 @@
+{
+  "miniprogramRoot": "miniprogram/",
+  "appid": "wx2e523de77e0da102",
+  "projectname": "jinyie-huishouxian",
+  "compileType": "minigame",
+  "libVersion": "3.4.0",
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "test"
+      },
+      {
+        "type": "folder",
+        "value": "docs"
+      },
+      {
+        "type": "folder",
+        "value": "compliance"
+      },
+      {
+        "type": "folder",
+        "value": ".cursor"
+      },
+      {
+        "type": "file",
+        "value": "preview-qr.png"
+      }
+    ]
+  },
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "minified": true,
+    "urlCheck": true
+  },
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}
