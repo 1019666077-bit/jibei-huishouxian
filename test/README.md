@@ -22,3 +22,12 @@ node device-smoke.js
 4. 提审前再按 `compliance/iaa-filing-material.md` 的截图清单，用现行大厅、局内、背包、结算、图鉴、设置各拍一张。确认画面只有北辰回收署 / 冻港 / 配给点等原创用语。
 
 本机没有开发者工具时，只跑 `npm test`。通过即表示绘制函数和玩法回归是绿的，但不能替代真机或模拟器截图。
+
+若只想在桌面浏览器里看程序化画面（不是提审截图），可在 `test` 目录执行：
+
+```bash
+npx esbuild preview-entry.js --bundle --outfile=preview-bundle.js --platform=browser
+python3 -m http.server 8765
+```
+
+然后打开 `http://127.0.0.1:8765/preview.html`。`preview-bundle.js` 是生成物，不要提交。
