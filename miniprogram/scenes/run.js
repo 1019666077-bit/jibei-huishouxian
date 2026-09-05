@@ -835,7 +835,7 @@ module.exports = manager => ({
         x: prop.x - 74,
         y: prop.y + 22,
         w: 148,
-        h: 68
+        h: 72
       }, floor, 12)
       ui.panel(plate.x, plate.y, plate.w, plate.h, {
         fill: hot || look.highlight ? look.fill : '#101820',
@@ -852,7 +852,7 @@ module.exports = manager => ({
         color: option.disabled ? '#6a7a88' : COLORS.text
       })
       const pip = this.pip(option)
-      ui.text(look.highlight ? '开索道' : (pip || look.label), plate.x + 32, plate.y + 52, 11,
+      ui.text(look.highlight ? '开索道' : (pip || look.label), plate.x + 32, plate.y + 54, 11,
         option.disabled ? '#6a7a88' : look.color, '700', plate.w - 46)
       ui.addHit(plate.x - 4, prop.y - 58, plate.w + 8, 132, () => activate(option, prop))
     })
@@ -905,7 +905,7 @@ module.exports = manager => ({
         stage.drawToneMark(ui.ctx, look.tone, inner.x + 16, y + 22, 26)
         const risky = present.dangerPip(option)
         const railW = risky ? 64 : 58
-        const textW = inner.w - 124 - railW
+        const textW = inner.w - 140 - railW
         ui.wrapped(present.listTitle(option), inner.x + 50, y + 12, textW, {
           size: 14,
           lineHeight: 18,
@@ -1006,9 +1006,9 @@ module.exports = manager => ({
           glow: look.highlight ? 'rgba(255,198,92,0.22)' : null
         })
         ui.text(present.travelLabel(option, node), x + 10, y + 6, 14, option.disabled ? '#6a7a88' : COLORS.text, '700', chipW - 20)
-        ui.wrapped(look.highlight ? '合闸开索道' : present.listTitle(option), x + 10, y + 24, chipW - 24, {
-          size: 11,
-          lineHeight: 15,
+        ui.wrapped(look.highlight ? '合闸开索道' : present.listTitle(option), x + 10, y + 24, chipW - 28, {
+          size: 10,
+          lineHeight: 14,
           maxLines: 2,
           weight: '700',
           color: option.disabled ? '#6a7a88' : look.color
