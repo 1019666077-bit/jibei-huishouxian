@@ -20,15 +20,19 @@ class SceneManager {
     feel.vibrate(kind)
     this.fx.kind = kind
     this.fx.label = label || ''
-    this.fx.until = Date.now() + ((kind === 'dead' || kind === 'win' || kind === 'loot' || kind === 'ok' || kind === 'bad') ? 820 : 420)
+    this.fx.until = Date.now() + ((kind === 'dead' || kind === 'win' || kind === 'loot' || kind === 'ok' || kind === 'bad' || kind === 'lever' || kind === 'extract') ? 860 : 420)
     if (kind === 'hit' || kind === 'dead') {
       this.fx.shake = kind === 'dead' ? 1 : 0.85
       this.fx.flash = 1
       this.fx.color = 'rgba(255,80,80,0.32)'
-    } else if (kind === 'loot' || kind === 'win') {
-      this.fx.shake = 0.2
-      this.fx.flash = 0.9
-      this.fx.color = 'rgba(255,198,92,0.28)'
+    } else if (kind === 'loot' || kind === 'win' || kind === 'lever') {
+      this.fx.shake = kind === 'lever' ? 0.28 : 0.2
+      this.fx.flash = 0.92
+      this.fx.color = 'rgba(255,198,92,0.3)'
+    } else if (kind === 'extract') {
+      this.fx.shake = 0.18
+      this.fx.flash = 0.84
+      this.fx.color = 'rgba(101,169,255,0.28)'
     } else if (kind === 'heal' || kind === 'ok') {
       this.fx.shake = kind === 'ok' ? 0.16 : 0
       this.fx.flash = 0.78
@@ -141,14 +145,15 @@ class SceneManager {
       ctx.fillRect(-20, -20, this.viewport.width + 40, this.viewport.height + 40)
       ctx.globalAlpha = 1
     }
-    if (this.fx.label && this.fx.flash > 0.15) {
+    const sceneJuice = this.scene && this.scene.juice && Date.now() < this.scene.juice.until
+    if (this.fx.label && this.fx.flash > 0.15 && !sceneJuice) {
       const ctx = this.ctx
-      const judge = this.fx.kind === 'ok' || this.fx.kind === 'bad' || this.fx.kind === 'loot'
+      const judge = this.fx.kind === 'ok' || this.fx.kind === 'bad' || this.fx.kind === 'loot' || this.fx.kind === 'lever' || this.fx.kind === 'extract'
       if (judge) {
         const stage = require('./stage')
         const scale = 0.82 + this.fx.flash * 0.5
         ctx.globalAlpha = Math.min(1, this.fx.flash + 0.25)
-        stage.drawJudge(ctx, this.fx.kind !== 'bad', this.viewport.width / 2, this.viewport.height * 0.34, 28 * scale)
+        stage.drawJudge(ctx, this.fx.kind !== 'bad' && this.fx.kind !== 'hit' && this.fx.kind !== 'dead', this.viewport.width / 2, this.viewport.height * 0.34, 28 * scale)
         ctx.globalAlpha = 1
       }
       ctx.font = require('./gfx').font(judge ? 22 : 28, '700')

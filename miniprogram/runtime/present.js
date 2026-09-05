@@ -201,7 +201,53 @@ function leverPath(run) {
   const n = run.levers || 0
   if (n >= 2) return '合闸完成 → 点索道'
   if (n === 1) return '合闸 1/2 → 再合闸 → 索道'
-  return '合闸 0/2 → 索道'
+  return '①合闸 → ②再合闸 → ③索道'
+}
+
+function lessonSteps(run) {
+  const n = (run && run.levers) || 0
+  const options = (run && run.node && run.node.options) || []
+  const hasCable = options.some(isCable)
+  return [
+    { id: 'one', label: '合闸', hint: '冷却舱配电柄', done: n >= 1 },
+    { id: 'two', label: '再合闸', hint: '压缩机房配电柄', done: n >= 2 },
+    { id: 'three', label: '索道', hint: '点金色「索道」撤出', done: n >= 2 && hasCable }
+  ]
+}
+
+function lesson(run) {
+  const n = (run && run.levers) || 0
+  const options = (run && run.node && run.node.options) || []
+  const hasLever = options.some(isLever)
+  const hasCable = options.some(isCable)
+  const steps = lessonSteps(run)
+  let cue = '两处配电柄接通后才能走索道'
+  let kind = 'path'
+  if (n >= 2) {
+    cue = hasCable ? '电源已通，点「索道」撤离' : '双电源已通，去撤离线点索道'
+    kind = 'cable'
+  } else if (hasLever) {
+    cue = n === 1 ? '再点金色「合闸」，然后走索道' : '先点金色「合闸」，再去另一处配电房'
+    kind = 'path'
+  } else if (n === 1) {
+    cue = '再去冷却舱或压缩机房合闸'
+  }
+  return {
+    title: n >= 2 ? '索道已开' : '合闸开索道',
+    kind,
+    cue,
+    steps
+  }
+}
+
+function shouldForceLesson(run, flags = {}) {
+  if (!run || run.ended || flags.taught) return false
+  const options = (run.node && run.node.options) || []
+  const hasLever = options.some(isLever)
+  const hasCable = options.some(isCable)
+  if (hasLever && (run.levers || 0) < 2 && !flags.seenLever) return true
+  if ((run.levers || 0) >= 2 && hasCable && !flags.seenCable) return true
+  return false
 }
 
 function leverNudge(run) {
@@ -446,6 +492,9 @@ module.exports = {
   leverPath,
   leverGuide,
   leverNudge,
+  lesson,
+  lessonSteps,
+  shouldForceLesson,
   paceHint,
   stepChip,
   dangerPip,

@@ -78,6 +78,12 @@ module.exports = manager => ({
     this.hintedCable = false
     this.hintedLate = false
     this.juice = null
+    this.lessonOpen = false
+    this.lessonKind = ''
+    this.lessonSeen = false
+    this.lessonCableSeen = false
+    this.taughtCable = false
+    try { this.taughtCable = !!wx.getStorageSync('lesson_cable_v1') } catch (e) { this.taughtCable = false }
     this.listRect = null
     this.actor = { nx: 0.5, ny: 0.82 }
     this.walk = null
@@ -157,20 +163,33 @@ module.exports = manager => ({
       }
       const hpBefore = this.run.hp
       const lootBefore = this.run.loot.length
+      const leversBefore = this.run.levers || 0
       const result = engine.choose(this.run, idx)
       this.messages = rankMessages(result.messages).concat(this.messages).slice(0, 8)
       this.mainScroll.reset()
       const fx = feel.classify(
-        { hp: hpBefore, lootCount: lootBefore, fight: !!(option && option.rounds) },
+        {
+          hp: hpBefore,
+          lootCount: lootBefore,
+          fight: !!(option && option.rounds),
+          levers: leversBefore,
+          extract: present.isCable(option)
+        },
         this.run,
         result.messages
       )
-      manager.pulse(fx.kind, fx.label)
+      manager.pulse(fx.kind, fx.stamp || fx.label)
       if (fx.item) {
         this.pickup = fx.item
-        this.pickupUntil = Date.now() + 1200
+        this.pickupUntil = Date.now() + 1400
       }
-      if (fx.stamp) this.flashJuice(fx.mark || 'ok', fx.stamp, { silent: true })
+      if (fx.stamp) {
+        this.flashJuice(fx.mark || 'ok', fx.stamp, {
+          silent: true,
+          sub: fx.sub || (fx.item ? fx.item.name : ''),
+          kind: fx.kind
+        })
+      }
       if (this.run.ended) {
         const wait = feel.liveSting() ? 780 : 0
         if (wait) {
@@ -199,7 +218,7 @@ module.exports = manager => ({
     if (!result) return
     engine.refreshNode(this.run)
     this.messages.unshift(`+${result.healed}`)
-    manager.pulse('heal', `+${result.healed} 生命`)
+    this.flashJuice('ok', '回血', { kind: 'heal', sub: `+${result.healed} 生命` })
     manager.requestRender()
   },
 
@@ -214,7 +233,7 @@ module.exports = manager => ({
       this.messages = rankMessages(result.messages).concat(this.messages).slice(0, 8)
       this.mainScroll.reset()
       this.teach()
-      manager.pulse('ok', '转向撤离线')
+      this.flashJuice('ok', '撤离', { kind: 'extract', sub: '选一条撤出' })
     } catch (e) {
       this.messages.unshift('现在还不能撤离，请再试一次。')
     }
@@ -228,9 +247,23 @@ module.exports = manager => ({
   },
 
   flashJuice(kind, label, options) {
-    this.juice = { kind, label, until: Date.now() + 820 }
-    if (options && options.silent) return
-    if (typeof manager.pulse === 'function') manager.pulse(kind, label)
+    const opts = options || {}
+    this.juice = {
+      kind: opts.kind || kind,
+      mark: kind,
+      label,
+      sub: opts.sub || '',
+      until: Date.now() + 860
+    }
+    if (opts.silent) return
+    if (typeof manager.pulse === 'function') manager.pulse(opts.kind || kind, label)
+  },
+
+  dismissLesson() {
+    this.lessonOpen = false
+    this.taughtCable = true
+    try { wx.setStorageSync('lesson_cable_v1', { at: Date.now() }) } catch (e) { /* 无存储时本局不再强弹 */ }
+    manager.requestRender()
   },
 
   toggleSecure(id) {
@@ -314,6 +347,17 @@ module.exports = manager => ({
       this.messages.unshift('匣是空的。先装箱。')
       this.bagOpen = true
     }
+    if (present.shouldForceLesson(this.run, {
+      taught: this.taughtCable,
+      seenLever: this.lessonSeen,
+      seenCable: this.lessonCableSeen
+    })) {
+      const card = present.lesson(this.run)
+      this.lessonOpen = true
+      this.lessonKind = card.kind
+      if (card.kind === 'cable') this.lessonCableSeen = true
+      else this.lessonSeen = true
+    }
   },
 
   finish() {
@@ -336,6 +380,7 @@ module.exports = manager => ({
   },
 
   pointerStart(point) {
+    if (this.lessonOpen) return
     if (!this.contentRect) return
     if (point.y < this.contentRect.y || point.y > this.contentRect.y + this.contentRect.h) return
     if (this.bagOpen) {
@@ -478,28 +523,27 @@ module.exports = manager => ({
     const zone = runMeta.zoneName || present.ZONE_SHORT[this.run.zone] || '冻港'
     const toast = present.toast(this.messages)
     const pace = toast ? '' : present.paceHint(this.run)
-    const hudH = toast || pace ? 132 : 112
+    const hudH = toast || pace ? 126 : 108
     ui.panel(left, top, width, hudH, {
-      fill: '#10202c',
+      fill: '#0d1a24',
       stroke: '#3d5c74',
-      radius: 12
+      radius: 12,
+      rim: COLORS.ice
     })
-    ui.text(zone, left + 12, top + 8, 18, '#ffffff', '700', width * 0.36)
-    if (this.run.levers < 2 && (this.run.zone === 'core' || present.leverGuide(this.run))) {
-      const chipX = left + Math.min(108, 16 + String(zone).length * 16)
-      ui.chip(chipX, top + 6, 72, 20, `供电 ${this.run.levers}/2`, {
-        fill: '#2a2410',
-        stroke: COLORS.gold,
-        color: COLORS.gold,
-        size: 11
-      })
-    }
+    ui.text(zone, left + 12, top + 8, 17, COLORS.text, '700', width * 0.42)
+    const powerOn = this.run.levers >= 2
+    ui.chip(left + 12 + Math.min(132, 18 + String(zone).length * 15), top + 7, 70, 20, `供电 ${this.run.levers}/2`, {
+      fill: powerOn ? '#132820' : '#2a2410',
+      stroke: powerOn ? COLORS.accent : COLORS.gold,
+      color: powerOn ? COLORS.accent : COLORS.gold,
+      size: 11
+    })
     const late = (this.run.step || 0) >= 6
     const stepLabel = runMeta.stepText || present.stepChip(this.run)
-    ui.chip(left + width - 90, top + 6, 78, 22, stepLabel, {
+    ui.chip(left + width - 88, top + 6, 76, 22, stepLabel, {
       fill: late ? '#2c171b' : '#132820',
       stroke: late ? COLORS.danger : COLORS.accent,
-      color: late ? COLORS.danger : COLORS.accent,
+      color: late ? '#ffd0d0' : '#b8ffe8',
       size: 12
     })
     const meterW = (width - 36) / 2
@@ -507,62 +551,52 @@ module.exports = manager => ({
       this.run.hp < 60 ? COLORS.danger : COLORS.accent)
     ui.meter(left + 24 + meterW, top + 32, meterW, '风险', this.run.risk, this.run.risk / 100,
       this.run.risk >= 70 ? COLORS.danger : COLORS.gold)
-    const ammoColor = runMeta.ammoClass === 'ammo-out' ? COLORS.danger : '#eef4fa'
-    const chipW = (width - 36) / 2
-    const chipY = top + 64
-    ui.chip(left + 12, chipY, chipW, 20, `弹 ${runMeta.ammoRounds}`, {
-      fill: '#0c1822',
-      stroke: '#2a4156',
-      color: ammoColor,
-      size: 12
-    })
-    ui.chip(left + 24 + chipW, chipY, chipW, 20, `药 ${this.run.meds}`, {
-      fill: '#0c1822',
-      stroke: '#2a4156',
-      color: this.run.meds ? COLORS.accent : COLORS.danger,
-      size: 12
-    })
-    ui.chip(left + 12, chipY + 24, chipW, 20, `${runMeta.loadGrids}/${this.run.capacity}格`, {
-      fill: '#0c1822',
-      stroke: '#2a4156',
-      color: '#eef4fa',
-      size: 12
-    })
-    ui.chip(left + 24 + chipW, chipY + 24, chipW, 20, `芯片 ${this.run.cards || 0}`, {
-      fill: '#0c1822',
-      stroke: '#2a4156',
-      color: this.run.cards ? COLORS.gold : COLORS.muted,
-      size: 12
-    })
-    if (toast || pace) {
-      const line = toast || pace
-      const hurt = /^-|倒/.test(line)
-      const leverToast = /合闸|供电|索道/.test(line)
-      if (leverToast) {
-        ui.panel(left + 8, top + 108, width - 16, 20, {
-          fill: '#2a2410',
-          stroke: COLORS.gold,
-          radius: 6,
-          sheen: false
-        })
-      }
-      ui.text(line, left + 12, top + 110, 13, hurt ? COLORS.danger : COLORS.gold, '700', width - 24)
-    }
-    let next = top + hudH + 8
-    const guide = present.leverGuide(this.run)
-    const path = present.leverPath(this.run)
-    if (guide) {
-      const two = path && path !== guide
-      const gh = two ? 40 : 24
-      ui.panel(left, next, width, gh, {
-        fill: '#2a2410',
-        stroke: COLORS.gold,
+    const chipW = (width - 48) / 4
+    const chipY = top + 68
+    const chips = [
+      { glyph: 'ammo', label: `${runMeta.ammoRounds}`, color: runMeta.ammoClass === 'ammo-out' ? COLORS.danger : COLORS.text },
+      { glyph: 'med', label: `${this.run.meds}`, color: this.run.meds ? COLORS.accent : COLORS.danger },
+      { glyph: 'grid', label: `${runMeta.loadGrids}/${this.run.capacity}`, color: COLORS.text },
+      { glyph: 'card', label: `${this.run.cards || 0}`, color: this.run.cards ? COLORS.gold : COLORS.muted }
+    ]
+    chips.forEach((chip, i) => {
+      const x = left + 12 + i * (chipW + 8)
+      ui.panel(x, chipY, chipW, 22, {
+        fill: '#0a141c',
+        stroke: '#2a4156',
         radius: 8,
         sheen: false
       })
-      if (two) ui.text(path, left + 10, next + 4, 12, '#ffe08a', '700', width - 20)
-      ui.text(guide, left + 10, next + (two ? 20 : 5), 13, COLORS.gold, '700', width - 20)
-      next += gh + 8
+      stage.drawHudGlyph(ui.ctx, chip.glyph, x + 6, chipY + 4, 14)
+      ui.text(chip.label, x + 24, chipY + 4, 12, chip.color, '700', chipW - 28)
+    })
+    if (toast || pace) {
+      const line = toast || pace
+      const hurt = /^-|倒|失手|挨打/.test(line)
+      const leverToast = /合闸|供电|索道|通电/.test(line)
+      ui.panel(left + 8, top + 96, width - 16, 24, {
+        fill: leverToast ? '#2a2410' : hurt ? '#2c171b' : '#102018',
+        stroke: leverToast ? COLORS.gold : hurt ? COLORS.danger : '#2a4156',
+        radius: 8,
+        sheen: false
+      })
+      stage.drawJudge(ui.ctx, !hurt, left + 22, top + 108, 8)
+      ui.text(line, left + 36, top + 100, 13, hurt ? '#ffd0d0' : COLORS.gold, '700', width - 52)
+    }
+    let next = top + hudH + 8
+    const guide = present.leverGuide(this.run)
+    if (guide) {
+      const card = present.lesson(this.run)
+      ui.panel(left, next, width, 52, {
+        fill: '#2a2410',
+        stroke: COLORS.gold,
+        radius: 10,
+        rim: COLORS.gold,
+        sheen: false
+      })
+      stage.drawLessonRail(ui.ctx, { x: left + 8, y: next + 6, w: width - 16, h: 22 }, card.steps, this.tick)
+      ui.text(guide, left + 10, next + 32, 12, '#ffe08a', '700', width - 20)
+      next += 60
     }
     return next
   },
@@ -800,9 +834,9 @@ module.exports = manager => ({
     this.mainScroll.setBounds(listNeed, listRect.h)
     const rows = props.slice().sort((a, b) => Number(present.isLever(b.opt)) - Number(present.isLever(a.opt)))
     ui.panel(listRect.x, listRect.y, listRect.w, listRect.h, {
-      fill: 'rgba(8,14,20,0.82)',
-      stroke: '#3d5c74',
-      radius: 10,
+      fill: 'rgba(8,14,20,0.86)',
+      stroke: COLORS.rim,
+      radius: 12,
       sheen: false
     })
     ui.withClip(listRect, () => {
@@ -1031,23 +1065,23 @@ module.exports = manager => ({
     ui.button(left, y, bw, 48, this.bagOpen ? '关闭' : `背包 ${this.run.loot.length}`,
       () => this.toggleBag(), {
         size: 14,
-        fill: this.bagOpen ? '#28443c' : (bagHot ? '#3a2e16' : '#172333'),
-        stroke: bagHot ? COLORS.gold : COLORS.line,
+        fill: this.bagOpen ? '#1e4f43' : (bagHot ? '#3a2e16' : '#162433'),
+        stroke: bagHot ? COLORS.gold : COLORS.rim,
         color: bagHot ? COLORS.gold : COLORS.text
       })
     ui.button(left + bw + gap, y, bw, 48,
       `打药 ${this.run.meds}`, () => this.useMed(), {
         size: 14,
         enabled: medEnabled,
-        fill: medHot ? '#3a2a16' : '#293b2c',
-        stroke: medHot ? COLORS.gold : COLORS.line,
+        fill: medHot ? '#3a2a16' : '#1a2c22',
+        stroke: medHot ? COLORS.gold : COLORS.rim,
         color: medHot ? COLORS.gold : COLORS.accent
       })
     ui.button(left + (bw + gap) * 2, y, bw, 48, '撤离', () => this.goExtract(), {
       size: 14,
       enabled: extractOn,
-      fill: extractHot ? '#3a2a16' : '#172333',
-      stroke: extractHot ? COLORS.gold : COLORS.line,
+      fill: extractHot ? '#2a2410' : '#162433',
+      stroke: extractHot ? COLORS.gold : COLORS.rim,
       color: extractHot ? COLORS.gold : COLORS.text
     })
 
@@ -1060,26 +1094,71 @@ module.exports = manager => ({
 
     this.renderPickup(ui, v)
     this.renderJuice(ui, v)
+    this.renderLesson(ui, v)
     this.renderEnding(ui, v)
+  },
+
+  juiceLook(kind) {
+    if (kind === 'bad' || kind === 'hit' || kind === 'dead') {
+      return { ok: false, fill: '#2c171b', stroke: COLORS.danger, glow: 'rgba(255,107,107,0.22)', color: '#ffd0d0' }
+    }
+    if (kind === 'loot' || kind === 'lever' || kind === 'win') {
+      return { ok: true, fill: '#2a2410', stroke: COLORS.gold, glow: 'rgba(255,198,92,0.24)', color: COLORS.gold }
+    }
+    if (kind === 'extract') {
+      return { ok: true, fill: '#15273a', stroke: COLORS.blue, glow: 'rgba(101,169,255,0.22)', color: COLORS.ice }
+    }
+    return { ok: true, fill: '#132820', stroke: COLORS.accent, glow: 'rgba(101,214,180,0.22)', color: COLORS.accent }
   },
 
   renderJuice(ui, v) {
     if (!this.juice || Date.now() > this.juice.until) return
+    if (this.pickup && Date.now() < this.pickupUntil) return
     const left = Math.max(0, this.juice.until - Date.now())
-    const t = 1 - left / 820
-    const scale = 1.22 - t * 0.32
-    const ok = this.juice.kind !== 'bad'
-    const w = Math.min(200, v.safe.right - v.safe.left - 80)
+    const t = 1 - left / 860
+    const scale = 1.18 - t * 0.26
+    const look = this.juiceLook(this.juice.kind || this.juice.mark)
+    const w = Math.min(228, v.safe.right - v.safe.left - 56)
     const x = (v.width - w) / 2
-    const y = v.height * 0.28
-    ui.panel(x, y, w, 72, {
-      fill: ok ? '#132820' : '#2c171b',
-      stroke: ok ? COLORS.accent : COLORS.danger,
+    const y = v.height * 0.26
+    ui.panel(x, y, w, this.juice.sub ? 82 : 70, {
+      fill: look.fill,
+      stroke: look.stroke,
       radius: 14,
-      glow: ok ? 'rgba(101,214,180,0.2)' : 'rgba(255,107,107,0.18)'
+      glow: look.glow,
+      rim: look.stroke
     })
-    stage.drawJudge(ui.ctx, ok, x + 36, y + 36, 16 * scale)
-    ui.text(this.juice.label, x + 64, y + 24, 18, ok ? COLORS.accent : COLORS.danger, '700', w - 80)
+    stage.drawJudge(ui.ctx, look.ok, x + 36, y + 36, 15 * scale)
+    ui.text(this.juice.label, x + 64, y + (this.juice.sub ? 16 : 24), 22, look.color, '700', w - 80)
+    if (this.juice.sub) ui.text(this.juice.sub, x + 64, y + 46, 13, COLORS.body, '700', w - 80)
+  },
+
+  renderLesson(ui, v) {
+    if (!this.lessonOpen || this.bagOpen) return
+    const card = present.lesson(this.run)
+    const w = Math.min(320, v.safe.right - v.safe.left - 28)
+    const x = (v.width - w) / 2
+    const y = v.safe.top + 86
+    ui.ctx.fillStyle = 'rgba(5,10,16,0.55)'
+    ui.ctx.fillRect(0, 0, v.width, v.height)
+    ui.panel(x, y, w, 168, {
+      fill: '#162018',
+      stroke: COLORS.gold,
+      radius: 14,
+      glow: 'rgba(255,198,92,0.28)',
+      rim: COLORS.gold
+    })
+    ui.text(card.title, x + 16, y + 12, 20, COLORS.gold, '700', w - 32)
+    ui.text(card.cue, x + 16, y + 40, 14, COLORS.text, '700', w - 32)
+    stage.drawLessonRail(ui.ctx, { x: x + 16, y: y + 68, w: w - 32, h: 28 }, card.steps, this.tick)
+    ui.button(x + 16, y + 112, w - 32, 40, card.kind === 'cable' ? '知道了，点索道' : '知道了，去合闸', () => this.dismissLesson(), {
+      fill: '#d4a017',
+      stroke: '#ffe08a',
+      color: '#1a1408',
+      size: 16,
+      weight: '700'
+    })
+    ui.addHit(0, 0, v.width, v.height, () => this.dismissLesson())
   },
 
   renderEnding(ui, v) {
@@ -1100,14 +1179,17 @@ module.exports = manager => ({
     const x = (v.width - w) / 2
     const y = v.height * 0.32
     const hot = item.tier === 'red' || item.tier === 'gold'
-    ui.panel(x, y, w, 84, {
-      fill: hot ? '#2c1c14' : '#182433',
+    ui.panel(x, y, w, 88, {
+      fill: hot ? '#2c1c14' : '#132820',
       stroke: hot ? COLORS.gold : COLORS.accent,
-      radius: 14
+      radius: 14,
+      glow: hot ? 'rgba(255,198,92,0.22)' : 'rgba(101,214,180,0.18)',
+      rim: hot ? COLORS.gold : COLORS.accent
     })
-    stage.drawJudge(ui.ctx, true, x + 28, y + 28, 11)
-    stage.drawItemIcon(ui.ctx, x + 48, y + 26, 24, item)
-    ui.text(item.name, x + 82, y + 18, 16, COLORS.text, '700', w - 98)
-    ui.text(`入手 · ${engine.fmtVal(item.value)}`, x + 82, y + 46, 13, COLORS.accent, '700')
+    stage.drawJudge(ui.ctx, true, x + 28, y + 32, 12)
+    stage.drawItemIcon(ui.ctx, x + 48, y + 28, 24, item)
+    ui.text('入手', x + 82, y + 12, 13, COLORS.gold, '700')
+    ui.text(item.name, x + 82, y + 32, 16, COLORS.text, '700', w - 98)
+    ui.text(engine.fmtVal(item.value), x + 82, y + 56, 13, COLORS.accent, '700')
   }
 })

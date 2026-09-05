@@ -5,13 +5,26 @@ const COLORS = {
   panel: '#101a26',
   panelAlt: '#162433',
   line: '#2a4156',
-  text: '#eef4fa',
-  muted: '#8fa3b8',
+  rim: '#3d5c74',
+  text: '#f4f8fc',
+  body: '#c8d6e6',
+  muted: '#9aafc2',
   accent: '#65d6b4',
   danger: '#ff6b6b',
   gold: '#ffc65c',
   blue: '#65a9ff',
   ice: '#9fd4ff'
+}
+
+const THEME = {
+  radius: { panel: 12, button: 10, chip: 8, stamp: 14 },
+  fill: {
+    ice: '#10202c',
+    gold: '#2a2410',
+    danger: '#2c171b',
+    ok: '#132820',
+    extract: '#15273a'
+  }
 }
 
 function copy(text) {
@@ -178,8 +191,12 @@ class UI {
       ctx.fillRect(x, y + 8, 4, Math.max(8, h - 16))
     }
     if (options.sheen !== false && h > 20) {
-      ctx.fillStyle = 'rgba(186,220,255,0.05)'
+      ctx.fillStyle = 'rgba(186,220,255,0.06)'
       ctx.fillRect(x + 2, y + 2, w - 4, Math.min(14, h * 0.22))
+    }
+    if (options.rim) {
+      ctx.fillStyle = options.rim
+      ctx.fillRect(x + 10, y, Math.max(24, w - 20), 2)
     }
   }
 
@@ -223,12 +240,12 @@ class UI {
   }
 
   meter(x, y, w, label, value, ratio, fill) {
-    this.text(label, x, y, 12, '#c5d4e4', '700')
-    gfx.applyFont(this.ctx, 15, '700')
+    this.text(label, x, y, 11, COLORS.body, '700')
+    gfx.applyFont(this.ctx, 16, '700')
     const num = copy(value)
     const nw = this.ctx.measureText(num).width
-    this.text(num, x + w - nw, y - 1, 15, fill || COLORS.text, '700')
-    this.bar(x, y + 18, w, 9, ratio, fill || COLORS.accent, '#0a141c')
+    this.text(num, x + w - nw, y - 2, 16, fill || COLORS.text, '700')
+    this.bar(x, y + 17, w, 10, ratio, fill || COLORS.accent, '#071018')
   }
 
   scrollbar(rect, scroll) {
@@ -284,4 +301,4 @@ class UI {
   }
 }
 
-module.exports = { UI, COLORS, copy, wrapLines, tierColor }
+module.exports = { UI, COLORS, THEME, copy, wrapLines, tierColor }

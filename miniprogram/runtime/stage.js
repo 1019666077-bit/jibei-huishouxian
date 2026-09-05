@@ -368,8 +368,9 @@ function drawCityDots(ctx, box, options = {}) {
       const label = ZONE_SHORT[key] || key
       const above = p.y >= 0.60
       const ly = above ? py - 18 : py + 8
-      fill(ctx, 'rgba(6,12,18,0.82)')
-      rect(ctx, px - 22, ly, 44, 13)
+      gfx.roundRect(ctx, px - 22, ly, 44, 13, 5)
+      fill(ctx, 'rgba(6,12,18,0.88)')
+      ctx.fill()
       fill(ctx, here ? '#7ee8c8' : '#ffe08a')
       ctx.fillText(label, px, ly + 1)
     }
@@ -428,8 +429,9 @@ function drawCity(ctx, box, options = {}) {
       dim: !current && !reach && !goal,
       tick
     })
-    fill(ctx, 'rgba(8,12,18,0.84)')
-    rect(ctx, px - 26, py + 6, 52, 16)
+    gfx.roundRect(ctx, px - 26, py + 6, 52, 16, 6)
+    fill(ctx, 'rgba(8,12,18,0.88)')
+    ctx.fill()
     gfx.applyFont(ctx, current || reach ? 12 : 10, '700')
     fill(ctx, current ? '#7ee8c8' : reach ? '#ffe08a' : '#6a7a88')
     ctx.fillText(ZONE_SHORT[key] || key, px, py + 8)
@@ -779,11 +781,16 @@ function drawToneMark(ctx, tone, x, y, size) {
     : tone === 'extract' ? '#65a9ff'
     : tone === 'lever' ? '#ffc65c'
     : '#ffc65c'
-  fill(ctx, 'rgba(8,14,20,0.55)')
-  rect(ctx, x, y, s, s)
+  gfx.roundRect(ctx, x, y, s, s, 5)
+  fill(ctx, 'rgba(8,14,20,0.72)')
+  ctx.fill()
+  gfx.roundRect(ctx, x + 1, y + 1, s - 2, s - 2, 4)
+  ctx.strokeStyle = color
+  ctx.lineWidth = 1.5
+  if (typeof ctx.stroke === 'function') ctx.stroke()
   fill(ctx, color)
   if (tone === 'fight') {
-    rect(ctx, x + s * 0.42, y + 3, 4, s - 6)
+    rect(ctx, x + s * 0.42, y + 4, 4, s - 8)
     rect(ctx, x + 4, y + s * 0.4, s - 8, 4)
     return
   }
@@ -808,9 +815,14 @@ function drawToneMark(ctx, tone, x, y, size) {
 }
 
 function drawJudge(ctx, ok, cx, cy, size) {
-  const s = Math.max(18, size || 36)
-  fill(ctx, ok ? 'rgba(18,52,40,0.9)' : 'rgba(72,18,24,0.9)')
-  rect(ctx, cx - s, cy - s, s * 2, s * 2)
+  const s = Math.max(16, size || 36)
+  gfx.roundRect(ctx, cx - s, cy - s, s * 2, s * 2, Math.min(10, s * 0.35))
+  fill(ctx, ok ? 'rgba(18,52,40,0.94)' : 'rgba(72,18,24,0.94)')
+  ctx.fill()
+  gfx.roundRect(ctx, cx - s, cy - s, s * 2, s * 2, Math.min(10, s * 0.35))
+  ctx.strokeStyle = ok ? '#65d6b4' : '#ff6b6b'
+  ctx.lineWidth = 2
+  if (typeof ctx.stroke === 'function') ctx.stroke()
   fill(ctx, ok ? '#65d6b4' : '#ff6b6b')
   if (ok) {
     rect(ctx, cx - s * 0.48, cy + 2, s * 0.38, 6)
@@ -821,6 +833,79 @@ function drawJudge(ctx, ok, cx, cy, size) {
     rect(ctx, cx + i * (s * 0.12) - 2, cy + i * (s * 0.12) - 2, 5, 5)
     rect(ctx, cx + i * (s * 0.12) - 2, cy - i * (s * 0.12) - 2, 5, 5)
   }
+}
+
+function drawHudGlyph(ctx, kind, x, y, size) {
+  const s = Math.max(10, size || 14)
+  if (kind === 'ammo') {
+    fill(ctx, '#eef4fa')
+    rect(ctx, x + 2, y + 1, s - 4, s - 2)
+    fill(ctx, '#10202c')
+    rect(ctx, x + 4, y + 3, s - 8, 3)
+    rect(ctx, x + s / 2 - 1, y + 7, 2, s - 10)
+    return
+  }
+  if (kind === 'med') {
+    fill(ctx, '#65d6b4')
+    rect(ctx, x + s * 0.38, y + 1, s * 0.24, s - 2)
+    rect(ctx, x + 1, y + s * 0.38, s - 2, s * 0.24)
+    return
+  }
+  if (kind === 'grid') {
+    fill(ctx, '#9fd4ff')
+    rect(ctx, x + 1, y + 1, s * 0.4, s * 0.4)
+    rect(ctx, x + s * 0.54, y + 1, s * 0.4, s * 0.4)
+    rect(ctx, x + 1, y + s * 0.54, s * 0.4, s * 0.4)
+    rect(ctx, x + s * 0.54, y + s * 0.54, s * 0.4, s * 0.4)
+    return
+  }
+  if (kind === 'card') {
+    fill(ctx, '#ffc65c')
+    rect(ctx, x + s * 0.18, y + 2, s * 0.64, s - 4)
+    fill(ctx, '#2a2410')
+    rect(ctx, x + s * 0.32, y + s * 0.28, s * 0.36, 3)
+    return
+  }
+  if (kind === 'power') {
+    fill(ctx, '#ffc65c')
+    rect(ctx, x + 2, y + 2, 3, s - 4)
+    rect(ctx, x + s - 5, y + 2, 3, s - 4)
+    rect(ctx, x + 2, y + 3, s - 4, 3)
+    return
+  }
+  fill(ctx, '#65d6b4')
+  rect(ctx, x + 2, y + 2, s - 4, s - 4)
+}
+
+function drawLessonRail(ctx, box, steps, tick) {
+  const { x, y, w, h } = box
+  const n = Math.max(1, (steps || []).length)
+  const gap = 6
+  const unit = (w - gap * (n - 1)) / n
+  const align = ctx.textAlign
+  ctx.textAlign = 'left'
+  steps.forEach((step, i) => {
+    const sx = x + i * (unit + gap)
+    const on = !!step.done
+    const pulse = !on && i === steps.findIndex(item => !item.done)
+    const glow = pulse ? 0.22 + 0.16 * Math.abs(Math.sin((tick || 0) * 0.28)) : 0
+    gfx.roundRect(ctx, sx, y, unit, h, 8)
+    fill(ctx, on ? '#1e4f43' : '#2a2410')
+    ctx.fill()
+    gfx.roundRect(ctx, sx, y, unit, h, 8)
+    ctx.strokeStyle = on ? '#65d6b4' : '#ffc65c'
+    ctx.lineWidth = pulse ? 2 : 1
+    if (typeof ctx.stroke === 'function') ctx.stroke()
+    if (glow) {
+      fill(ctx, `rgba(255,198,92,${glow})`)
+      rect(ctx, sx + 2, y + 2, unit - 4, h - 4)
+    }
+    gfx.applyFont(ctx, 11, '700')
+    fill(ctx, on ? '#8ef0d0' : '#ffe08a')
+    const label = `${i + 1} ${step.label || ''}`
+    ctx.fillText(label, sx + 8, y + Math.max(4, (h - 11) / 2 - 1), unit - 14)
+  })
+  ctx.textAlign = align || 'left'
 }
 
 function drawKit(ctx, x, y, size, id) {
@@ -861,5 +946,7 @@ module.exports = {
   drawFight,
   drawPad,
   drawToneMark,
-  drawJudge
+  drawJudge,
+  drawHudGlyph,
+  drawLessonRail
 }

@@ -70,8 +70,8 @@ module.exports = manager => ({
     })
     const left = v.safe.left + 12
     const width = v.safe.right - v.safe.left - 24
-    ui.button(left, v.safe.bottom - 48, width, 44, '回大厅出发', () => manager.go('index'), {
-      fill: '#1f6657', stroke: COLORS.accent, size: 17
+    ui.button(left, v.safe.bottom - 50, width, 46, '回大厅出发', () => manager.go('index'), {
+      fill: '#2a8f72', stroke: '#8ef0d0', color: '#ffffff', size: 17
     })
   }
 })

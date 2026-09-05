@@ -160,10 +160,10 @@ module.exports = manager => ({
       size: 13, radius: 8
     })
 
-    ui.chip(left, top + 22, 148, 22, '北辰回收署 · 配给点', {
-      fill: 'rgba(12,28,32,0.72)',
+    ui.chip(left, top + 22, 156, 22, '北辰回收署 · 配给点', {
+      fill: 'rgba(12,28,32,0.78)',
       stroke: COLORS.accent,
-      color: COLORS.accent,
+      color: '#b8ffe8',
       size: 11
     })
     ui.text('极夜回收线', left, top + 52, 34, COLORS.text, '700')
@@ -173,8 +173,9 @@ module.exports = manager => ({
     ui.section(left, mapY - 22, width, '冻港作业图')
     ui.panel(left - 4, mapY - 4, width + 8, mapH + 8, {
       fill: '#071018',
-      stroke: '#2a4156',
+      stroke: COLORS.rim,
       radius: 12,
+      rim: COLORS.ice,
       sheen: false
     })
     const missedLever = this.meta.runs >= 1 && this.lastReport && (this.lastReport.levers || 0) < 1
@@ -185,7 +186,7 @@ module.exports = manager => ({
       target: missedLever ? 'core' : ''
     })
     if (missedLever) {
-      ui.chip(left + 8, mapY + 6, Math.min(width - 16, 248), 22, '冷却舱·压缩机房可合闸开索道', {
+      ui.chip(left + 8, mapY + 6, Math.min(width - 16, 268), 22, '①冷却舱 ②压缩机房 → 索道', {
         fill: '#2a2410',
         stroke: COLORS.gold,
         color: COLORS.gold,
@@ -226,14 +227,18 @@ module.exports = manager => ({
     const startFill = `rgb(${Math.round(22 + 18 * glow)},${Math.round(90 + 30 * glow)},${Math.round(75 + 20 * glow)})`
     ui.button(left, startY, width, 64, '出发回收', () => this.start(), {
       fill: startFill,
-      stroke: COLORS.accent,
+      stroke: '#8ef0d0',
       color: '#ffffff',
       size: 22,
-      glow: 'rgba(101,214,180,0.25)'
+      glow: 'rgba(101,214,180,0.32)'
     })
 
-    ui.button(left, startY + 76, (width - 10) / 2, 42, '仓库图鉴', () => manager.go('codex'), { size: 14 })
-    ui.button(left + (width - 10) / 2 + 10, startY + 76, (width - 10) / 2, 42, '协议说明', () => manager.go('legal'), { size: 14 })
+    ui.button(left, startY + 76, (width - 10) / 2, 42, '仓库图鉴', () => manager.go('codex'), {
+      size: 14, fill: '#162433', stroke: COLORS.rim
+    })
+    ui.button(left + (width - 10) / 2 + 10, startY + 76, (width - 10) / 2, 42, '协议说明', () => manager.go('legal'), {
+      size: 14, fill: '#162433', stroke: COLORS.rim
+    })
 
     if (this.ad.configured && !this.ad.claimedToday) {
       ui.button(left, startY - 52, width, 40, '看完视频：医疗补给 +1', () => this.claimAd(), {

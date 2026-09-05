@@ -49,6 +49,14 @@ assert.ok(present.leverGuide({ zone: 'core', levers: 2, node: { options: [] } })
 assert.ok(present.leverGuide({ zone: 'extract', levers: 2, node: { type: 'escape', options: [{ method: 'heli' }] } }).includes('索道'))
 assert.ok(present.leverPath({ levers: 0 }).includes('合闸'))
 assert.ok(present.leverPath({ levers: 2 }).includes('索道'))
+{
+  const card = present.lesson({ levers: 0, node: { options: [{ verb: '合闸' }] } })
+  assert.ok(card.steps.length === 3 && card.steps[0].label === '合闸')
+  assert.ok(card.cue.includes('合闸'))
+  assert.ok(present.shouldForceLesson({ levers: 0, node: { options: [{ verb: '合闸' }] } }, { taught: false }))
+  assert.ok(!present.shouldForceLesson({ levers: 0, node: { options: [{ verb: '合闸' }] } }, { taught: true }))
+  assert.ok(present.shouldForceLesson({ levers: 2, node: { options: [{ method: 'heli' }] } }, { taught: false }))
+}
 assert.ok(present.leverNudge({ levers: 0, step: 3 }))
 assert.ok(!present.leverNudge({ levers: 0, step: 1 }))
 assert.ok(!present.leverNudge({ levers: 1, step: 5 }))
@@ -106,6 +114,15 @@ stage.drawToneMark(ctx, 'extract', 70, 200, 22)
 stage.drawToneMark(ctx, 'lever', 100, 200, 22)
 stage.drawJudge(ctx, true, 160, 210, 20)
 stage.drawJudge(ctx, false, 210, 210, 20)
+stage.drawHudGlyph(ctx, 'ammo', 10, 240, 14)
+stage.drawHudGlyph(ctx, 'med', 30, 240, 14)
+stage.drawHudGlyph(ctx, 'grid', 50, 240, 14)
+stage.drawHudGlyph(ctx, 'card', 70, 240, 14)
+stage.drawLessonRail(ctx, { x: 10, y: 260, w: 300, h: 22 }, [
+  { label: '合闸', done: true },
+  { label: '再合闸', done: false },
+  { label: '索道', done: false }
+], 3)
 
 const feel = require('../miniprogram/runtime/feel')
 {
@@ -129,6 +146,19 @@ const feel = require('../miniprogram/runtime/feel')
     ['巡检摸到了']
   )
   assert.strictEqual(bump.stamp, '挨打')
+  const gate = feel.classify(
+    { hp: 80, lootCount: 0, levers: 0 },
+    { hp: 80, loot: [], levers: 1, ended: false },
+    ['供电进度 1/2']
+  )
+  assert.strictEqual(gate.stamp, '合闸', '合闸没有即时标')
+  assert.strictEqual(gate.kind, 'lever')
+  const live = feel.classify(
+    { hp: 80, lootCount: 1, extract: true },
+    { hp: 80, loot: [{}], ended: false },
+    ['带着已经到手的货，转向撤离线']
+  )
+  assert.strictEqual(live.stamp, '撤离', '撤离没有即时标')
 }
 
 const ui = new UI(ctx)

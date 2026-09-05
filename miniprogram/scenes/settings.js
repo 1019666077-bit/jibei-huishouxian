@@ -7,7 +7,7 @@ const { COLORS } = require('../runtime/ui')
 
 const CLEAR_KEYS = [
   'meta_v1', 'last_report', 'last_rid', 'retry_preset',
-  'ad_reward_v1', consent.STORAGE_KEY
+  'ad_reward_v1', consent.STORAGE_KEY, 'lesson_cable_v1'
 ]
 
 module.exports = manager => ({

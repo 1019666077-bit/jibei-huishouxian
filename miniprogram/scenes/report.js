@@ -86,59 +86,60 @@ module.exports = manager => ({
       let y = this.rect.y + 4 - this.scroll.offset
       const start = y
       const win = !!r.escaped
-      const ratingColor = r.rating === 'S' ? COLORS.danger : r.rating === 'A' ? COLORS.gold : COLORS.text
+      const ratingColor = r.rating === 'S' ? COLORS.danger : r.rating === 'A' ? COLORS.gold : COLORS.ice
       const profit = r.netProfit || 0
       const failLine = !win && r.causeChain[0] ? r.causeChain[0] : ''
       const lootStrip = win ? (r.lootItems || []).slice(0, 8) : []
-      const headH = win ? (lootStrip.length ? 214 : 176) : (failLine ? 246 : 176)
+      const headH = win ? (lootStrip.length ? 228 : 188) : (failLine ? 258 : 188)
       ui.panel(x, y, w, headH, {
         fill: win ? '#132820' : '#2c171b',
-        stroke: win ? '#2b6653' : '#703840',
-        glow: win ? 'rgba(101,214,180,0.2)' : 'rgba(255,107,107,0.16)'
+        stroke: win ? COLORS.accent : COLORS.danger,
+        glow: win ? 'rgba(101,214,180,0.22)' : 'rgba(255,107,107,0.18)',
+        rim: win ? COLORS.accent : COLORS.danger
       })
-      ui.chip(x + 14, y + 12, 88, 24, win ? '撤收成功' : '未能归署', {
+      ui.chip(x + 14, y + 12, 96, 26, win ? '撤收成功' : '未能归署', {
         fill: win ? '#1e4f43' : '#4a2024',
         stroke: win ? COLORS.accent : COLORS.danger,
-        color: win ? COLORS.accent : COLORS.danger,
+        color: win ? '#b8ffe8' : '#ffd0d0',
         size: 13
       })
-      ui.chip(x + 110, y + 12, 56, 24, `评级 ${r.rating}`, {
-        fill: '#1a2418',
+      ui.chip(x + 118, y + 12, 64, 26, `评级 ${r.rating}`, {
+        fill: '#0f1a14',
         stroke: ratingColor,
         color: ratingColor,
         size: 13
       })
-      let bodyY = y + 48
+      let bodyY = y + 50
       if (failLine) {
-        ui.panel(x + 12, bodyY, w - 24, 58, {
+        ui.panel(x + 12, bodyY, w - 24, 62, {
           fill: '#4a2024',
           stroke: COLORS.danger,
           radius: 10,
-          glow: 'rgba(255,107,107,0.18)'
+          glow: 'rgba(255,107,107,0.2)'
         })
-        stage.drawJudge(ui.ctx, false, x + 34, bodyY + 29, 12)
-        ui.text('关键失误', x + 54, bodyY + 6, 12, COLORS.danger, '700')
-        ui.wrapped(failLine, x + 54, bodyY + 24, w - 82, {
-          size: 14, lineHeight: 18, maxLines: 2, weight: '700', color: '#ffe8e8'
+        stage.drawJudge(ui.ctx, false, x + 36, bodyY + 31, 13)
+        ui.text('这一趟倒在这儿', x + 58, bodyY + 8, 12, '#ffd0d0', '700')
+        ui.wrapped(failLine, x + 58, bodyY + 26, w - 86, {
+          size: 15, lineHeight: 19, maxLines: 2, weight: '700', color: '#fff4f4'
         })
-        bodyY += 68
+        bodyY += 72
       }
-      stage.drawMedal(ui.ctx, x + 16, bodyY, 44, {
+      stage.drawMedal(ui.ctx, x + 16, bodyY, 48, {
         tier: r.rating === 'S' || r.rating === 'A' ? 'gold' : win ? 'green' : 'red'
       })
-      ui.text(win ? '带出变现' : '本趟亏损', x + 72, bodyY - 2, 13, COLORS.muted, '600')
+      ui.text(win ? '带出变现' : '本趟亏损', x + 76, bodyY, 12, COLORS.body, '700')
       ui.text(`${win ? engine.fmtVal(r.totalValue || 0) : engine.fmtVal(Math.abs(profit))} 配给点`,
-        x + 72, bodyY + 18, 26, win ? COLORS.gold : COLORS.danger, '700', w - 90)
+        x + 76, bodyY + 18, 24, win ? COLORS.gold : '#ffd0d0', '700', w - 96)
       ui.text(`${profit >= 0 ? '净入账 +' : '净损失 -'}${engine.fmtVal(Math.abs(profit))}`,
-        x + 72, bodyY + 52, 14, profit >= 0 ? COLORS.accent : COLORS.danger, '700', w - 90)
-      ui.text(`${r.methodText || '未能撤离'} · ${r.loadoutName || ''}`, x + 16, bodyY + 80, 13, COLORS.muted, '600', w - 32)
+        x + 76, bodyY + 50, 15, profit >= 0 ? COLORS.accent : COLORS.danger, '700', w - 96)
+      ui.text(`${r.methodText || '未能撤离'} · ${r.loadoutName || ''}`, x + 16, bodyY + 82, 13, COLORS.body, '600', w - 32)
       const wallet = r.wallet && r.wallet.balanceAfter != null
-        ? `仓库 ${engine.fmtVal(r.wallet.balanceAfter)}`
+        ? `仓库还剩 ${engine.fmtVal(r.wallet.balanceAfter)}`
         : (win ? '配给点已入账，装备押金退回' : '本趟装备投入未返还')
-      ui.text(wallet, x + 16, bodyY + 102, 12, COLORS.muted, '600', w - 32)
+      ui.text(wallet, x + 16, bodyY + 104, 12, COLORS.muted, '600', w - 32)
       if (lootStrip.length) {
         lootStrip.forEach((item, i) => {
-          stage.drawItemIcon(ui.ctx, x + 16 + i * 28, bodyY + 126, 22, item)
+          stage.drawItemIcon(ui.ctx, x + 16 + i * 28, bodyY + 128, 22, item)
         })
       }
       y += headH + 14
@@ -216,17 +217,17 @@ module.exports = manager => ({
     const left = v.safe.left + 12
     const width = v.safe.right - v.safe.left - 24
     const y = v.safe.bottom - 64
-    ui.button(left, y, width, 56,
+    ui.button(left, y, width, 58,
       r.escaped ? '再出发' : '换方案再出发',
       () => this.again(), {
         fill: r.escaped ? '#2a8f72' : '#d4a017',
         stroke: r.escaped ? '#8ef0d0' : '#ffe08a',
         color: r.escaped ? '#ffffff' : '#1a1408',
-        size: 20,
+        size: 22,
         weight: '700',
         sub: r.loadoutName ? `${r.loadoutName} · 重开` : '用上一套战备重开',
         subColor: r.escaped ? '#d7fff0' : '#3a2a08',
-        glow: r.escaped ? 'rgba(101,214,180,0.28)' : 'rgba(255,198,92,0.28)'
+        glow: r.escaped ? 'rgba(101,214,180,0.32)' : 'rgba(255,198,92,0.32)'
       })
   }
 })

@@ -121,6 +121,10 @@ if (!storage.last_report.escaped) {
   assert.ok(scene.messages.some(line => /合闸/.test(line)), '进冷却舱没有合闸教学')
   assert.ok(present.leverGuide(scene.run).includes('合闸'), '冷却舱现场没有合闸教学条')
   assert.ok(present.leverPath(scene.run).includes('索道'), '合闸条没有指向索道')
+  assert.ok(scene.lessonOpen, '首次合闸没有强制短教学')
+  scene.dismissLesson()
+  assert.ok(!scene.lessonOpen, '短教学不能关掉')
+  assert.ok(storage.lesson_cable_v1, '短教学没有记下已看过')
 }
 
 {
@@ -177,7 +181,7 @@ storage.retry_preset = { loadout: 'half' }
 manager.go('settings')
 modalConfirm = true
 manager.scene.clearAll()
-for (const key of ['meta_v1', 'last_report', 'last_rid', 'retry_preset', 'ad_reward_v1', 'legal_consent_v1']) {
+for (const key of ['meta_v1', 'last_report', 'last_rid', 'retry_preset', 'ad_reward_v1', 'legal_consent_v1', 'lesson_cable_v1']) {
   assert.strictEqual(storage[key], undefined, `一键清档漏掉 ${key}`)
 }
 assert.strictEqual(manager.sceneName, 'legal', '清档后没有立刻回到协议确认')

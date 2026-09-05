@@ -150,6 +150,31 @@ document.addEventListener('DOMContentLoaded', () => {
     scene.placeActor(run.node)
   })
 
+  shot('run-lesson', '合闸强制短教学', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    const scene = manager.scene
+    const run = scene.run
+    run.zone = 'core'
+    run.lastRoom = 'coolant'
+    run.levers = 0
+    run.node = {
+      id: 'preview_lesson',
+      type: 'event',
+      room: 'coolant',
+      text: '冷却舱蓝雾里能看见配电柄',
+      zone: 'core',
+      options: [
+        { idx: 0, text: '合上冷却舱配电柄（极地索道条件之一）', verb: '合闸', safe: true, chance: 100, full: '合上冷却舱配电柄（极地索道条件之一）' },
+        { idx: 1, text: '不碰配电柄，贴墙撤', verb: '撤', safe: true, chance: 100, full: '不碰配电柄，贴墙撤' }
+      ]
+    }
+    scene.taughtCable = false
+    scene.lessonOpen = true
+    scene.lessonKind = 'path'
+    scene.placeActor(run.node)
+  })
+
   shot('run-nudge', '合闸迟到提示', manager => {
     enterLobby(manager)
     manager.go('run')
@@ -181,7 +206,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const scene = manager.scene
     scene.pickup = makeItem('气压逻辑板')
     scene.pickupUntil = Date.now() + 60000
-    scene.juice = { kind: 'ok', label: '入手', until: Date.now() + 60000 }
+    scene.juice = { kind: 'loot', label: '入手', sub: '气压逻辑板', mark: 'ok', until: Date.now() + 60000 }
+  })
+
+  shot('run-miss', '交火失手', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    manager.scene.juice = { kind: 'bad', label: '失手', sub: '-28 生命', mark: 'bad', until: Date.now() + 60000 }
   })
 
   shot('bag', '背包', manager => {
