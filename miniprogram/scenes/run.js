@@ -652,7 +652,7 @@ module.exports = manager => ({
     const rowGap = 8
     const nOpt = (node.options || []).length
     const listNeed = listMode ? nOpt * (rowH + rowGap) - rowGap + 10 : 0
-    const listH = listMode ? Math.min(listNeed, Math.max(148, Math.round(rect.h * 0.48))) : 0
+    const listH = listMode ? Math.min(listNeed, Math.max(200, Math.round(rect.h * 0.58))) : 0
     const wall = stage.ROOM_WALL
     const floor = {
       x: rect.x,
