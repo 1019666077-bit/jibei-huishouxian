@@ -145,7 +145,12 @@ class UI {
     const limit = options.maxLines || lines.length
     lines.slice(0, limit).forEach((line, index) => {
       let shown = line
-      if (index === limit - 1 && lines.length > limit) shown = line.slice(0, -1) + '…'
+      if (index === limit - 1 && lines.length > limit) {
+        while (shown.length && ctx.measureText(`${shown}…`).width > maxWidth) {
+          shown = shown.slice(0, -1)
+        }
+        shown += '…'
+      }
       ctx.fillText(shown, x, y + index * lineHeight)
     })
     return Math.min(lines.length, limit) * lineHeight

@@ -105,6 +105,23 @@ if (!storage.last_report.escaped) {
   assert.strictEqual(storage.meta_v1.balance, meta.START_BALANCE, '首局阵亡把押金扣了')
 }
 
+// 合闸引导：进冷却舱要出短教学，避免两局都看不见合闸
+{
+  manager.go('run')
+  const scene = manager.scene
+  scene.run.zone = 'core'
+  scene.run.levers = 0
+  scene.run.node = {
+    id: 'teach_lever',
+    type: 'event',
+    room: 'coolant',
+    options: [{ idx: 0, verb: '合闸', text: '合上冷却舱配电柄', safe: true }]
+  }
+  scene.teach()
+  assert.ok(scene.messages.some(line => /合闸/.test(line)), '进冷却舱没有合闸教学')
+  assert.ok(present.leverGuide(scene.run).includes('合闸'), '冷却舱现场没有合闸教学条')
+}
+
 // 设置页清档必须连协议确认和广告记录一起清除
 storage.ad_reward_v1 = { day: 'x', claimed: true, stock: 1 }
 storage.retry_preset = { loadout: 'half' }
