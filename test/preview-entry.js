@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const scene = manager.scene
     const run = scene.run
     run.zone = 'harbor'
-    run.step = 3
+    run.step = 6
     run.node = {
       id: 'preview_split',
       type: 'event',
@@ -155,6 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     b.secured = false
     core.loot = [a, b]
     manager.scene.bagOpen = true
+    manager.scene.juice = { kind: 'ok', label: '入匣', until: Date.now() + 60000 }
   })
 
   shot('report', '结算', manager => {
