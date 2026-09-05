@@ -162,7 +162,7 @@ class UI {
     const ctx = this.ctx
     const size = options.size || 14
     const lineHeight = options.lineHeight || Math.round(size * 1.55)
-    const wrapW = Math.max(8, (maxWidth || 0) - 4)
+    const wrapW = Math.max(8, (maxWidth || 0) - 8)
     gfx.applyFont(ctx, size, options.weight || 'normal')
     ctx.fillStyle = options.color || COLORS.text
     const lines = wrapLines(ctx, text, wrapW)

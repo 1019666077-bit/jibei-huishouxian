@@ -832,10 +832,10 @@ module.exports = manager => ({
       }
       const look = this.optionLook(option)
       const plate = present.fitBox({
-        x: prop.x - 66,
+        x: prop.x - 74,
         y: prop.y + 24,
-        w: 132,
-        h: 56
+        w: 148,
+        h: 62
       }, floor, 10)
       ui.panel(plate.x, plate.y, plate.w, plate.h, {
         fill: hot || look.highlight ? look.fill : '#101820',
@@ -843,8 +843,8 @@ module.exports = manager => ({
         radius: 8,
         glow: look.highlight ? `rgba(255,198,92,${0.16 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.28))})` : null
       })
-      stage.drawToneMark(ui.ctx, look.tone, plate.x + 8, plate.y + 10, 18)
-      ui.wrapped(present.listTitle(option), plate.x + 30, plate.y + 6, plate.w - 40, {
+      stage.drawToneMark(ui.ctx, look.tone, plate.x + 10, plate.y + 12, 18)
+      ui.wrapped(present.listTitle(option), plate.x + 34, plate.y + 8, plate.w - 48, {
         size: 12,
         lineHeight: 16,
         maxLines: 2,
@@ -852,8 +852,8 @@ module.exports = manager => ({
         color: option.disabled ? '#6a7a88' : COLORS.text
       })
       const pip = this.pip(option)
-      ui.text(look.highlight ? '开索道' : (pip || look.label), plate.x + 30, plate.y + 38, 11,
-        option.disabled ? '#6a7a88' : look.color, '700', plate.w - 40)
+      ui.text(look.highlight ? '开索道' : (pip || look.label), plate.x + 34, plate.y + 42, 11,
+        option.disabled ? '#6a7a88' : look.color, '700', plate.w - 48)
       ui.addHit(plate.x - 4, prop.y - 58, plate.w + 8, 132, () => activate(option, prop))
     })
     if (listMode) {
@@ -905,8 +905,8 @@ module.exports = manager => ({
         stage.drawToneMark(ui.ctx, look.tone, inner.x + 16, y + 22, 26)
         const risky = present.dangerPip(option)
         const railW = risky ? 64 : 58
-        const textW = inner.w - 86 - railW
-        ui.wrapped(present.listTitle(option), inner.x + 50, y + 10, textW, {
+        const textW = inner.w - 112 - railW
+        ui.wrapped(present.listTitle(option), inner.x + 50, y + 12, textW, {
           size: 15,
           lineHeight: 20,
           maxLines: 3,

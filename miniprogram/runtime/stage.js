@@ -639,41 +639,41 @@ function drawActor(ctx, x, y, tick, options) {
 }
 
 function rivet(ctx, x, y) {
-  fill(ctx, '#0c0e12')
-  rect(ctx, x, y, 4, 4)
-  fill(ctx, 'rgba(230,242,255,0.55)')
-  rect(ctx, x, y, 3, 2)
-  fill(ctx, 'rgba(70,80,90,0.75)')
-  rect(ctx, x + 2, y + 2, 2, 2)
+  fill(ctx, '#080a0c')
+  rect(ctx, x, y, 6, 6)
+  fill(ctx, 'rgba(236,246,255,0.7)')
+  rect(ctx, x, y, 4, 3)
+  fill(ctx, 'rgba(90,104,118,0.85)')
+  rect(ctx, x + 3, y + 3, 3, 3)
 }
 
 function frost(ctx, x, y, w, h) {
-  const hh = h || 4
-  fill(ctx, 'rgba(186,230,255,0.3)')
+  const hh = h || 6
+  fill(ctx, 'rgba(186,230,255,0.42)')
   rect(ctx, x, y, w, hh)
-  fill(ctx, 'rgba(236,248,255,0.46)')
-  rect(ctx, x + 3, y, Math.max(8, w * 0.4), Math.max(2, hh - 1))
+  fill(ctx, 'rgba(246,252,255,0.62)')
+  rect(ctx, x + 4, y, Math.max(10, w * 0.44), Math.max(3, hh - 2))
 }
 
 function seam(ctx, x, y, w) {
-  fill(ctx, 'rgba(6,8,10,0.64)')
-  rect(ctx, x, y, w, 2)
-  fill(ctx, 'rgba(210,228,242,0.24)')
+  fill(ctx, 'rgba(4,6,8,0.72)')
+  rect(ctx, x, y, w, 3)
+  fill(ctx, 'rgba(220,236,250,0.32)')
   rect(ctx, x, y, w, 1)
 }
 
 function iceBloom(ctx, x, y, w, h) {
-  fill(ctx, 'rgba(159,212,255,0.18)')
+  fill(ctx, 'rgba(159,212,255,0.28)')
   rect(ctx, x, y, w, h)
-  fill(ctx, 'rgba(236,248,255,0.28)')
-  rect(ctx, x + 2, y + 1, Math.max(6, w * 0.42), 2)
+  fill(ctx, 'rgba(246,252,255,0.4)')
+  rect(ctx, x + 3, y + 2, Math.max(8, w * 0.46), 3)
 }
 
 function metalEdge(ctx, x, y, w) {
-  fill(ctx, 'rgba(220,232,245,0.26)')
-  rect(ctx, x, y, w, 2)
-  fill(ctx, 'rgba(8,10,14,0.48)')
-  rect(ctx, x, y + 2, w, 2)
+  fill(ctx, 'rgba(230,242,255,0.38)')
+  rect(ctx, x, y, w, 3)
+  fill(ctx, 'rgba(6,8,12,0.55)')
+  rect(ctx, x, y + 3, w, 2)
 }
 
 function isoFace(ctx, points, color) {
@@ -723,13 +723,15 @@ function drawCrate(ctx, x, y, lit, hot) {
   isoFace(ctx, [
     [fx, fy - h], [fx + 10, fy - h - 8], [fx + w + d, fy - h - 8], [fx + w, fy - h]
   ], top)
-  frost(ctx, fx, fy - h - 10, w + 10, 6)
-  iceBloom(ctx, fx + 6, fy - h - 6, 18, 5)
-  fill(ctx, 'rgba(255,245,210,0.42)')
-  rect(ctx, fx + 2, fy - h + 2, 18, 5)
+  frost(ctx, fx - 2, fy - h - 12, w + 14, 8)
+  iceBloom(ctx, fx + 4, fy - h - 8, 22, 7)
+  fill(ctx, 'rgba(255,245,210,0.5)')
+  rect(ctx, fx + 2, fy - h + 2, 20, 6)
   metalEdge(ctx, fx + 1, fy - h + 1, w - 2)
-  fill(ctx, hot ? '#eee4b8' : '#9aa096')
-  rect(ctx, fx + 18, fy - h, 6, h)
+  fill(ctx, 'rgba(230,240,255,0.28)')
+  rect(ctx, fx + 1, fy - h + 2, 5, h - 4)
+  fill(ctx, hot ? '#eee4b8' : '#a8aea4')
+  rect(ctx, fx + 18, fy - h, 7, h)
   seam(ctx, fx, fy - 16, w)
   seam(ctx, fx, fy - 26, w)
   fill(ctx, 'rgba(40,22,10,0.42)')
@@ -776,7 +778,7 @@ function drawDoor(ctx, x, y, lit, hot) {
   fill(ctx, '#243040')
   rect(ctx, x - 34, y - 2, 68, 6)
   metalEdge(ctx, x - 28, y - 70, 52)
-  frost(ctx, x - 30, y - 74, 56, 6)
+  frost(ctx, x - 32, y - 76, 60, 8)
   rivet(ctx, x - 26, y - 66)
   rivet(ctx, x + 18, y - 66)
   rivet(ctx, x - 26, y - 12)
@@ -1030,12 +1032,12 @@ function drawRoom(ctx, zone, box, tick) {
   fill(ctx, 'rgba(255,236,190,0.72)')
   rect(ctx, lx - 6, ly - 16, 12, 10)
   fill(ctx, gfx.rgrad(ctx, lx, ly + 6, w * 0.5, [
-    [0, 'rgba(255,220,160,0.3)'],
-    [0.42, 'rgba(255,198,92,0.1)'],
+    [0, 'rgba(255,220,160,0.38)'],
+    [0.38, 'rgba(255,198,92,0.14)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x + w * 0.16, ly, w * 0.68, (h - wall) * 0.82)
-  gfx.circle(ctx, lx, ly + 14, 28, 'rgba(255,220,160,0.18)')
+  rect(ctx, x + w * 0.14, ly, w * 0.72, (h - wall) * 0.86)
+  gfx.circle(ctx, lx, ly + 16, 34, 'rgba(255,220,160,0.24)')
   fill(ctx, gfx.hgrad(ctx, x, y, 22, [
     [0, 'rgba(0,0,0,0.36)'],
     [1, 'rgba(0,0,0,0)']
