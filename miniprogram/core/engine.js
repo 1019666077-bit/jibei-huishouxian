@@ -33,6 +33,7 @@ function tutorialWound(state, hp) {
 function tutorialHit(state, dmg) {
   if (!state || !state.tutorial) return dmg
   const step = state.step || 0
+  if (step <= 1) return Math.min(dmg, 6)
   if (step <= 3) return Math.min(dmg, 8)
   if (step <= 5) return Math.min(dmg, 14)
   return dmg

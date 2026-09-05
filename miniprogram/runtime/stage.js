@@ -590,8 +590,11 @@ function drawPerson(ctx, x, y, tick, options = {}) {
   const body = hostile ? '#d45a5a' : '#65d6b4'
   const dark = hostile ? '#4a181c' : '#2a4a40'
   const skin = hostile ? '#e0b09a' : '#d7efe6'
-  fill(ctx, 'rgba(0,0,0,0.35)')
-  rect(ctx, x - 12, y - 4, 24, 6)
+  fill(ctx, gfx.rgrad(ctx, x, y + 2, 16, [
+    [0, 'rgba(0,0,0,0.45)'],
+    [1, 'rgba(0,0,0,0)']
+  ]))
+  rect(ctx, x - 16, y - 4, 32, 10)
   fill(ctx, '#1a1c20')
   rect(ctx, x - 8 + step, y - 8 + bob, 7, 8)
   rect(ctx, x + 1 - step, y - 8 + bob, 7, 8)
@@ -600,6 +603,8 @@ function drawPerson(ctx, x, y, tick, options = {}) {
   rect(ctx, x + 1 - step, y - 18 + bob, 6, 16)
   fill(ctx, body)
   rect(ctx, x - 9, y - 34 + bob, 18, 18)
+  fill(ctx, 'rgba(255,255,255,0.16)')
+  rect(ctx, x - 7, y - 32 + bob, 5, 12)
   fill(ctx, dark)
   rect(ctx, facing > 0 ? x - 13 : x + 6, y - 30 + bob, 8, 12)
   fill(ctx, '#1a2430')
@@ -608,6 +613,8 @@ function drawPerson(ctx, x, y, tick, options = {}) {
   rect(ctx, x - 6, y - 48 + bob, 12, 14)
   fill(ctx, body)
   rect(ctx, x - 7, y - 50 + bob, 14, 8)
+  fill(ctx, 'rgba(255,255,255,0.18)')
+  rect(ctx, x - 6, y - 50 + bob, 4, 6)
   fill(ctx, dark)
   rect(ctx, x - 5, y - 42 + bob, 10, 4)
   fill(ctx, tintVisor(hostile))
@@ -631,125 +638,151 @@ function drawActor(ctx, x, y, tick, options) {
   drawPerson(ctx, x, y, tick, options || {})
 }
 
+function isoFace(ctx, points, color) {
+  if (ctx.beginPath && ctx.lineTo && ctx.closePath) {
+    ctx.beginPath()
+    ctx.moveTo(points[0][0], points[0][1])
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1])
+    ctx.closePath()
+    fill(ctx, color)
+    ctx.fill()
+    return
+  }
+  fill(ctx, color)
+  rect(ctx, points[0][0], points[0][1], 20, 16)
+}
+
 function drawCrate(ctx, x, y, lit, hot) {
-  fill(ctx, gfx.rgrad(ctx, x + 2, y + 4, 34, [
-    [0, 'rgba(0,0,0,0.55)'],
+  fill(ctx, gfx.rgrad(ctx, x + 4, y + 6, 36, [
+    [0, 'rgba(0,0,0,0.58)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x - 36, y - 8, 74, 22)
+  rect(ctx, x - 38, y - 6, 80, 20)
   if (lit || hot) {
-    fill(ctx, gfx.rgrad(ctx, x, y - 22, 42, [
-      [0, hot ? 'rgba(255,198,92,0.28)' : 'rgba(255,210,140,0.14)'],
+    fill(ctx, gfx.rgrad(ctx, x, y - 24, 46, [
+      [0, hot ? 'rgba(255,198,92,0.3)' : 'rgba(255,210,140,0.16)'],
       [1, 'rgba(0,0,0,0)']
     ]))
-    rect(ctx, x - 40, y - 58, 80, 68)
+    rect(ctx, x - 42, y - 62, 86, 72)
   }
-  const front = hot ? '#d8a85c' : lit ? '#9a6e38' : '#4a4e46'
-  const top = hot ? '#f2d488' : lit ? '#c89850' : '#6a6e64'
+  const front = hot ? '#d8a85c' : lit ? '#a0743c' : '#4a4e46'
+  const top = hot ? '#f4d890' : lit ? '#d4a45c' : '#6a6e64'
   const side = hot ? '#8a6428' : lit ? '#6a4a22' : '#32362e'
-  fill(ctx, side)
-  rect(ctx, x + 20, y - 38, 14, 36)
-  fill(ctx, front)
-  rect(ctx, x - 26, y - 38, 48, 36)
-  fill(ctx, top)
-  rect(ctx, x - 22, y - 52, 48, 16)
-  fill(ctx, side)
-  rect(ctx, x + 26, y - 52, 10, 16)
+  const d = 14
+  const w = 48
+  const h = 36
+  const fx = x - 26
+  const fy = y
+  isoFace(ctx, [
+    [fx + w, fy - h], [fx + w + d, fy - h - 8], [fx + w + d, fy - 8], [fx + w, fy]
+  ], side)
+  fill(ctx, gfx.vgrad(ctx, fx, fy - h, h, [
+    [0, top],
+    [0.22, front],
+    [1, side]
+  ]))
+  rect(ctx, fx, fy - h, w, h)
+  isoFace(ctx, [
+    [fx, fy - h], [fx + 10, fy - h - 8], [fx + w + d, fy - h - 8], [fx + w, fy - h]
+  ], top)
+  fill(ctx, 'rgba(255,245,210,0.28)')
+  rect(ctx, fx + 2, fy - h + 2, 16, 4)
   fill(ctx, hot ? '#eee4b8' : '#8a8e84')
-  rect(ctx, x - 8, y - 38, 8, 36)
-  rect(ctx, x - 26, y - 22, 48, 5)
-  fill(ctx, 'rgba(40,22,10,0.45)')
-  rect(ctx, x - 22, y - 34, 6, 18)
-  rect(ctx, x + 8, y - 34, 6, 18)
-  fill(ctx, 'rgba(220,236,255,0.28)')
-  rect(ctx, x - 20, y - 52, 20, 7)
+  rect(ctx, fx + 18, fy - h, 6, h)
+  rect(ctx, fx, fy - 16, w, 4)
+  fill(ctx, 'rgba(40,22,10,0.42)')
+  rect(ctx, fx + 6, fy - 30, 7, 16)
+  rect(ctx, fx + 32, fy - 30, 7, 16)
   fill(ctx, hot ? '#ffc65c' : '#d4a84a')
-  gfx.roundRect(ctx, x - 6, y - 24, 18, 15, 3)
+  gfx.roundRect(ctx, fx + 16, fy - 22, 18, 14, 3)
   ctx.fill()
   fill(ctx, '#14161a')
-  rect(ctx, x + 2, y - 19, 5, 7)
+  rect(ctx, fx + 24, fy - 17, 5, 6)
   fill(ctx, hot ? '#8ef0d0' : '#65d6b4')
-  rect(ctx, x + 16, y - 34, 9, 5)
-  fill(ctx, 'rgba(8,12,16,0.4)')
-  rect(ctx, x - 20, y - 32, 12, 3)
+  rect(ctx, fx + 38, fy - 32, 8, 5)
 }
 
 function drawDoor(ctx, x, y, lit, hot) {
-  fill(ctx, gfx.rgrad(ctx, x, y + 4, 30, [
-    [0, 'rgba(0,0,0,0.5)'],
+  fill(ctx, gfx.rgrad(ctx, x, y + 6, 32, [
+    [0, 'rgba(0,0,0,0.55)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x - 32, y - 6, 64, 18)
+  rect(ctx, x - 34, y - 4, 70, 18)
   if (lit || hot) {
-    gfx.quad(ctx, x - 18, y - 6, x, y + 26, x + 18, y - 6,
-      hot ? 'rgba(255,198,92,0.2)' : 'rgba(101,214,180,0.16)')
+    gfx.quad(ctx, x - 20, y - 2, x, y + 30, x + 20, y - 2,
+      hot ? 'rgba(255,198,92,0.22)' : 'rgba(101,214,180,0.18)')
   }
+  fill(ctx, '#0a1014')
+  rect(ctx, x - 32, y - 76, 64, 74)
   fill(ctx, lit ? '#1e3a34' : '#161a20')
-  rect(ctx, x - 30, y - 72, 60, 70)
+  rect(ctx, x - 28, y - 70, 52, 66)
+  isoFace(ctx, [
+    [x + 24, y - 70], [x + 32, y - 76], [x + 32, y - 6], [x + 24, y]
+  ], lit ? '#16302c' : '#101418')
   fill(ctx, hot ? '#0a1814' : '#080c10')
-  rect(ctx, x - 20, y - 60, 40, 54)
+  rect(ctx, x - 18, y - 58, 36, 50)
   fill(ctx, lit ? '#65d6b4' : '#3d5a52')
-  rect(ctx, x - 30, y - 72, 60, 8)
-  rect(ctx, x - 30, y - 72, 8, 70)
-  rect(ctx, x + 22, y - 72, 8, 70)
+  rect(ctx, x - 28, y - 70, 52, 7)
+  rect(ctx, x - 28, y - 70, 7, 66)
+  rect(ctx, x + 17, y - 70, 7, 66)
   fill(ctx, '#243040')
-  rect(ctx, x - 32, y - 4, 64, 6)
-  fill(ctx, lit ? 'rgba(142,240,208,0.34)' : 'rgba(80,100,110,0.18)')
-  rect(ctx, x - 14, y - 54, 18, 24)
+  rect(ctx, x - 34, y - 2, 68, 6)
+  fill(ctx, lit ? 'rgba(142,240,208,0.38)' : 'rgba(80,100,110,0.18)')
+  rect(ctx, x - 12, y - 52, 16, 22)
   fill(ctx, 'rgba(8,12,16,0.35)')
-  rect(ctx, x - 6, y - 54, 3, 24)
-  rect(ctx, x - 14, y - 43, 18, 3)
+  rect(ctx, x - 5, y - 52, 3, 22)
+  rect(ctx, x - 12, y - 42, 16, 3)
   fill(ctx, hot ? '#ffc65c' : '#65d6b4')
-  gfx.circle(ctx, x + 12, y - 32, 6, hot ? '#ffc65c' : '#65d6b4')
+  gfx.circle(ctx, x + 10, y - 30, 6, hot ? '#ffc65c' : '#65d6b4')
   fill(ctx, '#1a2430')
-  rect(ctx, x + 10, y - 34, 5, 5)
-  fill(ctx, lit ? '#8ef0d0' : '#3d5a52')
-  rect(ctx, x - 8, y - 68, 16, 4)
-  fill(ctx, 'rgba(255,198,92,0.45)')
-  rect(ctx, x - 4, y - 76, 8, 5)
+  rect(ctx, x + 8, y - 32, 5, 5)
+  fill(ctx, 'rgba(255,198,92,0.5)')
+  rect(ctx, x - 4, y - 78, 8, 5)
 }
 
 function drawLoot(ctx, x, y, lit, hot) {
-  fill(ctx, gfx.rgrad(ctx, x, y, 24, [
-    [0, 'rgba(0,0,0,0.48)'],
+  fill(ctx, gfx.rgrad(ctx, x, y + 2, 26, [
+    [0, 'rgba(0,0,0,0.5)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x - 24, y - 6, 48, 16)
+  rect(ctx, x - 26, y - 4, 52, 16)
   if (lit || hot) {
-    fill(ctx, gfx.rgrad(ctx, x, y - 28, 28, [
-      [0, 'rgba(255,198,92,0.28)'],
+    fill(ctx, gfx.rgrad(ctx, x, y - 30, 32, [
+      [0, 'rgba(255,198,92,0.32)'],
       [1, 'rgba(0,0,0,0)']
     ]))
-    rect(ctx, x - 28, y - 52, 56, 52)
+    rect(ctx, x - 30, y - 56, 60, 56)
   }
-  fill(ctx, '#2a3848')
-  rect(ctx, x - 18, y - 16, 36, 14)
   fill(ctx, '#1a2430')
-  rect(ctx, x - 16, y - 14, 32, 5)
-  fill(ctx, hot || lit ? '#3a2e16' : '#243040')
-  rect(ctx, x - 14, y - 22, 28, 8)
-  gem(ctx, x - 13, y - 48, 26, hot || lit ? '#ffc65c' : '#65d6b4')
-  fill(ctx, '#ffe08a')
-  rect(ctx, x - 2, y - 42, 5, 5)
+  rect(ctx, x - 16, y - 8, 32, 8)
+  isoFace(ctx, [
+    [x - 18, y - 16], [x - 10, y - 22], [x + 22, y - 22], [x + 14, y - 16]
+  ], hot || lit ? '#3a2e16' : '#243040')
+  fill(ctx, '#2a3848')
+  rect(ctx, x - 18, y - 16, 32, 10)
+  gem(ctx, x - 13, y - 50, 26, hot || lit ? '#ffc65c' : '#65d6b4')
+  fill(ctx, 'rgba(255,240,180,0.45)')
+  rect(ctx, x - 2, y - 44, 5, 5)
 }
 
 function drawThreat(ctx, x, y, tick, hot) {
-  fill(ctx, gfx.rgrad(ctx, x, y + 2, 28, [
-    [0, 'rgba(90,12,18,0.5)'],
+  fill(ctx, gfx.rgrad(ctx, x, y + 4, 30, [
+    [0, 'rgba(90,12,18,0.55)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x - 32, y - 8, 64, 20)
-  fill(ctx, gfx.rgrad(ctx, x, y - 36, 36, [
-    [0, hot ? 'rgba(255,107,107,0.28)' : 'rgba(255,107,107,0.14)'],
+  rect(ctx, x - 34, y - 6, 68, 20)
+  fill(ctx, gfx.rgrad(ctx, x, y - 38, 40, [
+    [0, hot ? 'rgba(255,107,107,0.32)' : 'rgba(255,107,107,0.16)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x - 34, y - 72, 68, 72)
+  rect(ctx, x - 36, y - 76, 72, 76)
   drawPerson(ctx, x, y, tick, { hostile: true, facing: -1, walking: !!hot })
   fill(ctx, '#ff6b6b')
-  rect(ctx, x - 10, y - 70, 20, 6)
-  rect(ctx, x - 5, y - 76, 10, 7)
-  gfx.strokeCircle(ctx, x, y - 28, hot ? 26 : 21, 'rgba(255,107,107,0.7)', 2)
-  fill(ctx, 'rgba(255,107,107,0.2)')
+  isoFace(ctx, [
+    [x - 10, y - 70], [x, y - 80], [x + 10, y - 70]
+  ], '#ff6b6b')
+  gfx.strokeCircle(ctx, x, y - 28, hot ? 26 : 21, 'rgba(255,107,107,0.72)', 2)
+  fill(ctx, 'rgba(255,107,107,0.22)')
   rect(ctx, x - 26, y - 60, 52, 6)
 }
 
@@ -809,6 +842,10 @@ function drawFloor(ctx, x, y, w, h) {
   stains.forEach(s => {
     fill(ctx, s[4])
     rect(ctx, x + w * s[0], y + h * s[1], w * s[2], h * s[3])
+  })
+  fill(ctx, 'rgba(186,214,230,0.06)')
+  ;[0.28, 0.5, 0.72].forEach(nx => {
+    gfx.line(ctx, x + w * nx, y + 4, x + w * 0.5, y + h * 0.92, 'rgba(186,214,230,0.08)', 1)
   })
   fill(ctx, gfx.hgrad(ctx, x, y, w * 0.2, [
     [0, 'rgba(0,0,0,0.4)'],

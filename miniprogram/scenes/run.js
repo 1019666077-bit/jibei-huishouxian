@@ -77,6 +77,7 @@ module.exports = manager => ({
     this.hintedLever = false
     this.hintedCable = false
     this.hintedLate = false
+    this.hintedMid = false
     this.juice = null
     this.lessonOpen = false
     this.lessonKind = ''
@@ -92,6 +93,7 @@ module.exports = manager => ({
     this.seenNode = ''
     this.tick = 0
     this.teach()
+    if (opener) this.flashJuice('ok', '合闸开索道', { kind: 'lever', sub: '冷却舱·压缩机房', silent: true })
     Scroll.resetView(manager.canvas)
     if (this.breath) clearInterval(this.breath)
     this.breath = setInterval(() => {
@@ -254,7 +256,7 @@ module.exports = manager => ({
       mark: kind,
       label,
       sub: opts.sub || '',
-      until: Date.now() + 1400
+      until: Date.now() + 1600
     }
     if (opts.silent) return
     if (typeof manager.pulse === 'function') manager.pulse(opts.kind || kind, label)
@@ -301,11 +303,10 @@ module.exports = manager => ({
 
   optionLook(option) {
     const tone = present.optionTone(option)
-    const nudge = present.leverNudge(this.run)
-    const target = nudge && present.isLeverTarget(option)
-    const highlight = present.isLever(option) || present.isLeverHint(option)
-      || (present.isCable(option) && this.run && this.run.levers >= 2)
-      || target
+    const needPower = !this.run || (this.run.levers || 0) < 2
+    const target = needPower && present.isLeverTarget(option)
+    const cableReady = !!(this.run && this.run.levers >= 2 && present.isCable(option))
+    const highlight = present.isLever(option) || present.isLeverHint(option) || cableReady || target
     return {
       tone: target ? 'lever' : tone,
       color: present.toneColor(target ? 'lever' : tone),
@@ -335,6 +336,10 @@ module.exports = manager => ({
     if (!this.hintedLate && present.leverNudge(this.run) && this.run.zone !== 'core' && !hasLever && !hasHint) {
       this.hintedLate = true
       this.messages.unshift('冷却舱·压缩机房可合闸')
+    }
+    if (!this.hintedMid && (this.run.levers || 0) === 1 && (this.run.step || 0) >= 3) {
+      this.hintedMid = true
+      this.messages.unshift('再合闸 1/2，开索道')
     }
     if (!this.hintedBox && this.run.loot.length >= 2 && runMeta.secureWeight === 0) {
       this.hintedBox = true
@@ -525,7 +530,7 @@ module.exports = manager => ({
     const toast = present.toast(this.messages)
     const paceRaw = present.paceHint(this.run)
     const pace = toast ? '' : (/残局|选一条撤/.test(paceRaw) ? paceRaw : '')
-    const hudH = toast || pace ? 128 : 108
+    const hudH = toast || pace ? 140 : 108
     ui.panel(left, top, width, hudH, {
       fill: '#08141c',
       stroke: '#5a86a4',
@@ -535,7 +540,9 @@ module.exports = manager => ({
     ui.text(zone, left + 16, top + 10, 13, COLORS.body, '700', 52)
     const powerOn = this.run.levers >= 2
     const needLever = !powerOn
-    ui.chip(left + 72, top + 8, 118, 28, needLever ? `合闸 ${this.run.levers}/2` : `供电已通`, {
+    ui.chip(left + 68, top + 8, 128, 28, needLever
+      ? ((this.run.levers || 0) === 1 ? '再合闸 1/2' : `合闸 ${this.run.levers}/2`)
+      : '供电·点索道', {
       fill: powerOn ? '#132820' : '#2a2410',
       stroke: powerOn ? COLORS.accent : COLORS.gold,
       color: powerOn ? COLORS.accent : COLORS.gold,
@@ -579,7 +586,13 @@ module.exports = manager => ({
       const leverToast = /合闸|供电|索道|通电/.test(line)
       ui.ctx.fillStyle = hurt ? COLORS.danger : (leverToast ? COLORS.gold : COLORS.accent)
       ui.ctx.fillRect(left + 16, top + 108, 5, 8)
-      ui.text(line, left + 28, top + 104, 13, hurt ? '#ffd0d0' : COLORS.gold, '700', width - 48)
+      ui.wrapped(line, left + 28, top + 104, width - 48, {
+        size: 13,
+        lineHeight: 16,
+        maxLines: 2,
+        weight: '700',
+        color: hurt ? '#ffd0d0' : COLORS.gold
+      })
     }
     let next = top + hudH + 10
     const guide = present.leverGuide(this.run)
@@ -649,14 +662,14 @@ module.exports = manager => ({
     })
     if (engine.canExtractNow(this.run) && this.run.node.type !== 'escape') reachable.extract = true
     reachable[this.run.zone] = true
-    if (present.leverNudge(this.run)) reachable.core = true
+    if ((this.run.levers || 0) < 2) reachable.core = true
     stage.drawCity(ui.ctx, rect, {
       current: this.run.zone,
       tick: this.tick,
       hot: this.run.risk >= 70,
       marker: 'pulse',
       reachable,
-      target: present.leverNudge(this.run) ? 'core' : ''
+      target: (this.run.levers || 0) >= 2 ? 'extract' : ((this.run.levers || 0) < 2 ? 'core' : '')
     })
     if (rect.h >= 130) {
       ui.panel(rect.x + 6, rect.y + 4, 52, 18, { fill: 'rgba(8,16,20,0.72)', stroke: false, radius: 6, sheen: false })
@@ -738,19 +751,24 @@ module.exports = manager => ({
     }
     if (this.seenNode !== node.id) this.placeActor(node)
     stage.drawRoom(ui.ctx, zone, rect, this.tick)
-    ui.panel(rect.x + 8, rect.y + 6, 44, 18, { fill: 'rgba(8,16,20,0.7)', stroke: false, radius: 6, sheen: false })
-    ui.text('现场', rect.x + 14, rect.y + 8, 11, COLORS.gold, '700')
-    ui.wrapped(present.spot(node) || node.text, rect.x + 58, rect.y + 6, rect.w - 70, {
+    ui.panel(rect.x + 8, rect.y + 6, rect.w - 16, 42, {
+      fill: 'rgba(8,14,20,0.88)',
+      stroke: '#3d5c74',
+      radius: 8,
+      sheen: false
+    })
+    ui.text('现场', rect.x + 16, rect.y + 10, 11, COLORS.gold, '700')
+    ui.wrapped(present.sceneLine(node), rect.x + 56, rect.y + 8, rect.w - 80, {
       size: 14,
-      lineHeight: 18,
+      lineHeight: 17,
       maxLines: 2,
       weight: '700',
       color: COLORS.text
     })
     if (node.revealItem) {
       const it = node.revealItem
-      stage.drawItemIcon(ui.ctx, rect.x + 14, rect.y + 42, 16, it)
-      ui.text(it.name, rect.x + 38, rect.y + 44, 13, COLORS.text, '700', rect.w - 54)
+      stage.drawItemIcon(ui.ctx, rect.x + 14, rect.y + 52, 16, it)
+      ui.text(it.name, rect.x + 38, rect.y + 54, 13, COLORS.text, '700', rect.w - 54)
     }
     const listMode = present.useOptionList(node)
     const rowH = present.OPTION_ROW_H
@@ -795,14 +813,14 @@ module.exports = manager => ({
       }
       const look = this.optionLook(option)
       const plateY = prop.y + 24
-      ui.panel(prop.x - 58, plateY, 116, 52, {
+      ui.panel(prop.x - 66, plateY, 132, 56, {
         fill: hot || look.highlight ? look.fill : '#101820',
         stroke: option.disabled ? COLORS.line : look.color,
         radius: 8,
         glow: look.highlight ? `rgba(255,198,92,${0.16 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.28))})` : null
       })
-      stage.drawToneMark(ui.ctx, look.tone, prop.x - 54, plateY + 8, 18)
-      ui.wrapped(present.listTitle(option), prop.x - 32, plateY + 4, 86, {
+      stage.drawToneMark(ui.ctx, look.tone, prop.x - 62, plateY + 8, 18)
+      ui.wrapped(present.listTitle(option), prop.x - 40, plateY + 4, 100, {
         size: 12,
         lineHeight: 16,
         maxLines: 2,
@@ -810,10 +828,10 @@ module.exports = manager => ({
         color: option.disabled ? '#6a7a88' : COLORS.text
       })
       const pip = this.pip(option)
-      const cost = option.costText ? present.clip(option.costText, 10) : ''
-      ui.text(look.highlight ? '开索道' : ([pip, cost].filter(Boolean).join(' · ') || look.label), prop.x - 32, plateY + 34, 11,
-        option.disabled ? '#6a7a88' : look.color, '700', 86)
-      ui.addHit(prop.x - 60, prop.y - 58, 120, 128, () => activate(option, prop))
+      const cost = option.costText ? present.clip(option.costText, 12) : ''
+      ui.text(look.highlight ? '开索道' : ([pip, cost].filter(Boolean).join(' · ') || look.label), prop.x - 40, plateY + 36, 11,
+        option.disabled ? '#6a7a88' : look.color, '700', 100)
+      ui.addHit(prop.x - 68, prop.y - 58, 136, 132, () => activate(option, prop))
     })
     if (listMode) {
       this.renderOptionList(ui, {
@@ -937,7 +955,7 @@ module.exports = manager => ({
     })
     if (engine.canExtractNow(this.run) && node.type !== 'escape') reachable.extract = true
     reachable[this.run.zone] = true
-    if (present.leverNudge(this.run)) reachable.core = true
+    if ((this.run.levers || 0) < 2) reachable.core = true
     return reachable
   },
 
@@ -1144,12 +1162,13 @@ module.exports = manager => ({
         stroke: medHot ? COLORS.gold : '#4a7190',
         color: medHot ? COLORS.gold : COLORS.accent
       })
-    ui.button(left + (bw + gap) * 2, y, bw, 52, '撤离', () => this.goExtract(), {
+    ui.button(left + (bw + gap) * 2, y, bw, 52, this.run.levers >= 2 ? '索道' : '撤离', () => this.goExtract(), {
       size: 15,
       enabled: extractOn,
       fill: extractHot ? '#2a2410' : '#121c28',
       stroke: extractHot ? COLORS.gold : '#4a7190',
-      color: extractHot ? COLORS.gold : COLORS.text
+      color: extractHot ? COLORS.gold : COLORS.text,
+      glow: extractHot ? 'rgba(255,198,92,0.22)' : null
     })
 
     if (this.run.risk >= 55) {

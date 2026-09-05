@@ -55,9 +55,25 @@ function firstBeat(text) {
   return clip(beat, 16)
 }
 
+function sceneLine(node) {
+  if (!node) return ''
+  const raw = String(node.full || node.spot || node.text || '').replace(/\s+/g, '')
+  if (!raw) return ''
+  if (/货运雪橇已离站/.test(raw)) return '货运雪橇已离站'
+  if (node.type === 'move') return raw.length <= 22 ? raw : '下一段走哪'
+  if (node.type === 'escape') return raw.length <= 22 ? raw : '选一条撤'
+  if (node.type === 'loadout') return '带什么进场'
+  const beat = raw.split(/[。！？]/)[0] || raw
+  if (beat.length <= 32) return beat
+  const half = beat.split(/[，；：]/)[0]
+  if (half.length >= 8 && half.length <= 32) return half
+  return clip(beat, 32)
+}
+
 function spot(node) {
   if (!node) return ''
   if (node.text && /货运雪橇已离站/.test(node.text)) return '货运雪橇已离站'
+  if (node.full && /货运雪橇已离站/.test(node.full)) return '货运雪橇已离站'
   if (node.spot) return clip(node.spot, 18)
   if (node.type === 'move') return '下一段走哪'
   if (node.type === 'escape') return '选一条撤'
@@ -129,9 +145,9 @@ function toast(messages) {
   if (hp) return `-${hp[1]}`
   if (/生命归零|倒在|没能回来/.test(line)) return '倒了'
   if (/撤离成功|活着出来/.test(line)) return '出来了'
-  if (/⚠/.test(line)) return clip(line.replace(/⚠\s*/, ''), 10)
-  if (/合闸|供电|索道/.test(line)) return clip(line.replace(/（[^）]*）/g, ''), 14)
-  return clip(line.replace(/（[^）]*）/g, '').replace(/配给点.*/g, ''), 12)
+  if (/⚠/.test(line)) return clip(line.replace(/⚠\s*/, ''), 12)
+  if (/合闸|供电|索道/.test(line)) return clip(line.replace(/（[^）]*）/g, ''), 18)
+  return clip(line.replace(/（[^）]*）/g, '').replace(/配给点.*/g, ''), 16)
 }
 
 // 局内主文案：完整句的前半拍，避免按钮只剩含糊动词。
@@ -309,6 +325,9 @@ function leverGuide(run) {
   }
   if (hasHint) return '进内环可合闸开索道'
   if (leverNudge(run)) return '冷却舱·压缩机房可合闸'
+  if ((run.levers || 0) === 1) return '再合闸 1/2，开索道'
+  if ((run.levers || 0) >= 2) return '双电源已通，走索道撤离'
+  if ((run.step || 0) >= 4) return '中盘仍可去内环合闸'
   return ''
 }
 
@@ -598,6 +617,7 @@ module.exports = {
   TONE,
   clip,
   spot,
+  sceneLine,
   verb,
   caption,
   plateText,
