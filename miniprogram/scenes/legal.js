@@ -57,7 +57,15 @@ module.exports = manager => ({
     const left = v.safe.left + 12
     const width = v.safe.right - v.safe.left - 24
     const bannerY = top + 4
-    ui.panel(left, bannerY, width, 78, { accent: COLORS.gold })
+    ui.panel(left, bannerY, width, 78, {
+      accent: COLORS.gold,
+      depth: true,
+      rim: COLORS.gold,
+      material: 'metal',
+      bezel: 3,
+      metal: '#7a6230',
+      hairline: 'rgba(255,220,140,0.2)'
+    })
     ui.text(`${healthNotice.title}  ·  16+`, left + 12, bannerY + 10, 13, COLORS.gold, '700')
     ui.wrapped(healthNotice.lines[0], left + 12, bannerY + 32, width - 24, {
       size: 11, lineHeight: 16, color: COLORS.text

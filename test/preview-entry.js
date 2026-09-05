@@ -2,6 +2,9 @@
 const { createGame } = require('../miniprogram/runtime/app')
 const { makeItem } = require('../miniprogram/data/items')
 const metaStore = require('../miniprogram/core/meta')
+const engine = require('../miniprogram/core/engine')
+const feel = require('../miniprogram/runtime/feel')
+const present = require('../miniprogram/runtime/present')
 
 const storage = {}
 
@@ -77,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
     manager.go('run')
   })
 
-  shot('run-map', '双栏地图短铭牌', manager => {
+  shot('run-map', '双栏转移列表', manager => {
     enterLobby(manager)
     manager.go('run')
     const scene = manager.scene
@@ -150,6 +153,55 @@ document.addEventListener('DOMContentLoaded', () => {
     scene.placeActor(run.node)
   })
 
+  shot('run-lesson', '合闸强制短教学', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    const scene = manager.scene
+    const run = scene.run
+    run.zone = 'core'
+    run.lastRoom = 'coolant'
+    run.levers = 0
+    run.node = {
+      id: 'preview_lesson',
+      type: 'event',
+      room: 'coolant',
+      text: '冷却舱蓝雾里能看见配电柄',
+      zone: 'core',
+      options: [
+        { idx: 0, text: '合上冷却舱配电柄（极地索道条件之一）', verb: '合闸', safe: true, chance: 100, full: '合上冷却舱配电柄（极地索道条件之一）' },
+        { idx: 1, text: '不碰配电柄，贴墙撤', verb: '撤', safe: true, chance: 100, full: '不碰配电柄，贴墙撤' }
+      ]
+    }
+    scene.taughtCable = false
+    scene.lessonOpen = true
+    scene.lessonKind = 'path'
+    scene.placeActor(run.node)
+  })
+
+  shot('run-mid', '中盘再合闸', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    const scene = manager.scene
+    const run = scene.run
+    run.zone = 'harbor'
+    run.step = 5
+    run.levers = 1
+    run.node = {
+      id: 'preview_mid',
+      type: 'event',
+      text: '冻港西堤还能走',
+      zone: 'harbor',
+      options: [
+        { idx: 0, text: '沿运冰线去热能管廊', verb: '管廊', moveTo: 'thermal', full: '沿运冰线去热能管廊' },
+        { idx: 1, text: '刷通行芯片开启西堤气密门', verb: '刷门', moveTo: 'core', full: '刷通行芯片开启西堤气密门', costText: '可合闸' },
+        { idx: 2, text: '只取门边维修箱', verb: '搜', safe: true, chance: 100, full: '只取门边维修箱' }
+      ]
+    }
+    scene.messages = ['再合闸 1/2，开索道']
+    scene.hintedMid = true
+    scene.placeActor(run.node)
+  })
+
   shot('run-nudge', '合闸迟到提示', manager => {
     enterLobby(manager)
     manager.go('run')
@@ -181,7 +233,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const scene = manager.scene
     scene.pickup = makeItem('气压逻辑板')
     scene.pickupUntil = Date.now() + 60000
-    scene.juice = { kind: 'ok', label: '入手', until: Date.now() + 60000 }
+    scene.juice = {
+      kind: 'loot',
+      label: '入手',
+      sub: `${scene.pickup.name} · ${scene.pickup.weight || 2}格`,
+      mark: 'ok',
+      until: Date.now() + 60000
+    }
+  })
+
+  shot('run-scratch', '首局擦伤', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    const raw = -8
+    const wound = engine.tutorialWound({ tutorial: true, step: 1 }, raw)
+    const fx = feel.classify(
+      { hp: 80, lootCount: 0, tutorial: true, step: 1 },
+      { hp: 80 + wound, loot: [], ended: false },
+      ['柜开了。擦了一下']
+    )
+    manager.scene.juice = {
+      kind: fx.kind,
+      label: fx.stamp,
+      sub: fx.sub,
+      mark: fx.mark,
+      until: Date.now() + 60000
+    }
+  })
+
+  shot('run-miss', '交火失手', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    manager.scene.juice = { kind: 'bad', label: '失手', sub: '-10 生命', mark: 'bad', until: Date.now() + 60000 }
+  })
+
+  shot('run-extract', '撤离印章', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    manager.scene.juice = { kind: 'extract', label: '撤离', sub: present.extractCue(manager.scene.run), mark: 'ok', until: Date.now() + 60000 }
+  })
+
+  shot('run-lever-stamp', '合闸印章', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    manager.scene.juice = { kind: 'lever', label: '合闸', sub: '合闸 1/2', mark: 'ok', until: Date.now() + 60000 }
   })
 
   shot('bag', '背包', manager => {

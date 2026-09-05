@@ -19,6 +19,17 @@ const ZONE_POS = {
   extract: { x: 0.84, y: 0.80 }
 }
 
+// 地图标签锚点：中轴四房错开，避免「塔群/指挥塔/内环/管廊」叠成一团。
+const ZONE_LABEL = {
+  weather: { ox: -34, oy: 14 },
+  aurora: { ox: 34, oy: 12 },
+  harbor: { ox: 0, oy: 14 },
+  core: { ox: -36, oy: 12 },
+  thermal: { ox: 30, oy: 14 },
+  lift: { ox: 0, oy: 14 },
+  extract: { ox: -4, oy: 14 }
+}
+
 const ROOM_POS = {
   maglev: { x: 0.38, y: 0.38 },
   coolant: { x: 0.62, y: 0.38 },
@@ -32,7 +43,10 @@ function clip(text, n) {
   const source = String(text == null ? '' : text).replace(/\s+/g, '')
   if (source.length <= n) return source
   if (n <= 1) return '…'
-  return source.slice(0, n - 1) + '…'
+  let cut = source.slice(0, n - 1)
+  const trimmed = cut.replace(/[的了在与和及到向于·，、（(]+$/g, '')
+  if (trimmed.length >= Math.min(4, n - 2)) cut = trimmed
+  return cut + '…'
 }
 
 function firstBeat(text) {
@@ -41,10 +55,26 @@ function firstBeat(text) {
   return clip(beat, 16)
 }
 
+function sceneLine(node) {
+  if (!node) return ''
+  const raw = String(node.full || node.spot || node.text || '').replace(/\s+/g, '')
+  if (!raw) return ''
+  if (/货运雪橇已离站/.test(raw)) return '货运雪橇已离站'
+  if (node.type === 'move') return raw.length <= 22 ? raw : '下一段走哪'
+  if (node.type === 'escape') return raw.length <= 22 ? raw : '选一条撤'
+  if (node.type === 'loadout') return '带什么进场'
+  const beat = raw.split(/[。！？]/)[0] || raw
+  if (beat.length <= 32) return beat
+  const half = beat.split(/[，；：]/)[0]
+  if (half.length >= 8 && half.length <= 32) return half
+  return clip(beat, 32)
+}
+
 function spot(node) {
   if (!node) return ''
   if (node.text && /货运雪橇已离站/.test(node.text)) return '货运雪橇已离站'
-  if (node.spot) return clip(node.spot, 16)
+  if (node.full && /货运雪橇已离站/.test(node.full)) return '货运雪橇已离站'
+  if (node.spot) return clip(node.spot, 18)
   if (node.type === 'move') return '下一段走哪'
   if (node.type === 'escape') return '选一条撤'
   if (node.type === 'loadout') return '带什么进场'
@@ -115,9 +145,9 @@ function toast(messages) {
   if (hp) return `-${hp[1]}`
   if (/生命归零|倒在|没能回来/.test(line)) return '倒了'
   if (/撤离成功|活着出来/.test(line)) return '出来了'
-  if (/⚠/.test(line)) return clip(line.replace(/⚠\s*/, ''), 10)
-  if (/合闸|供电|索道/.test(line)) return clip(line.replace(/（[^）]*）/g, ''), 14)
-  return clip(line.replace(/（[^）]*）/g, '').replace(/配给点.*/g, ''), 12)
+  if (/⚠/.test(line)) return clip(line.replace(/⚠\s*/, ''), 12)
+  if (/合闸|供电|索道/.test(line)) return clip(line.replace(/（[^）]*）/g, ''), 18)
+  return clip(line.replace(/（[^）]*）/g, '').replace(/配给点.*/g, ''), 16)
 }
 
 // 局内主文案：完整句的前半拍，避免按钮只剩含糊动词。
@@ -131,7 +161,15 @@ function caption(opt) {
   return verb(opt)
 }
 
-const OPTION_ROW_H = 72
+const OPTION_ROW_H = 88
+
+function plateText(opt, look) {
+  if (look && look.highlight) return look.label
+  if (look && (look.tone === 'fight' || look.tone === 'safe' || look.tone === 'lever' || look.tone === 'extract')) {
+    return look.label
+  }
+  return verb(opt)
+}
 
 function isLever(opt) {
   if (!opt) return false
@@ -192,8 +230,11 @@ function listTitle(opt) {
   if (!opt) return '继续'
   const raw = String(opt.full || opt.text || '').replace(/\s+/g, '')
   if (!raw) return verb(opt)
-  const beat = raw.split(/[。！？]/)[0]
-  return beat || raw
+  const beat = raw.split(/[。！？]/)[0] || raw
+  if (beat.length <= 22) return beat
+  const half = beat.split(/[，；：]/)[0]
+  if (half.length >= 8 && half.length <= 22) return half
+  return clip(beat, 22)
 }
 
 function leverPath(run) {
@@ -201,12 +242,60 @@ function leverPath(run) {
   const n = run.levers || 0
   if (n >= 2) return '合闸完成 → 点索道'
   if (n === 1) return '合闸 1/2 → 再合闸 → 索道'
-  return '合闸 0/2 → 索道'
+  return '①合闸 → ②再合闸 → ③索道'
+}
+
+function lessonSteps(run) {
+  const n = (run && run.levers) || 0
+  const options = (run && run.node && run.node.options) || []
+  const hasCable = options.some(isCable)
+  return [
+    { id: 'one', label: '合闸', hint: '冷却舱配电柄', done: n >= 1 },
+    { id: 'two', label: '再合闸', hint: '压缩机房配电柄', done: n >= 2 },
+    { id: 'three', label: '索道', hint: '点金色「索道」撤出', done: n >= 2 && hasCable }
+  ]
+}
+
+function lesson(run) {
+  const n = (run && run.levers) || 0
+  const options = (run && run.node && run.node.options) || []
+  const hasLever = options.some(isLever)
+  const hasCable = options.some(isCable)
+  const steps = lessonSteps(run)
+  let cue = '两处配电柄接通后才能走索道'
+  let kind = 'path'
+  if (n >= 2) {
+    cue = hasCable ? '电源已通，点「索道」撤离' : '双电源已通，去撤离线点索道'
+    kind = 'cable'
+  } else if (hasLever) {
+    cue = n === 1 ? '再点金色「合闸」，然后走索道' : '先点金色「合闸」，再去另一处配电房'
+    kind = 'path'
+  } else if (n === 1) {
+    cue = '再去冷却舱或压缩机房合闸'
+  }
+  return {
+    title: n >= 2 ? '索道已开' : '合闸开索道',
+    kind,
+    cue,
+    steps
+  }
+}
+
+function shouldForceLesson(run, flags = {}) {
+  if (!run || run.ended || flags.taught) return false
+  const options = (run.node && run.node.options) || []
+  const hasLever = options.some(isLever)
+  const hasCable = options.some(isCable)
+  if (hasLever && (run.levers || 0) < 2 && !flags.seenLever) return true
+  if ((run.levers || 0) >= 2 && hasCable && !flags.seenCable) return true
+  return false
 }
 
 function leverNudge(run) {
   if (!run || run.ended) return false
-  return (run.levers || 0) < 1 && (run.step || 0) >= 3
+  if ((run.levers || 0) >= 1) return false
+  const early = !!(run.tutorial || run.openerId)
+  return (run.step || 0) >= (early ? 0 : 3)
 }
 
 function isLeverTarget(opt) {
@@ -236,6 +325,9 @@ function leverGuide(run) {
   }
   if (hasHint) return '进内环可合闸开索道'
   if (leverNudge(run)) return '冷却舱·压缩机房可合闸'
+  if ((run.levers || 0) === 1) return '再合闸 1/2，开索道'
+  if ((run.levers || 0) >= 2) return '双电源已通，走索道撤离'
+  if ((run.step || 0) >= 4) return '中盘仍可去内环合闸'
   return ''
 }
 
@@ -273,6 +365,28 @@ function useMap(node) {
   if (options.length < 2) return false
   const travel = options.filter(isTravel).length
   return travel >= 2 && travel * 2 >= options.length
+}
+
+function useTravelList(node) {
+  if (!node) return false
+  const options = node.options || []
+  const travel = options.filter(isTravel)
+  const local = options.filter(opt => !isTravel(opt))
+  return travel.length > 0 && local.length > 0
+}
+
+function travelStripH(count) {
+  const n = Math.max(0, count || 0)
+  if (n <= 3) return 88
+  return Math.min(12 + n * 54, 188)
+}
+
+function travelLabel(opt, node) {
+  if (!opt) return '转移'
+  if (opt.method === 'heli') return '索道'
+  if (opt.method) return verb(opt)
+  const zone = pinZone(opt, node)
+  return ZONE_SHORT[zone] || verb(opt)
 }
 
 function useRoom(node) {
@@ -314,23 +428,25 @@ function propName(opt) {
     if (opt && opt.lootAction === 'flee') return '出口'
     return '门口'
   }
-  if (kind === 'take') return clip(String((opt && (opt.full || opt.text)) || '这件'), 8)
+  if (kind === 'take') return clip(String((opt && (opt.full || opt.text)) || '这件'), 10)
   if (opt && opt.lootAction === 'grabAll') return '一堆'
   return '货柜'
 }
 
 function useOptionList(node) {
-  return ((node && node.options) || []).length >= 4
+  const n = ((node && node.options) || []).length
+  if (n >= 4) return true
+  return n >= 3 && !!(node && (node.id === 'opener_fog' || node.entryOnly))
 }
 
 function layoutRoom(node, rect) {
   const options = (node && node.options) || []
   const slots = [
-    { nx: 0.20, ny: 0.50 },
-    { nx: 0.50, ny: 0.34 },
-    { nx: 0.80, ny: 0.50 },
-    { nx: 0.30, ny: 0.76 },
-    { nx: 0.70, ny: 0.76 }
+    { nx: 0.18, ny: 0.44 },
+    { nx: 0.50, ny: 0.26 },
+    { nx: 0.82, ny: 0.44 },
+    { nx: 0.28, ny: 0.80 },
+    { nx: 0.72, ny: 0.80 }
   ]
   const used = {}
   const take = prefers => {
@@ -367,11 +483,11 @@ function layoutRoom(node, rect) {
   placed.forEach((item, index) => {
     for (let prev = 0; prev < index; prev++) {
       const other = placed[prev]
-      if (Math.abs(item.x - other.x) < 96 && Math.abs(item.y - other.y) < 50) {
-        item.x += item.x >= other.x ? 22 : -22
-        item.y += item.y >= other.y ? 18 : -18
-        item.x = Math.min(rect.x + rect.w - 40, Math.max(rect.x + 40, item.x))
-        item.y = Math.min(rect.y + rect.h - 28, Math.max(rect.y + 24, item.y))
+      if (Math.abs(item.x - other.x) < 118 && Math.abs(item.y - other.y) < 58) {
+        item.x += item.x >= other.x ? 28 : -28
+        item.y += item.y >= other.y ? 22 : -22
+        item.x = Math.min(rect.x + rect.w - 68, Math.max(rect.x + 68, item.x))
+        item.y = Math.min(rect.y + rect.h - 32, Math.max(rect.y + 28, item.y))
         item.nx = rect.w ? (item.x - rect.x) / rect.w : item.nx
         item.ny = rect.h ? (item.y - rect.y) / rect.h : item.ny
       }
@@ -411,7 +527,8 @@ function layoutPins(node, rect, forceMap) {
     const bump = used[key] || 0
     used[key] = bump + 1
     if (bump) {
-      pos = { x: pos.x + bump * 0.05, y: pos.y + bump * 0.04 }
+      const dir = bump % 2 ? 1 : -1
+      pos = { x: pos.x + dir * (0.09 + bump * 0.04), y: pos.y + bump * 0.08 }
     }
     const x = Math.min(rect.x + rect.w - 26, Math.max(rect.x + 26, rect.x + pos.x * rect.w))
     const y = Math.min(rect.y + rect.h - 26, Math.max(rect.y + 22, rect.y + pos.y * rect.h))
@@ -426,16 +543,121 @@ function layoutPins(node, rect, forceMap) {
   })
 }
 
+function extractCue(run) {
+  const n = (run && run.levers) || 0
+  if (n >= 2) return '点索道撤出'
+  return '索道要2/2，可走列车'
+}
+
+function extractLockReason(run) {
+  if (!run || run.ended) return '这局已经结束'
+  if (run.node && run.node.type === 'escape') return '已在撤离线，点一条撤法'
+  if ((run.step || 0) < 2 && (run.hp == null || run.hp >= 60) && (run.risk || 0) < 70) {
+    return '开局先搜，第3步才能撤'
+  }
+  return '现在还不能撤'
+}
+
+function bagLoadText(run, meta) {
+  const grids = meta && meta.loadGrids != null ? meta.loadGrids : 0
+  const cap = (run && run.capacity) || 0
+  return `${grids}/${cap}格`
+}
+
+function fitBox(box, bounds, pad) {
+  const g = pad == null ? 10 : pad
+  if (!box || !bounds) return box
+  const x = Math.min(bounds.x + bounds.w - box.w - g, Math.max(bounds.x + g, box.x))
+  const y = Math.min(bounds.y + bounds.h - box.h - g, Math.max(bounds.y + g, box.y))
+  return { x, y, w: box.w, h: box.h }
+}
+
+function listFitH(n, roomH) {
+  const count = Math.max(0, n || 0)
+  const need = count * (OPTION_ROW_H + 8) - (count ? 8 : 0) + 16
+  const limit = roomH ? Math.max(200, roomH - 64) : need
+  if (count <= 3) return Math.min(Math.max(0, need), limit)
+  return Math.min(need, Math.max(220, Math.round((roomH || 320) * 0.64)))
+}
+
+function boxesOverlap(a, b, pad) {
+  const g = pad || 0
+  return a.x < b.x + b.w + g && a.x + a.w + g > b.x && a.y < b.y + b.h + g && a.y + a.h + g > b.y
+}
+
+function pinPlateBox(pin, rect) {
+  const plateW = 56
+  const plateH = 16
+  const mid = pin.ny > 0.22 && pin.ny < 0.72
+  const above = mid || pin.ny > 0.55
+  let plateX = pin.x - plateW / 2 + (pin.nx < 0.28 ? 14 : pin.nx > 0.72 ? -14 : 0)
+  let plateY = above ? pin.y - plateH - 8 : pin.y + 12
+  if (rect) {
+    plateX = Math.min(rect.x + rect.w - plateW - 2, Math.max(rect.x + 2, plateX))
+    plateY = Math.min(rect.y + rect.h - plateH - 2, Math.max(rect.y + 2, plateY))
+  }
+  return { x: plateX, y: plateY, w: plateW, h: plateH }
+}
+
+function cityLabelLayout(box, extras) {
+  const { x, y, w, h } = box
+  const skip = (extras && extras.skip) || {}
+  const busy = (extras && extras.busy) || []
+  const labels = Object.keys(ZONE_POS).filter(key => !skip[key]).map(key => {
+    const p = ZONE_POS[key]
+    const d = ZONE_LABEL[key] || { ox: 0, oy: 12 }
+    const px = x + p.x * w
+    const py = y + p.y * h
+    const tw = (ZONE_SHORT[key] || key).length >= 3 ? 52 : 44
+    return {
+      key,
+      x: px + d.ox - tw / 2,
+      y: py + d.oy,
+      w: tw,
+      h: 16
+    }
+  })
+  const fit = item => {
+    item.x = Math.min(x + w - item.w - 2, Math.max(x + 2, item.x))
+    item.y = Math.min(y + h - item.h - 2, Math.max(y + 2, item.y))
+  }
+  for (let pass = 0; pass < 2; pass++) {
+    labels.forEach((item, index) => {
+      for (let prev = 0; prev < labels.length; prev++) {
+        if (prev === index) continue
+        const other = labels[prev]
+        if (boxesOverlap(item, other, 3)) {
+          item.y += item.y >= other.y ? 15 : -15
+          item.x += item.x >= other.x ? 8 : -8
+          fit(item)
+        }
+      }
+      busy.forEach(box => {
+        if (boxesOverlap(item, box, 3)) {
+          item.y += item.y >= box.y ? 15 : -15
+          item.x += item.x >= box.x ? 8 : -8
+          fit(item)
+        }
+      })
+    })
+  }
+  labels.forEach(fit)
+  return labels
+}
+
 module.exports = {
   ZONE_SHORT,
   ZONE_POS,
+  ZONE_LABEL,
   ROOM_POS,
   OPTION_ROW_H,
   TONE,
   clip,
   spot,
+  sceneLine,
   verb,
   caption,
+  plateText,
   listTitle,
   toast,
   isTravel,
@@ -446,6 +668,9 @@ module.exports = {
   leverPath,
   leverGuide,
   leverNudge,
+  lesson,
+  lessonSteps,
+  shouldForceLesson,
   paceHint,
   stepChip,
   dangerPip,
@@ -454,11 +679,22 @@ module.exports = {
   toneFill,
   toneLabel,
   useMap,
+  useTravelList,
+  travelStripH,
+  travelLabel,
   useRoom,
   pinZone,
   layoutPins,
   propKind,
   propName,
   layoutRoom,
-  useOptionList
+  useOptionList,
+  listFitH,
+  bagLoadText,
+  extractCue,
+  extractLockReason,
+  fitBox,
+  boxesOverlap,
+  cityLabelLayout,
+  pinPlateBox
 }

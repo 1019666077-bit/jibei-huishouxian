@@ -87,6 +87,21 @@ assert.ok(present.layoutRoom(manager.scene.run.node, { x: 0, y: 0, w: 100, h: 10
 assert.ok(manager.scene.run.node.text.length <= 16, '首局场景仍是长段说明')
 assert.ok(manager.scene.run.node.options.every(item => (item.verb || item.text).length <= 8), '首局选项没有收成短动词')
 assert.strictEqual(manager.scene.run.cost, 0, '首局进场不该扣押金')
+assert.ok(manager.scene.messages.some(line => /合闸/.test(line)), '首局进场没有合闸目标')
+assert.ok(present.leverGuide(manager.scene.run).includes('冷却舱'), '首局现场没有合闸条')
+assert.ok(present.leverNudge(manager.scene.run), '首局没有提前催合闸')
+assert.ok(!manager.scene.juice, '进场印章不得伪装合闸成功')
+{
+  const runMeta = require('../miniprogram/core/engine').getRunMeta(manager.scene.run)
+  assert.strictEqual(present.bagLoadText(manager.scene.run, runMeta), `${runMeta.loadGrids}/${manager.scene.run.capacity}格`)
+  assert.ok(present.extractCue(manager.scene.run).includes('2/2'))
+  manager.scene.goExtract()
+  assert.ok(manager.scene.juice, '锁撤离应给顶栏说明，不能静默')
+  assert.ok(/第3步|还早/.test(manager.scene.juice.label + manager.scene.juice.sub), '开局点撤离应说明第3步')
+  assert.strictEqual(manager.scene.juice.kind, 'warn', '拒撤离不得用成功蓝 extract')
+  assert.ok(!manager.scene.messages.some(line => /第3步才能撤|还早/.test(line)), '拒绝锁定不得刷进消息日志')
+  manager.scene.juice = null
+}
 const meta = require('../miniprogram/core/meta')
 assert.ok(!storage.meta_v1 || storage.meta_v1.balance === meta.START_BALANCE, '首局尚未结算却已扣仓库')
 let guard = 0
@@ -121,6 +136,10 @@ if (!storage.last_report.escaped) {
   assert.ok(scene.messages.some(line => /合闸/.test(line)), '进冷却舱没有合闸教学')
   assert.ok(present.leverGuide(scene.run).includes('合闸'), '冷却舱现场没有合闸教学条')
   assert.ok(present.leverPath(scene.run).includes('索道'), '合闸条没有指向索道')
+  assert.ok(scene.lessonOpen, '首次合闸没有强制短教学')
+  scene.dismissLesson()
+  assert.ok(!scene.lessonOpen, '短教学不能关掉')
+  assert.ok(storage.lesson_cable_v1, '短教学没有记下已看过')
 }
 
 {
@@ -177,7 +196,7 @@ storage.retry_preset = { loadout: 'half' }
 manager.go('settings')
 modalConfirm = true
 manager.scene.clearAll()
-for (const key of ['meta_v1', 'last_report', 'last_rid', 'retry_preset', 'ad_reward_v1', 'legal_consent_v1']) {
+for (const key of ['meta_v1', 'last_report', 'last_rid', 'retry_preset', 'ad_reward_v1', 'legal_consent_v1', 'lesson_cable_v1']) {
   assert.strictEqual(storage[key], undefined, `一键清档漏掉 ${key}`)
 }
 assert.strictEqual(manager.sceneName, 'legal', '清档后没有立刻回到协议确认')
