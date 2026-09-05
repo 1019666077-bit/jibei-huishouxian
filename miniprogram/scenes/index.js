@@ -118,6 +118,8 @@ module.exports = manager => ({
     this.kit = this.meta.runs === 0
       ? (metaStore.affordable(this.meta).half ? 'half' : 'knife')
       : metaStore.preferredLoadout(this.meta)
+    this.lastReport = null
+    try { this.lastReport = wx.getStorageSync('last_report') || null } catch (e) { this.lastReport = null }
   },
 
   selectKit(id) {
@@ -175,11 +177,21 @@ module.exports = manager => ({
       radius: 12,
       sheen: false
     })
+    const missedLever = this.meta.runs >= 1 && this.lastReport && (this.lastReport.levers || 0) < 1
     stage.drawCity(ui.ctx, { x: left, y: mapY, w: width, h: mapH }, {
       current: 'harbor',
       tick: this.tick,
-      marker: 'pulse'
+      marker: 'pulse',
+      target: missedLever ? 'core' : ''
     })
+    if (missedLever) {
+      ui.chip(left + 8, mapY + 6, Math.min(width - 16, 248), 22, '冷却舱·压缩机房可合闸开索道', {
+        fill: '#2a2410',
+        stroke: COLORS.gold,
+        color: COLORS.gold,
+        size: 11
+      })
+    }
     const kit = engine.LOADOUTS[this.kit] || engine.LOADOUTS.half
     if (this.meta.runs === 0) {
       ui.text(`首趟配发${kit.name}，倒了不扣押金`, left, top + 120, 13, COLORS.gold, '600', width)

@@ -76,6 +76,7 @@ module.exports = manager => ({
     this.hintedCore = false
     this.hintedLever = false
     this.hintedCable = false
+    this.hintedLate = false
     this.juice = null
     this.listRect = null
     this.actor = { nx: 0.5, ny: 0.82 }
@@ -160,7 +161,7 @@ module.exports = manager => ({
       this.messages = rankMessages(result.messages).concat(this.messages).slice(0, 8)
       this.mainScroll.reset()
       const fx = feel.classify(
-        { hp: hpBefore, lootCount: lootBefore },
+        { hp: hpBefore, lootCount: lootBefore, fight: !!(option && option.rounds) },
         this.run,
         result.messages
       )
@@ -169,6 +170,7 @@ module.exports = manager => ({
         this.pickup = fx.item
         this.pickupUntil = Date.now() + 1200
       }
+      if (fx.stamp) this.flashJuice(fx.mark || 'ok', fx.stamp, { silent: true })
       if (this.run.ended) {
         const wait = feel.liveSting() ? 780 : 0
         if (wait) {
@@ -225,8 +227,9 @@ module.exports = manager => ({
     manager.requestRender()
   },
 
-  flashJuice(kind, label) {
-    this.juice = { kind, label, until: Date.now() + 700 }
+  flashJuice(kind, label, options) {
+    this.juice = { kind, label, until: Date.now() + 820 }
+    if (options && options.silent) return
     if (typeof manager.pulse === 'function') manager.pulse(kind, label)
   },
 
@@ -264,13 +267,16 @@ module.exports = manager => ({
 
   optionLook(option) {
     const tone = present.optionTone(option)
+    const nudge = present.leverNudge(this.run)
+    const target = nudge && present.isLeverTarget(option)
     const highlight = present.isLever(option) || present.isLeverHint(option)
       || (present.isCable(option) && this.run && this.run.levers >= 2)
+      || target
     return {
-      tone,
-      color: present.toneColor(tone),
-      fill: present.toneFill(tone),
-      label: present.toneLabel(tone),
+      tone: target ? 'lever' : tone,
+      color: present.toneColor(target ? 'lever' : tone),
+      fill: present.toneFill(target ? 'lever' : tone),
+      label: target && !present.isLever(option) && !present.isLeverHint(option) ? '内环' : present.toneLabel(tone),
       highlight
     }
   },
@@ -291,6 +297,10 @@ module.exports = manager => ({
     if (!this.hintedCable && this.run.levers >= 2) {
       this.hintedCable = true
       this.messages.unshift('电源已通，点索道')
+    }
+    if (!this.hintedLate && present.leverNudge(this.run) && this.run.zone !== 'core' && !hasLever && !hasHint) {
+      this.hintedLate = true
+      this.messages.unshift('冷却舱·压缩机房可合闸')
     }
     if (!this.hintedBox && this.run.loot.length >= 2 && runMeta.secureWeight === 0) {
       this.hintedBox = true
@@ -456,9 +466,7 @@ module.exports = manager => ({
     }
     if (option.chance == null) return ''
     if (option.safe) return '稳'
-    if (option.method === 'ambush' || (option.rounds && option.chance < 60)) {
-      return `险 ${option.chance}%`
-    }
+    if (present.dangerPip(option)) return `${option.chance}%`
     return `${option.chance}%`
   },
 
@@ -581,9 +589,21 @@ module.exports = manager => ({
     })
     const pip = this.pip(option)
     const cost = option.costText ? present.clip(option.costText, 14) : ''
-    const detail = [look.label, pip, cost].filter(Boolean).join(' · ')
-    ui.text(detail || option.verb || '', x + 46, y + 52, 12,
-      option.disabled ? '#4b5968' : look.color, '700', w - 60)
+    const risky = present.dangerPip(option)
+    if (risky) {
+      ui.chip(x + 46, y + 50, 28, 20, '险', {
+        fill: '#4a2024',
+        stroke: COLORS.danger,
+        color: COLORS.danger,
+        size: 12
+      })
+      ui.text([pip, cost].filter(Boolean).join(' · ') || look.label, x + 80, y + 52, 12,
+        option.disabled ? '#4b5968' : COLORS.danger, '700', w - 94)
+    } else {
+      const detail = [look.label, pip, cost].filter(Boolean).join(' · ')
+      ui.text(detail || option.verb || '', x + 46, y + 52, 12,
+        option.disabled ? '#4b5968' : look.color, '700', w - 60)
+    }
     ui.addHit(x, y, w, h, () => this.pick(option.idx), !option.disabled)
     return h
   },
@@ -597,12 +617,14 @@ module.exports = manager => ({
     })
     if (engine.canExtractNow(this.run) && this.run.node.type !== 'escape') reachable.extract = true
     reachable[this.run.zone] = true
+    if (present.leverNudge(this.run)) reachable.core = true
     stage.drawCity(ui.ctx, rect, {
       current: this.run.zone,
       tick: this.tick,
       hot: this.run.risk >= 70,
       marker: 'pulse',
-      reachable
+      reachable,
+      target: present.leverNudge(this.run) ? 'core' : ''
     })
     if (rect.h >= 130) {
       ui.panel(rect.x + 6, rect.y + 4, 52, 18, { fill: 'rgba(8,16,20,0.72)', stroke: false, radius: 6, sheen: false })
@@ -795,11 +817,12 @@ module.exports = manager => ({
           radius: 10,
           glow: look.highlight ? `rgba(255,198,92,${0.16 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.28))})` : null
         })
-        stage.drawToneMark(ui.ctx, look.tone, listRect.x + 14, y + 18, 24)
-        const railW = 58
+        stage.drawToneMark(ui.ctx, look.tone, listRect.x + 14, y + 20, 26)
+        const risky = present.dangerPip(option)
+        const railW = risky ? 64 : 58
         const textW = listRect.w - 56 - railW
-        ui.wrapped(present.listTitle(option), listRect.x + 44, y + 8, textW, {
-          size: 14,
+        ui.wrapped(present.listTitle(option), listRect.x + 46, y + 8, textW, {
+          size: 15,
           lineHeight: 20,
           maxLines: 2,
           weight: '700',
@@ -807,16 +830,28 @@ module.exports = manager => ({
         })
         const pip = this.pip(option)
         const railX = listRect.x + listRect.w - railW - 14
-        ui.chip(railX, y + 8, railW, 20, look.label, {
+        ui.chip(railX, y + 8, railW, 22, look.label, {
           fill: look.fill,
           stroke: look.color,
           color: look.color,
           size: 12
         })
-        ui.ctx.textAlign = 'right'
-        ui.text(pip || (look.highlight ? '开索道' : present.propName(option)), railX + railW, y + 34, 12,
-          option.disabled ? '#6a7a88' : look.color, '700', railW)
-        ui.ctx.textAlign = 'left'
+        if (risky) {
+          ui.chip(railX, y + 34, 32, 24, '险', {
+            fill: '#4a2024',
+            stroke: COLORS.danger,
+            color: COLORS.danger,
+            size: 14
+          })
+          ui.ctx.textAlign = 'right'
+          ui.text(pip, railX + railW, y + 38, 13, COLORS.danger, '700', railW - 36)
+          ui.ctx.textAlign = 'left'
+        } else {
+          ui.ctx.textAlign = 'right'
+          ui.text(pip || (look.highlight ? '开索道' : present.propName(option)), railX + railW, y + 38, 12,
+            option.disabled ? '#6a7a88' : look.color, '700', railW)
+          ui.ctx.textAlign = 'left'
+        }
         ui.addHit(listRect.x + 6, y, listRect.w - 12, rowH, () => activate(option, prop))
         y += rowH + gap
       })
@@ -840,7 +875,8 @@ module.exports = manager => ({
         hot: this.run.risk >= 70,
         marker: 'pulse',
         compact: true,
-        reachable: this.reachMap(node, travel)
+        reachable: this.reachMap(node, travel),
+        target: present.leverNudge(this.run) ? 'core' : ''
       })
       this.renderMapHits(ui, mapRect, travel, node)
       const siteRect = {
@@ -867,6 +903,7 @@ module.exports = manager => ({
     })
     if (engine.canExtractNow(this.run) && node.type !== 'escape') reachable.extract = true
     reachable[this.run.zone] = true
+    if (present.leverNudge(this.run)) reachable.core = true
     return reachable
   },
 
@@ -1029,8 +1066,8 @@ module.exports = manager => ({
   renderJuice(ui, v) {
     if (!this.juice || Date.now() > this.juice.until) return
     const left = Math.max(0, this.juice.until - Date.now())
-    const t = 1 - left / 700
-    const scale = 1.18 - t * 0.28
+    const t = 1 - left / 820
+    const scale = 1.22 - t * 0.32
     const ok = this.juice.kind !== 'bad'
     const w = Math.min(200, v.safe.right - v.safe.left - 80)
     const x = (v.width - w) / 2
@@ -1068,8 +1105,9 @@ module.exports = manager => ({
       stroke: hot ? COLORS.gold : COLORS.accent,
       radius: 14
     })
-    stage.drawItemIcon(ui.ctx, x + 16, y + 26, 24, item)
-    ui.text(item.name, x + 50, y + 22, 16, COLORS.text, '700', w - 66)
-    ui.text(engine.fmtVal(item.value), x + 48, y + 48, 13, COLORS.gold, '600')
+    stage.drawJudge(ui.ctx, true, x + 28, y + 28, 11)
+    stage.drawItemIcon(ui.ctx, x + 48, y + 26, 24, item)
+    ui.text(item.name, x + 82, y + 18, 16, COLORS.text, '700', w - 98)
+    ui.text(`入手 · ${engine.fmtVal(item.value)}`, x + 82, y + 46, 13, COLORS.accent, '700')
   }
 })
