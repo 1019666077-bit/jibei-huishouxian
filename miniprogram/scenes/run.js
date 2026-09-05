@@ -522,7 +522,8 @@ module.exports = manager => ({
     const runMeta = engine.getRunMeta(this.run)
     const zone = runMeta.zoneName || present.ZONE_SHORT[this.run.zone] || '冻港'
     const toast = present.toast(this.messages)
-    const pace = toast ? '' : present.paceHint(this.run)
+    const paceRaw = present.paceHint(this.run)
+    const pace = toast ? '' : (/残局|选一条撤/.test(paceRaw) ? paceRaw : '')
     const hudH = toast || pace ? 126 : 108
     ui.panel(left, top, width, hudH, {
       fill: '#0d1a24',
@@ -580,8 +581,9 @@ module.exports = manager => ({
         radius: 8,
         sheen: false
       })
-      stage.drawJudge(ui.ctx, !hurt, left + 22, top + 108, 8)
-      ui.text(line, left + 36, top + 100, 13, hurt ? '#ffd0d0' : COLORS.gold, '700', width - 52)
+      ui.ctx.fillStyle = hurt ? COLORS.danger : (leverToast ? COLORS.gold : COLORS.accent)
+      ui.ctx.fillRect(left + 16, top + 104, 6, 8)
+      ui.text(line, left + 30, top + 100, 13, hurt ? '#ffd0d0' : COLORS.gold, '700', width - 48)
     }
     let next = top + hudH + 8
     const guide = present.leverGuide(this.run)

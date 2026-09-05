@@ -838,11 +838,12 @@ function drawJudge(ctx, ok, cx, cy, size) {
 function drawHudGlyph(ctx, kind, x, y, size) {
   const s = Math.max(10, size || 14)
   if (kind === 'ammo') {
-    fill(ctx, '#eef4fa')
-    rect(ctx, x + 2, y + 1, s - 4, s - 2)
-    fill(ctx, '#10202c')
-    rect(ctx, x + 4, y + 3, s - 8, 3)
-    rect(ctx, x + s / 2 - 1, y + 7, 2, s - 10)
+    fill(ctx, '#c8d6e6')
+    rect(ctx, x + s * 0.28, y + 1, s * 0.44, s - 2)
+    fill(ctx, '#0a141c')
+    rect(ctx, x + s * 0.34, y + 3, s * 0.32, 3)
+    fill(ctx, '#65d6b4')
+    rect(ctx, x + s * 0.42, y + 7, 3, s * 0.5)
     return
   }
   if (kind === 'med') {
