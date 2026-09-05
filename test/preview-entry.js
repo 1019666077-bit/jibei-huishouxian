@@ -175,6 +175,30 @@ document.addEventListener('DOMContentLoaded', () => {
     scene.placeActor(run.node)
   })
 
+  shot('run-mid', '中盘再合闸', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    const scene = manager.scene
+    const run = scene.run
+    run.zone = 'harbor'
+    run.step = 5
+    run.levers = 1
+    run.node = {
+      id: 'preview_mid',
+      type: 'event',
+      text: '冻港西堤还能走',
+      zone: 'harbor',
+      options: [
+        { idx: 0, text: '沿运冰线去热能管廊', verb: '管廊', moveTo: 'thermal', full: '沿运冰线去热能管廊' },
+        { idx: 1, text: '刷通行芯片开启西堤气密门', verb: '刷门', moveTo: 'core', full: '刷通行芯片开启西堤气密门', costText: '可合闸' },
+        { idx: 2, text: '只取门边维修箱', verb: '搜', safe: true, chance: 100, full: '只取门边维修箱' }
+      ]
+    }
+    scene.messages = ['再合闸 1/2，开索道']
+    scene.hintedMid = true
+    scene.placeActor(run.node)
+  })
+
   shot('run-nudge', '合闸迟到提示', manager => {
     enterLobby(manager)
     manager.go('run')
@@ -207,6 +231,12 @@ document.addEventListener('DOMContentLoaded', () => {
     scene.pickup = makeItem('气压逻辑板')
     scene.pickupUntil = Date.now() + 60000
     scene.juice = { kind: 'loot', label: '入手', sub: '气压逻辑板', mark: 'ok', until: Date.now() + 60000 }
+  })
+
+  shot('run-scratch', '首局擦伤', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    manager.scene.juice = { kind: 'scratch', label: '擦伤', sub: '-6 生命', mark: 'ok', until: Date.now() + 60000 }
   })
 
   shot('run-miss', '交火失手', manager => {
