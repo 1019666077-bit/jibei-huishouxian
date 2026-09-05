@@ -34,6 +34,19 @@ class Scroll {
     this.dragging = false
   }
 
+  wheel(delta) {
+    if (this.max <= 0) return false
+    const next = Math.max(0, Math.min(this.max, this.offset + (Number(delta) || 0)))
+    if (next === this.offset) return false
+    this.offset = next
+    return true
+  }
+
+  progress() {
+    if (this.max <= 0) return 1
+    return this.offset / this.max
+  }
+
   atEnd() {
     return this.max <= 12 || this.offset >= this.max - 12
   }

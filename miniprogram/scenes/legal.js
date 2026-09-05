@@ -34,21 +34,30 @@ module.exports = manager => ({
     }
     wx.showToast({ title: '请从右上角关闭游戏', icon: 'none' })
   },
+  inDrag(point) {
+    const area = this.dragRect
+    if (!area || !point) return false
+    return point.x >= area.x && point.x <= area.x + area.w &&
+      point.y >= area.y && point.y <= area.y + area.h
+  },
   pointerStart(point) {
-    if (this.rect && point.y >= this.rect.y && point.y <= this.rect.y + this.rect.h) this.scroll.start(point.y)
+    if (this.inDrag(point)) this.scroll.start(point.y)
   },
   pointerMove(point) { return this.scroll.move(point.y) },
   pointerEnd() { this.scroll.end() },
+  wheel(delta) {
+    return this.scroll.wheel(delta)
+  },
   render(ui, v) {
     const top = ui.header(
       '协议与隐私',
-      this.firstUse ? '请滑动读完全文后再同意' : '上下滑动查看完整内容',
+      this.firstUse ? '请滑动或滚轮读完全文后再同意' : '上下滑动查看完整内容',
       this.firstUse ? null : () => manager.go('index')
     )
     const left = v.safe.left + 12
     const width = v.safe.right - v.safe.left - 24
     const bannerY = top + 4
-    ui.panel(left, bannerY, width, 78)
+    ui.panel(left, bannerY, width, 78, { accent: COLORS.gold })
     ui.text(`${healthNotice.title}  ·  16+`, left + 12, bannerY + 10, 13, COLORS.gold, '700')
     ui.wrapped(healthNotice.lines[0], left + 12, bannerY + 32, width - 24, {
       size: 11, lineHeight: 16, color: COLORS.text
@@ -64,9 +73,15 @@ module.exports = manager => ({
       w: v.safe.right - v.safe.left - 20,
       h: v.safe.bottom - (bannerY + 88) - toolbarH
     }
+    this.dragRect = {
+      x: v.safe.left,
+      y: top,
+      w: v.width - v.safe.left,
+      h: (this.firstUse ? v.safe.bottom - toolbarH : v.safe.bottom) - top
+    }
     ui.withClip(this.rect, () => {
       const x = this.rect.x + 4
-      const w = this.rect.w - 8
+      const w = this.rect.w - 18
       let y = this.rect.y + 4 - this.scroll.offset
       const start = y
       documents.forEach((doc, docIndex) => {
@@ -90,6 +105,19 @@ module.exports = manager => ({
       y += 28
       this.scroll.setBounds(y - start, this.rect.h)
     })
+    ui.scrollbar(this.rect, this.scroll)
+    if (this.firstUse && !this.canAccept()) {
+      const hintH = 36
+      const hintY = this.rect.y + this.rect.h - hintH
+      ui.panel(this.rect.x + 8, hintY, this.rect.w - 22, hintH, {
+        fill: 'rgba(18, 36, 28, 0.92)',
+        stroke: COLORS.gold,
+        radius: 8,
+        sheen: false
+      })
+      const pct = Math.round(this.scroll.progress() * 100)
+      ui.text(`继续下滑阅读全文 · 已读 ${pct}%`, this.rect.x + 18, hintY + 10, 13, COLORS.gold, '700', this.rect.w - 40)
+    }
     if (this.firstUse) {
       const gap = 10
       const buttonWidth = (width - gap) / 2

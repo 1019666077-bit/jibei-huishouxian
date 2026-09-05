@@ -4,69 +4,65 @@ const ads = require('../utils/ads')
 const { healthNotice } = require('../legal/documents')
 const { COLORS } = require('../runtime/ui')
 const stage = require('../runtime/stage')
+const gfx = require('../runtime/gfx')
 
 function drawCover(ctx, v, tick) {
   const w = v.width
   const h = v.height
-  if (typeof ctx.createLinearGradient === 'function') {
-    const sky = ctx.createLinearGradient(0, 0, 0, h)
-    sky.addColorStop(0, '#07101c')
-    sky.addColorStop(0.42, '#14304a')
-    sky.addColorStop(0.72, '#0c1a28')
-    sky.addColorStop(1, '#070b12')
-    ctx.fillStyle = sky
-  } else {
-    ctx.fillStyle = '#0b1522'
-  }
+  ctx.fillStyle = gfx.vgrad(ctx, 0, 0, h, [
+    [0, '#06101c'],
+    [0.38, '#12344c'],
+    [0.7, '#0b1c2a'],
+    [1, '#05090f']
+  ])
   ctx.fillRect(0, 0, w, h)
 
-  if (typeof ctx.createLinearGradient === 'function') {
-    const aurora = ctx.createLinearGradient(w * 0.1, v.safe.top, w * 0.9, v.safe.top + 180)
-    aurora.addColorStop(0, 'rgba(101,214,180,0)')
-    aurora.addColorStop(0.5, 'rgba(101,214,180,0.22)')
-    aurora.addColorStop(1, 'rgba(101,169,255,0)')
-    ctx.fillStyle = aurora
-    ctx.beginPath()
-    ctx.moveTo(0, v.safe.top + 36)
-    ctx.quadraticCurveTo(w * 0.45, v.safe.top - 10, w, v.safe.top + 70)
-    ctx.lineTo(w, v.safe.top + 120)
-    ctx.quadraticCurveTo(w * 0.5, v.safe.top + 40, 0, v.safe.top + 90)
-    ctx.closePath()
-    ctx.fill()
-  }
+  gfx.quad(ctx, 0, v.safe.top + 28, w * 0.42, v.safe.top - 16, w, v.safe.top + 64,
+    'rgba(101,214,180,0.2)')
+  gfx.quad(ctx, 0, v.safe.top + 70, w * 0.58, v.safe.top + 24, w, v.safe.top + 110,
+    'rgba(101,169,255,0.12)')
 
   const ground = Math.min(v.safe.bottom - 168, h * 0.58)
   const towers = [
-    { x: 0.04, w: 0.09, h: 0.22 },
-    { x: 0.14, w: 0.07, h: 0.16 },
-    { x: 0.23, w: 0.12, h: 0.34 },
+    { x: 0.03, w: 0.1, h: 0.2 },
+    { x: 0.13, w: 0.07, h: 0.15 },
+    { x: 0.22, w: 0.13, h: 0.36 },
     { x: 0.37, w: 0.08, h: 0.2 },
-    { x: 0.48, w: 0.16, h: 0.42 },
+    { x: 0.47, w: 0.17, h: 0.44 },
     { x: 0.66, w: 0.1, h: 0.26 },
-    { x: 0.78, w: 0.14, h: 0.31 },
+    { x: 0.78, w: 0.14, h: 0.32 },
     { x: 0.93, w: 0.08, h: 0.18 }
   ]
   towers.forEach((t, i) => {
     const x = w * t.x
     const tw = w * t.w
     const th = h * t.h
-    ctx.fillStyle = i === 4 ? '#152433' : '#101c2a'
+    ctx.fillStyle = i === 4 ? '#173044' : '#101c2a'
     ctx.fillRect(x, ground - th, tw, th)
-    ctx.fillStyle = i % 2 ? 'rgba(255,198,92,0.35)' : 'rgba(101,214,180,0.28)'
+    ctx.fillStyle = '#0a1218'
+    ctx.fillRect(x - 2, ground - th - 5, tw + 4, 5)
+    ctx.fillStyle = i % 2 ? 'rgba(255,198,92,0.38)' : 'rgba(101,214,180,0.3)'
     for (let row = 8; row < th - 10; row += 11) {
       for (let col = 5; col < tw - 6; col += 8) {
         if ((row + col + i) % 3 === 0) ctx.fillRect(x + col, ground - th + row, 3, 4)
       }
     }
   })
-  ctx.fillStyle = '#0a121c'
+  ctx.fillStyle = '#243040'
+  ctx.fillRect(w * 0.78, ground - h * 0.42, 5, h * 0.28)
+  ctx.fillStyle = '#ffc65c'
+  ctx.fillRect(w * 0.74, ground - h * 0.42, w * 0.14, 4)
+  ctx.fillStyle = gfx.vgrad(ctx, 0, ground, h - ground, [
+    [0, 'rgba(40,80,110,0.45)'],
+    [1, '#070b12']
+  ])
   ctx.fillRect(0, ground, w, h - ground)
-  ctx.fillStyle = 'rgba(101,214,180,0.08)'
-  ctx.fillRect(0, ground - 18, w, 18)
+  ctx.fillStyle = 'rgba(101,214,180,0.1)'
+  ctx.fillRect(0, ground - 16, w, 16)
 
   const t = tick || 0
   ctx.fillStyle = 'rgba(230,240,255,0.55)'
-  for (let i = 0; i < 28; i++) {
+  for (let i = 0; i < 32; i++) {
     const sx = ((i * 97 + t * 2) % (w + 20)) - 10
     const sy = ((i * 53) % Math.max(40, ground - 20)) + 8
     ctx.fillRect(sx, sy, i % 5 === 0 ? 2 : 1, i % 5 === 0 ? 2 : 1)
@@ -158,15 +154,27 @@ module.exports = manager => ({
     const width = v.safe.right - v.safe.left - 44
     const top = v.safe.top + 18
 
-    ui.button(v.safe.right - 86, top, 64, 32, '设置', () => manager.go('settings'), {
-      size: 12, radius: 8
+    ui.button(v.safe.right - 86, top, 64, 36, '设置', () => manager.go('settings'), {
+      size: 13, radius: 8
     })
 
-    ui.text('极夜回收线', left, top + 28, 34, COLORS.text, '700')
-    ui.text('带东西活着出来', left, top + 72, 18, COLORS.gold, '700')
-    const mapH = Math.max(120, Math.min(188, v.safe.bottom - top - 280))
-    const mapY = top + (this.meta.runs === 0 ? 118 : 178)
-    ui.text('冻港地图', left, mapY - 20, 13, COLORS.gold, '600')
+    ui.chip(left, top + 22, 148, 22, '北辰回收署 · 配给点', {
+      fill: 'rgba(12,28,32,0.72)',
+      stroke: COLORS.accent,
+      color: COLORS.accent,
+      size: 11
+    })
+    ui.text('极夜回收线', left, top + 52, 34, COLORS.text, '700')
+    ui.text('带东西活着出来', left, top + 94, 18, COLORS.gold, '700')
+    const mapH = Math.max(108, Math.min(168, v.safe.bottom - top - 300))
+    const mapY = top + (this.meta.runs === 0 ? 148 : 198)
+    ui.section(left, mapY - 22, width, '冻港作业图')
+    ui.panel(left - 4, mapY - 4, width + 8, mapH + 8, {
+      fill: '#071018',
+      stroke: '#2a4156',
+      radius: 12,
+      sheen: false
+    })
     stage.drawCity(ui.ctx, { x: left, y: mapY, w: width, h: mapH }, {
       current: 'harbor',
       tick: this.tick,
@@ -174,41 +182,46 @@ module.exports = manager => ({
     })
     const kit = engine.LOADOUTS[this.kit] || engine.LOADOUTS.half
     if (this.meta.runs === 0) {
-      ui.text(`首趟配发${kit.name}，倒了不扣押金`, left, top + 100, 13, COLORS.gold, '600', width)
+      ui.text(`首趟配发${kit.name}，倒了不扣押金`, left, top + 120, 13, COLORS.gold, '600', width)
     } else {
       const can = metaStore.affordable(this.meta)
       const chips = [
-        { id: 'knife', label: '轻装 0' },
-        { id: 'half', label: '标准 15万' },
-        { id: 'full', label: '重装 45万' }
+        { id: 'knife', label: '轻装', sub: '0' },
+        { id: 'half', label: '标准', sub: '15万' },
+        { id: 'full', label: '重装', sub: '45万' }
       ]
       const cw = (width - 16) / 3
       chips.forEach((chip, i) => {
         const on = this.kit === chip.id
-        ui.button(left + i * (cw + 8), top + 100, cw, 36, chip.label, () => this.selectKit(chip.id), {
-          size: 12,
+        const bx = left + i * (cw + 8)
+        ui.button(bx, top + 122, cw, 48, chip.label, () => this.selectKit(chip.id), {
+          size: 14,
           enabled: !!can[chip.id],
           fill: on ? '#1e4f43' : '#172333',
           stroke: on ? COLORS.accent : COLORS.line,
-          color: on ? '#ffffff' : COLORS.text
+          color: on ? '#ffffff' : COLORS.text,
+          sub: chip.sub,
+          subColor: on ? COLORS.gold : COLORS.muted
         })
+        stage.drawKit(ui.ctx, bx + 8, top + 132, 18, chip.id)
       })
       ui.text(kit.cost ? `本趟押 ${engine.fmtVal(kit.cost)}，活着退回` : '本趟零成本，倒了不亏押金',
-        left, top + 144, 12, COLORS.gold, '600', width)
+        left, top + 176, 12, COLORS.gold, '600', width)
     }
 
-    const startY = Math.min(v.safe.bottom - 196, Math.max(mapY + mapH + 14, v.height * 0.52))
+    const startY = Math.min(v.safe.bottom - 196, Math.max(mapY + mapH + 16, v.height * 0.54))
     const glow = 0.55 + 0.45 * Math.sin((this.tick || 0) / 4.2)
     const startFill = `rgb(${Math.round(22 + 18 * glow)},${Math.round(90 + 30 * glow)},${Math.round(75 + 20 * glow)})`
-    ui.button(left, startY, width, 62, '出发', () => this.start(), {
+    ui.button(left, startY, width, 64, '出发回收', () => this.start(), {
       fill: startFill,
       stroke: COLORS.accent,
       color: '#ffffff',
-      size: 22
+      size: 22,
+      glow: 'rgba(101,214,180,0.25)'
     })
 
-    ui.button(left, startY + 74, (width - 10) / 2, 40, '仓库', () => manager.go('codex'), { size: 13 })
-    ui.button(left + (width - 10) / 2 + 10, startY + 74, (width - 10) / 2, 40, '协议', () => manager.go('legal'), { size: 13 })
+    ui.button(left, startY + 76, (width - 10) / 2, 42, '仓库图鉴', () => manager.go('codex'), { size: 14 })
+    ui.button(left + (width - 10) / 2 + 10, startY + 76, (width - 10) / 2, 42, '协议说明', () => manager.go('legal'), { size: 14 })
 
     if (this.ad.configured && !this.ad.claimedToday) {
       ui.button(left, startY - 52, width, 40, '看完视频：医疗补给 +1', () => this.claimAd(), {

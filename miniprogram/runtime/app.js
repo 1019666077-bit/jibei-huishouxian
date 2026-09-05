@@ -88,6 +88,32 @@ function createGame(options = {}) {
       manager.pointerEnd(point)
     })
   }
+  if (canvas && typeof canvas.addEventListener === 'function') {
+    const pointFrom = ev => {
+      const box = typeof canvas.getBoundingClientRect === 'function'
+        ? canvas.getBoundingClientRect()
+        : { left: 0, top: 0, width: viewport.width, height: viewport.height }
+      const scaleX = viewport.width / (box.width || viewport.width)
+      const scaleY = viewport.height / (box.height || viewport.height)
+      return {
+        x: (ev.clientX - box.left) * scaleX,
+        y: (ev.clientY - box.top) * scaleY
+      }
+    }
+    canvas.addEventListener('mousedown', ev => {
+      ev.preventDefault()
+      manager.pointerStart(pointFrom(ev))
+    })
+    canvas.addEventListener('mousemove', ev => {
+      if (ev.buttons) manager.pointerMove(pointFrom(ev))
+    })
+    canvas.addEventListener('mouseup', ev => manager.pointerEnd(pointFrom(ev)))
+    canvas.addEventListener('mouseleave', ev => manager.pointerEnd(pointFrom(ev)))
+    canvas.addEventListener('wheel', ev => {
+      ev.preventDefault()
+      manager.wheel(ev.deltaY, pointFrom(ev))
+    }, { passive: false })
+  }
   if (typeof wx.onWindowResize === 'function') {
     wx.onWindowResize(info => manager.resize(sizeCanvas(windowInfo(info))))
   }

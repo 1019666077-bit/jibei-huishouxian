@@ -118,6 +118,17 @@ function toast(messages) {
   return clip(line.replace(/（[^）]*）/g, '').replace(/配给点.*/g, ''), 12)
 }
 
+// 局内主文案：完整句的前半拍，避免按钮只剩含糊动词。
+function caption(opt) {
+  if (!opt) return '继续'
+  const raw = String(opt.full || opt.text || '')
+  if (raw) {
+    const beat = raw.split(/[。！？；：]/)[0].replace(/\s+/g, '')
+    if (beat) return clip(beat, 16)
+  }
+  return verb(opt)
+}
+
 function isTravel(opt) {
   if (!opt) return false
   return !!(opt.moveTo || opt.goEvent || opt.method || opt.wait)
@@ -167,13 +178,13 @@ function propKind(opt) {
 
 function propName(opt) {
   const kind = propKind(opt)
-  if (kind === 'threat') return '有人'
+  if (kind === 'threat') return '交火点'
   if (kind === 'door') {
     if (opt && opt.lootAction === 'skip') return '先走'
     if (opt && opt.lootAction === 'flee') return '出口'
     return '门口'
   }
-  if (kind === 'take') return '这件'
+  if (kind === 'take') return clip(String((opt && (opt.full || opt.text)) || '这件'), 8)
   if (opt && opt.lootAction === 'grabAll') return '一堆'
   return '货柜'
 }
@@ -274,6 +285,7 @@ module.exports = {
   clip,
   spot,
   verb,
+  caption,
   toast,
   isTravel,
   useMap,

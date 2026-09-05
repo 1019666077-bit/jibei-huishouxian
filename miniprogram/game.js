@@ -43,7 +43,7 @@ try {
     ctx.fillStyle = '#080c13'
     ctx.fillRect(0, 0, 400, 800)
     ctx.fillStyle = '#ffc65c'
-    ctx.font = '16px sans-serif'
+    ctx.font = '16px PingFang SC, Microsoft YaHei, sans-serif'
     ctx.fillText('启动失败，请完全关闭后重开。', 24, 80)
   } catch (e) { /* 画布也不可用时只能退出 */ }
 }
