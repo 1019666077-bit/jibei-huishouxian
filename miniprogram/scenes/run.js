@@ -613,7 +613,7 @@ module.exports = manager => ({
   },
 
   renderOption(ui, x, y, w, option) {
-    const h = 80
+    const h = 88
     const look = this.optionLook(option)
     const glow = look.highlight ? `rgba(255,198,92,${0.18 + 0.16 * Math.abs(Math.sin((this.tick || 0) * 0.28))})` : null
     ui.panel(x, y, w, h, {
@@ -628,7 +628,7 @@ module.exports = manager => ({
     ui.wrapped(title, x + 46, y + 8, w - 60, {
       size: 15,
       lineHeight: 20,
-      maxLines: 2,
+      maxLines: 3,
       weight: '700',
       color: option.disabled ? '#59697a' : COLORS.text
     })
@@ -828,8 +828,7 @@ module.exports = manager => ({
         color: option.disabled ? '#6a7a88' : COLORS.text
       })
       const pip = this.pip(option)
-      const cost = option.costText ? present.clip(option.costText, 12) : ''
-      ui.text(look.highlight ? '开索道' : ([pip, cost].filter(Boolean).join(' · ') || look.label), prop.x - 40, plateY + 36, 11,
+      ui.text(look.highlight ? '开索道' : (pip || look.label), prop.x - 40, plateY + 36, 11,
         option.disabled ? '#6a7a88' : look.color, '700', 100)
       ui.addHit(prop.x - 68, prop.y - 58, 136, 132, () => activate(option, prop))
     })
@@ -884,8 +883,8 @@ module.exports = manager => ({
         const textW = listRect.w - 56 - railW
         ui.wrapped(present.listTitle(option), listRect.x + 46, y + 8, textW, {
           size: 15,
-          lineHeight: 21,
-          maxLines: 2,
+          lineHeight: 20,
+          maxLines: 3,
           weight: '700',
           color: option.disabled ? '#6a7a88' : COLORS.text
         })

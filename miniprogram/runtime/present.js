@@ -161,7 +161,7 @@ function caption(opt) {
   return verb(opt)
 }
 
-const OPTION_ROW_H = 76
+const OPTION_ROW_H = 88
 
 function plateText(opt, look) {
   if (look && look.highlight) return look.label
