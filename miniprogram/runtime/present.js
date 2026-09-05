@@ -116,6 +116,7 @@ function toast(messages) {
   if (/生命归零|倒在|没能回来/.test(line)) return '倒了'
   if (/撤离成功|活着出来/.test(line)) return '出来了'
   if (/⚠/.test(line)) return clip(line.replace(/⚠\s*/, ''), 10)
+  if (/合闸|供电|索道/.test(line)) return clip(line.replace(/（[^）]*）/g, ''), 14)
   return clip(line.replace(/（[^）]*）/g, '').replace(/配给点.*/g, ''), 12)
 }
 
@@ -128,6 +129,46 @@ function caption(opt) {
     if (beat) return clip(beat, 16)
   }
   return verb(opt)
+}
+
+const OPTION_ROW_H = 64
+
+function isLever(opt) {
+  if (!opt) return false
+  if (opt.verb === '合闸' || opt.verb === '穿庭合闸') return true
+  if (opt.verb) return false
+  const t = String(opt.text || opt.full || '')
+  return /^合上.+配电柄/.test(t) || /^合闸/.test(t)
+}
+
+function isLeverHint(opt) {
+  if (!opt || isLever(opt)) return false
+  return /可合闸/.test(String(opt.costText || ''))
+}
+
+// 底部列表用完整前半句，交给两行省略，不再先裁成 16 字。
+function listTitle(opt) {
+  if (!opt) return '继续'
+  const raw = String(opt.full || opt.text || '').replace(/\s+/g, '')
+  if (!raw) return verb(opt)
+  const beat = raw.split(/[。！？]/)[0]
+  return beat || raw
+}
+
+function leverGuide(run) {
+  if (!run || run.ended || (run.levers || 0) >= 2) return ''
+  const node = run.node || {}
+  const options = node.options || []
+  const hasLever = options.some(isLever)
+  const hasHint = options.some(isLeverHint)
+  const room = node.room || run.lastRoom
+  const nearLever = room === 'coolant' || room === 'compressor'
+  if (hasLever) return run.levers === 1 ? '再合闸，开索道' : '点「合闸」接通电源，开索道'
+  if (run.zone === 'core' || nearLever) {
+    return run.levers === 1 ? '去另一处配电房合闸' : '冷却舱·压缩机房可合闸开索道'
+  }
+  if (hasHint) return '进内环可合闸开索道'
+  return ''
 }
 
 function isTravel(opt) {
@@ -301,12 +342,17 @@ module.exports = {
   ZONE_SHORT,
   ZONE_POS,
   ROOM_POS,
+  OPTION_ROW_H,
   clip,
   spot,
   verb,
   caption,
+  listTitle,
   toast,
   isTravel,
+  isLever,
+  isLeverHint,
+  leverGuide,
   useMap,
   useRoom,
   pinZone,

@@ -73,6 +73,9 @@ module.exports = manager => ({
     this.endTimer = null
     this.hintedBox = false
     this.hintedExtract = false
+    this.hintedCore = false
+    this.hintedLever = false
+    this.listRect = null
     this.actor = { nx: 0.5, ny: 0.82 }
     this.walk = null
     this.walkTick = null
@@ -248,6 +251,17 @@ module.exports = manager => ({
 
   teach() {
     const runMeta = engine.getRunMeta(this.run)
+    const options = (this.run.node && this.run.node.options) || []
+    const hasLever = options.some(opt => present.isLever(opt))
+    const hasHint = options.some(opt => present.isLeverHint(opt))
+    if (!this.hintedLever && hasLever && this.run.levers < 2) {
+      this.hintedLever = true
+      this.hintedCore = true
+      this.messages.unshift('点合闸开索道')
+    } else if (!this.hintedCore && this.run.levers < 2 && (this.run.zone === 'core' || hasHint)) {
+      this.hintedCore = true
+      this.messages.unshift('内环可合闸开索道')
+    }
     if (!this.hintedBox && this.run.loot.length >= 2 && runMeta.secureWeight === 0) {
       this.hintedBox = true
       this.messages.unshift('贵的，装箱。')
@@ -284,7 +298,25 @@ module.exports = manager => ({
   pointerStart(point) {
     if (!this.contentRect) return
     if (point.y < this.contentRect.y || point.y > this.contentRect.y + this.contentRect.h) return
-    ;(this.bagOpen ? this.bagScroll : this.mainScroll).start(point.y)
+    if (this.bagOpen) {
+      this.bagScroll.start(point.y)
+      return
+    }
+    if (this.listRect) {
+      if (point.y < this.listRect.y || point.y > this.listRect.y + this.listRect.h) return
+    }
+    this.mainScroll.start(point.y)
+  },
+
+  wheel(delta, point) {
+    const scroll = this.bagOpen ? this.bagScroll : this.mainScroll
+    if (!scroll || !scroll.max) return false
+    const area = this.bagOpen ? this.contentRect : (this.listRect || this.contentRect)
+    if (point && area) {
+      if (point.x < area.x || point.x > area.x + area.w ||
+          point.y < area.y || point.y > area.y + area.h) return false
+    }
+    return scroll.wheel(delta)
   },
 
   pointerMove(point) {
@@ -413,7 +445,16 @@ module.exports = manager => ({
       stroke: '#3d5c74',
       radius: 12
     })
-    ui.text(zone, left + 12, top + 8, 18, '#ffffff', '700', width * 0.58)
+    ui.text(zone, left + 12, top + 8, 18, '#ffffff', '700', width * 0.42)
+    if (this.run.levers < 2 && (this.run.zone === 'core' || present.leverGuide(this.run))) {
+      const chipX = left + Math.min(118, 16 + String(zone).length * 18)
+      ui.chip(chipX, top + 6, 72, 20, `供电 ${this.run.levers}/2`, {
+        fill: '#2a2410',
+        stroke: COLORS.gold,
+        color: COLORS.gold,
+        size: 11
+      })
+    }
     ui.ctx.textAlign = 'right'
     ui.text(`${runMeta.timeText} · ${runMeta.phase || ''}`, left + width - 12, top + 10, 13, '#9ff0d4', '700')
     ui.ctx.textAlign = 'left'
@@ -451,27 +492,55 @@ module.exports = manager => ({
     })
     if (toast) {
       const hurt = /^-|倒/.test(toast)
-      ui.text(toast, left + 12, top + 112, 13, hurt ? COLORS.danger : COLORS.gold, '700', width - 24)
+      const leverToast = /合闸|供电|索道/.test(toast)
+      if (leverToast) {
+        ui.panel(left + 8, top + 108, width - 16, 20, {
+          fill: '#2a2410',
+          stroke: COLORS.gold,
+          radius: 6,
+          sheen: false
+        })
+      }
+      ui.text(toast, left + 12, top + 110, 13, hurt ? COLORS.danger : COLORS.gold, '700', width - 24)
     }
-    return top + hudH + 8
+    let next = top + hudH + 8
+    const guide = present.leverGuide(this.run)
+    if (guide) {
+      ui.panel(left, next, width, 24, {
+        fill: '#2a2410',
+        stroke: COLORS.gold,
+        radius: 8,
+        sheen: false
+      })
+      ui.text(guide, left + 10, next + 5, 13, COLORS.gold, '700', width - 20)
+      next += 32
+    }
+    return next
   },
 
   renderOption(ui, x, y, w, option) {
-    const h = 72
-    const stripe = option.disabled ? '#2a3644' : option.rounds ? COLORS.danger : option.safe ? COLORS.accent : COLORS.gold
+    const h = 80
+    const lever = present.isLever(option) || present.isLeverHint(option)
+    const stripe = option.disabled ? '#2a3644' : lever ? COLORS.gold : option.rounds ? COLORS.danger : option.safe ? COLORS.accent : COLORS.gold
     ui.panel(x, y, w, h, {
-      fill: option.disabled ? '#101720' : '#142131',
-      stroke: option.disabled ? '#1e2936' : (option.chance != null && option.chance < 50 ? '#6c3c42' : COLORS.line),
+      fill: option.disabled ? '#101720' : lever ? '#2a2410' : '#142131',
+      stroke: option.disabled ? '#1e2936' : lever ? COLORS.gold : (option.chance != null && option.chance < 50 ? '#6c3c42' : COLORS.line),
       radius: 12,
       accent: stripe
     })
-    const title = present.caption(option)
-    ui.text(title, x + 18, y + 10, 16, option.disabled ? '#59697a' : COLORS.text, '700', w - 36)
+    const title = present.listTitle(option)
+    ui.wrapped(title, x + 18, y + 8, w - 36, {
+      size: 15,
+      lineHeight: 20,
+      maxLines: 2,
+      weight: '700',
+      color: option.disabled ? '#59697a' : COLORS.text
+    })
     const pip = this.pip(option)
     const cost = option.costText ? present.clip(option.costText, 18) : ''
-    const detail = [pip, cost].filter(Boolean).join(' · ')
-    ui.text(detail || option.verb || '', x + 18, y + 40, 12,
-      option.disabled ? '#4b5968' : (option.safe ? COLORS.accent : option.rounds ? COLORS.danger : COLORS.gold), '700', w - 36)
+    const detail = [lever ? '合闸' : '', pip, cost].filter(Boolean).join(' · ')
+    ui.text(detail || option.verb || '', x + 18, y + 52, 12,
+      option.disabled ? '#4b5968' : (lever ? COLORS.gold : option.safe ? COLORS.accent : option.rounds ? COLORS.danger : COLORS.gold), '700', w - 36)
     ui.addHit(x, y, w, h, () => this.pick(option.idx), !option.disabled)
     return h
   },
@@ -578,15 +647,20 @@ module.exports = manager => ({
       stage.drawItemIcon(ui.ctx, rect.x + 14, rect.y + 28, 16, it)
       ui.text(it.name, rect.x + 38, rect.y + 30, 13, COLORS.text, '700', rect.w - 54)
     }
+    const listMode = present.useOptionList(node)
+    const rowH = present.OPTION_ROW_H
+    const rowGap = 8
+    const nOpt = (node.options || []).length
+    const listNeed = listMode ? nOpt * (rowH + rowGap) - rowGap + 10 : 0
+    const listH = listMode ? Math.min(listNeed, Math.max(148, Math.round(rect.h * 0.48))) : 0
     const wall = stage.ROOM_WALL
     const floor = {
       x: rect.x,
       y: rect.y + rect.h * wall,
       w: rect.w,
-      h: rect.h * (1 - wall)
+      h: Math.max(72, rect.h * (1 - wall) - listH)
     }
     const props = present.layoutRoom(node, floor)
-    const listMode = present.useOptionList(node)
     const hotIdx = this.walk ? this.walk.idx : (this.fight ? this.fight.idx : null)
     if (!this.actor) this.actor = { nx: 0.5, ny: 0.82 }
     const ax = floor.x + this.actor.nx * floor.w
@@ -613,45 +687,31 @@ module.exports = manager => ({
         ui.addHit(prop.x - 28, prop.y - 36, 56, 64, () => activate(option, prop))
         return
       }
+      const lever = present.isLever(option)
       const plateY = prop.y + 6
       ui.panel(prop.x - 50, plateY, 100, 46, {
-        fill: hot ? '#1e4f43' : '#101820',
-        stroke: option.disabled ? COLORS.line : (prop.kind === 'threat' ? COLORS.danger : COLORS.gold),
+        fill: hot || lever ? '#2a2410' : '#101820',
+        stroke: option.disabled ? COLORS.line : (lever ? COLORS.gold : (prop.kind === 'threat' ? COLORS.danger : COLORS.gold)),
         radius: 8
       })
       ui.ctx.textAlign = 'center'
-      ui.text(present.caption(option), prop.x, plateY + 5, 12, option.disabled ? '#6a7a88' : COLORS.text, '700', 92)
+      ui.text(lever ? '合闸' : present.caption(option), prop.x, plateY + 5, 12, option.disabled ? '#6a7a88' : COLORS.text, '700', 92)
       const pip = this.pip(option)
       const cost = option.costText ? present.clip(option.costText, 8) : ''
-      ui.text([pip, cost].filter(Boolean).join(' · ') || present.propName(option), prop.x, plateY + 26, 11,
-        option.disabled ? '#6a7a88' : (prop.kind === 'threat' ? COLORS.danger : COLORS.gold), '700')
+      ui.text(lever ? '开索道' : ([pip, cost].filter(Boolean).join(' · ') || present.propName(option)), prop.x, plateY + 26, 11,
+        option.disabled ? '#6a7a88' : (lever ? COLORS.gold : (prop.kind === 'threat' ? COLORS.danger : COLORS.gold)), '700')
       ui.ctx.textAlign = 'left'
       ui.addHit(prop.x - 52, prop.y - 58, 104, 116, () => activate(option, prop))
     })
     if (listMode) {
-      const rowH = 34
-      const listH = props.length * rowH + 4
-      let ly = Math.min(floor.y + floor.h - listH - 4, floor.y + 10)
-      ly = Math.max(floor.y + 4, ly)
-      const lx = floor.x + 8
-      const lw = floor.w - 16
-      props.forEach((prop, i) => {
-        const option = prop.opt
-        const hot = hotIdx === option.idx
-        const y = ly + i * rowH
-        ui.panel(lx, y, lw, rowH - 4, {
-          fill: hot ? '#1e4f43' : '#101820',
-          stroke: option.disabled ? COLORS.line : (prop.kind === 'threat' ? COLORS.danger : COLORS.gold),
-          radius: 8
-        })
-        ui.text(present.caption(option), lx + 10, y + 6, 12, option.disabled ? '#6a7a88' : COLORS.text, '700', lw - 88)
-        const pip = this.pip(option)
-        ui.ctx.textAlign = 'right'
-        ui.text(pip || present.propName(option), lx + lw - 10, y + 7, 11,
-          option.disabled ? '#6a7a88' : (prop.kind === 'threat' ? COLORS.danger : COLORS.gold), '700')
-        ui.ctx.textAlign = 'left'
-        ui.addHit(lx, y, lw, rowH - 4, () => activate(option, prop))
-      })
+      this.renderOptionList(ui, {
+        x: rect.x + 6,
+        y: rect.y + rect.h - listH,
+        w: rect.w - 12,
+        h: listH
+      }, props, hotIdx, activate, listNeed)
+    } else {
+      this.mainScroll.setBounds(rect.h, rect.h)
     }
     if (this.fight) {
       const threat = props.find(item => item.opt.idx === this.fight.idx)
@@ -662,7 +722,59 @@ module.exports = manager => ({
       facing,
       walking: !!this.walk
     })
-    this.mainScroll.setBounds(rect.h, rect.h)
+  },
+
+  renderOptionList(ui, listRect, props, hotIdx, activate, listNeed) {
+    const rowH = present.OPTION_ROW_H
+    const gap = 8
+    this.listRect = listRect
+    this.mainScroll.setBounds(listNeed, listRect.h)
+    const rows = props.slice().sort((a, b) => Number(present.isLever(b.opt)) - Number(present.isLever(a.opt)))
+    ui.panel(listRect.x, listRect.y, listRect.w, listRect.h, {
+      fill: 'rgba(8,14,20,0.82)',
+      stroke: '#3d5c74',
+      radius: 10,
+      sheen: false
+    })
+    ui.withClip(listRect, () => {
+      let y = listRect.y + 6 - this.mainScroll.offset
+      rows.forEach(prop => {
+        const option = prop.opt
+        const hot = hotIdx === option.idx
+        const lever = present.isLever(option)
+        ui.panel(listRect.x + 6, y, listRect.w - 12, rowH, {
+          fill: hot || lever ? '#2a2410' : '#101820',
+          stroke: option.disabled ? COLORS.line : (lever ? COLORS.gold : (prop.kind === 'threat' ? COLORS.danger : COLORS.gold)),
+          radius: 10
+        })
+        const railW = 58
+        const textW = listRect.w - 28 - railW
+        ui.wrapped(present.listTitle(option), listRect.x + 16, y + 8, textW, {
+          size: 14,
+          lineHeight: 20,
+          maxLines: 2,
+          weight: '700',
+          color: option.disabled ? '#6a7a88' : COLORS.text
+        })
+        const pip = this.pip(option)
+        const railX = listRect.x + listRect.w - railW - 14
+        if (lever) {
+          ui.chip(railX, y + 8, railW, 20, '合闸', {
+            fill: '#3a2e10',
+            stroke: COLORS.gold,
+            color: COLORS.gold,
+            size: 12
+          })
+        }
+        ui.ctx.textAlign = 'right'
+        ui.text(pip || (lever ? '开索道' : present.propName(option)), railX + railW, y + 34, 12,
+          option.disabled ? '#6a7a88' : (lever ? COLORS.gold : (prop.kind === 'threat' ? COLORS.danger : COLORS.gold)), '700', railW)
+        ui.ctx.textAlign = 'left'
+        ui.addHit(listRect.x + 6, y, listRect.w - 12, rowH, () => activate(option, prop))
+        y += rowH + gap
+      })
+    })
+    ui.scrollbar(listRect, this.mainScroll)
   },
 
   renderRunContent(ui, rect) {
@@ -723,27 +835,28 @@ module.exports = manager => ({
       const option = pin.opt
       const zone = present.pinZone(option, node)
       const zoneLabel = present.ZONE_SHORT[zone]
-      const extra = !!(option.method || option.wait || (option.verb && option.verb !== zoneLabel))
+      const leverHint = present.isLeverHint(option) || present.isLever(option)
+      const extra = !!(option.method || option.wait || leverHint || (option.verb && option.verb !== zoneLabel))
       if (option.method || option.wait) {
         stage.drawPad(ui.ctx, option.method || 'wait', pin.x, pin.y, !option.disabled, false)
       }
       if (extra) {
         const above = pin.ny > 0.52
-        const plateW = 52
+        const plateW = leverHint ? 56 : 52
         const plateH = 16
         let plateX = pin.x - plateW / 2
         let plateY = above ? pin.y - plateH - 8 : pin.y + 12
         plateX = Math.min(rect.x + rect.w - plateW - 2, Math.max(rect.x + 2, plateX))
         plateY = Math.min(rect.y + rect.h - plateH - 2, Math.max(rect.y + 2, plateY))
         ui.panel(plateX, plateY, plateW, plateH, {
-          fill: option.disabled ? '#101820' : '#142131',
-          stroke: option.disabled ? COLORS.line : (option.rounds ? COLORS.danger : COLORS.gold),
+          fill: option.disabled ? '#101820' : (leverHint ? '#2a2410' : '#142131'),
+          stroke: option.disabled ? COLORS.line : (leverHint || option.rounds ? (leverHint ? COLORS.gold : COLORS.danger) : COLORS.gold),
           radius: 6,
           sheen: false
         })
         ui.ctx.textAlign = 'center'
-        ui.text(option.verb || present.caption(option), plateX + plateW / 2, plateY + 2, 10,
-          option.disabled ? '#6a7a88' : COLORS.text, '700', plateW - 8)
+        ui.text(leverHint ? '合闸' : (option.verb || present.caption(option)), plateX + plateW / 2, plateY + 2, 10,
+          option.disabled ? '#6a7a88' : (leverHint ? COLORS.gold : COLORS.text), '700', plateW - 8)
         ui.ctx.textAlign = 'left'
       }
       ui.addHit(pin.x - 36, pin.y - 28, 72, 56, () => {
@@ -804,6 +917,7 @@ module.exports = manager => ({
   },
 
   render(ui, v) {
+    this.listRect = null
     const contentTop = this.renderHud(ui, v)
     const toolbarH = 64
     const bottom = v.safe.bottom - toolbarH

@@ -32,6 +32,19 @@ assert.ok(present.clip('这是一段超过十六个字的转移选项标题', 16
 assert.ok(present.clip('短标', 16) === '短标')
 assert.ok(present.useOptionList({ options: [1, 2, 3, 4] }))
 assert.ok(!present.useOptionList({ options: [1, 2, 3] }))
+assert.ok(present.OPTION_ROW_H >= 56, '四选项行高仍偏矮')
+assert.ok(present.isLever({ verb: '合闸', text: '合上冷却舱配电柄' }))
+assert.ok(present.isLever({ verb: '穿庭合闸' }))
+assert.ok(!present.isLever({ verb: '撤', text: '不碰配电柄，贴墙撤' }))
+assert.ok(present.isLeverHint({ costText: '芯片 · 可合闸', moveTo: 'core' }))
+assert.ok(!present.isLeverHint({ moveTo: 'thermal', costText: '' }))
+assert.ok(present.listTitle({ full: '合上冷却舱配电柄（极地索道条件之一）' }).includes('极地索道'))
+assert.ok(present.listTitle({ full: '合上冷却舱配电柄（极地索道条件之一）' }).length > 16)
+assert.ok(present.leverGuide({ zone: 'core', levers: 0, node: { options: [] } }).includes('合闸'))
+assert.ok(present.leverGuide({ zone: 'core', levers: 0, node: { room: 'coolant', options: [{ verb: '合闸' }] } }).includes('合闸'))
+assert.ok(!present.leverGuide({ zone: 'core', levers: 2, node: { options: [] } }))
+assert.ok(present.toast(['点合闸开索道']).includes('合闸'))
+assert.ok(present.toast(['内环可合闸开索道']).includes('合闸'))
 {
   const packed = present.layoutRoom({
     options: [
