@@ -364,7 +364,7 @@ function drawCityDots(ctx, box, options = {}) {
     fill(ctx, here ? (options.hot ? '#ff6b6b' : '#7ee8c8') : (reach ? (TINT[key] || '#ffc65c') : '#243040'))
     rect(ctx, px - sz / 2, py - sz / 2, sz, sz)
   })
-  cityLabelLayout(box).forEach(lab => {
+  cityLabelLayout(box, { skip: options.skipLabels, busy: options.busy }).forEach(lab => {
     const here = options.current === lab.key
     const reach = !options.reachable || options.reachable[lab.key]
     const goal = options.target === lab.key && !here
@@ -431,7 +431,7 @@ function drawCity(ctx, box, options = {}) {
       tick
     })
   })
-  cityLabelLayout(box).forEach(lab => {
+  cityLabelLayout(box, { skip: options.skipLabels, busy: options.busy }).forEach(lab => {
     const current = options.current === lab.key
     const reach = !options.reachable || options.reachable[lab.key]
     const goal = options.target === lab.key && !current

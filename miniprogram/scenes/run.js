@@ -908,6 +908,16 @@ module.exports = manager => ({
     if (showMap && showSite) {
       const mapH = Math.max(124, Math.min(150, Math.round(rect.h * 0.30)))
       const mapRect = { x: rect.x, y: rect.y, w: rect.w, h: mapH }
+      const mapPins = present.layoutPins(Object.assign({}, node, { options: travel }), mapRect, true)
+      const skipLabels = {}
+      const busy = []
+      mapPins.forEach(pin => {
+        const look = this.optionLook(pin.opt)
+        if (this.pinNeedsPlate(pin.opt, look, node)) {
+          skipLabels[present.pinZone(pin.opt, node)] = true
+          busy.push(present.pinPlateBox(pin, mapRect))
+        }
+      })
       stage.drawCity(ui.ctx, mapRect, {
         current: this.run.zone,
         tick: this.tick,
@@ -915,9 +925,11 @@ module.exports = manager => ({
         marker: 'pulse',
         compact: true,
         reachable: this.reachMap(node, travel),
-        target: present.leverNudge(this.run) ? 'core' : ''
+        target: present.leverNudge(this.run) ? 'core' : '',
+        skipLabels,
+        busy
       })
-      this.renderMapHits(ui, mapRect, travel, node)
+      this.renderMapHits(ui, mapRect, travel, node, mapPins)
       const siteRect = {
         x: rect.x,
         y: rect.y + mapH + 6,
@@ -946,8 +958,14 @@ module.exports = manager => ({
     return reachable
   },
 
-  renderMapHits(ui, rect, travel, node) {
-    const pins = present.layoutPins(Object.assign({}, node, { options: travel }), rect, true)
+  pinNeedsPlate(option, look, node) {
+    const zoneLabel = present.ZONE_SHORT[present.pinZone(option, node)]
+    return !!(option.method || option.wait || look.highlight || look.tone === 'fight' || look.tone === 'safe'
+      || (option.verb && option.verb !== zoneLabel))
+  },
+
+  renderMapHits(ui, rect, travel, node, readyPins) {
+    const pins = readyPins || present.layoutPins(Object.assign({}, node, { options: travel }), rect, true)
     Object.keys(present.ZONE_POS).forEach(key => {
       const p = present.ZONE_POS[key]
       const px = rect.x + p.x * rect.w
@@ -956,22 +974,14 @@ module.exports = manager => ({
     })
     pins.forEach(pin => {
       const option = pin.opt
-      const zone = present.pinZone(option, node)
-      const zoneLabel = present.ZONE_SHORT[zone]
       const look = this.optionLook(option)
-      const extra = !!(option.method || option.wait || look.highlight || look.tone === 'fight' || look.tone === 'safe' || (option.verb && option.verb !== zoneLabel))
+      const extra = this.pinNeedsPlate(option, look, node)
       if (option.method || option.wait) {
         stage.drawPad(ui.ctx, option.method || 'wait', pin.x, pin.y, !option.disabled, look.highlight)
       }
       if (extra) {
-        const above = pin.ny > 0.52
-        const plateW = 64
-        const plateH = 16
-        let plateX = pin.x - plateW / 2 + (pin.nx < 0.28 ? 18 : pin.nx > 0.72 ? -18 : 0)
-        let plateY = above ? pin.y - plateH - 10 : pin.y + 14
-        plateX = Math.min(rect.x + rect.w - plateW - 2, Math.max(rect.x + 2, plateX))
-        plateY = Math.min(rect.y + rect.h - plateH - 2, Math.max(rect.y + 2, plateY))
-        ui.panel(plateX, plateY, plateW, plateH, {
+        const plate = present.pinPlateBox(pin, rect)
+        ui.panel(plate.x, plate.y, plate.w, plate.h, {
           fill: option.disabled ? '#101820' : look.fill,
           stroke: option.disabled ? COLORS.line : look.color,
           radius: 6,
@@ -980,8 +990,8 @@ module.exports = manager => ({
         })
         ui.ctx.textAlign = 'center'
         ui.text(present.plateText(option, look),
-          plateX + plateW / 2, plateY + 2, 11,
-          option.disabled ? '#6a7a88' : look.color, '700', plateW - 8)
+          plate.x + plate.w / 2, plate.y + 2, 11,
+          option.disabled ? '#6a7a88' : look.color, '700', plate.w - 8)
         ui.ctx.textAlign = 'left'
       }
       ui.addHit(pin.x - 36, pin.y - 28, 72, 56, () => {

@@ -212,7 +212,19 @@ document.addEventListener('DOMContentLoaded', () => {
   shot('run-miss', '交火失手', manager => {
     enterLobby(manager)
     manager.go('run')
-    manager.scene.juice = { kind: 'bad', label: '失手', sub: '-28 生命', mark: 'bad', until: Date.now() + 60000 }
+    manager.scene.juice = { kind: 'bad', label: '失手', sub: '-10 生命', mark: 'bad', until: Date.now() + 60000 }
+  })
+
+  shot('run-extract', '撤离印章', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    manager.scene.juice = { kind: 'extract', label: '撤离', sub: '选一条撤出', mark: 'ok', until: Date.now() + 60000 }
+  })
+
+  shot('run-lever-stamp', '合闸印章', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    manager.scene.juice = { kind: 'lever', label: '合闸', sub: '合闸 1/2', mark: 'ok', until: Date.now() + 60000 }
   })
 
   shot('bag', '背包', manager => {

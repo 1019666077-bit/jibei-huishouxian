@@ -109,6 +109,17 @@ assert.ok(present.toast(['电源已通，点索道']).includes('索道'))
     const clash = labels.some((a, i) => labels.slice(i + 1).some(b => present.boxesOverlap(a, b, 2)))
     assert.ok(!clash, `城市标签在 ${box.w}x${box.h} 仍重叠`)
   })
+  const split = { x: 0, y: 0, w: 360, h: 124 }
+  const pins = present.layoutPins({
+    options: [
+      { verb: '管廊', moveTo: 'thermal' },
+      { verb: '刷门', moveTo: 'core', costText: '可合闸' }
+    ]
+  }, split, true)
+  const plates = pins.map(pin => present.pinPlateBox(pin, split))
+  const labels = present.cityLabelLayout(split, { skip: { core: true }, busy: plates })
+  const clash = labels.some(lab => plates.some(plate => present.boxesOverlap(lab, plate, 2)))
+  assert.ok(!clash, '双栏地图铭牌仍压着城市标签')
 }
 
 const box = { x: 0, y: 0, w: 320, h: 180 }

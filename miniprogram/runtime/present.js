@@ -499,9 +499,25 @@ function boxesOverlap(a, b, pad) {
   return a.x < b.x + b.w + g && a.x + a.w + g > b.x && a.y < b.y + b.h + g && a.y + a.h + g > b.y
 }
 
-function cityLabelLayout(box) {
+function pinPlateBox(pin, rect) {
+  const plateW = 56
+  const plateH = 16
+  const mid = pin.ny > 0.22 && pin.ny < 0.72
+  const above = mid || pin.ny > 0.55
+  let plateX = pin.x - plateW / 2 + (pin.nx < 0.28 ? 14 : pin.nx > 0.72 ? -14 : 0)
+  let plateY = above ? pin.y - plateH - 8 : pin.y + 12
+  if (rect) {
+    plateX = Math.min(rect.x + rect.w - plateW - 2, Math.max(rect.x + 2, plateX))
+    plateY = Math.min(rect.y + rect.h - plateH - 2, Math.max(rect.y + 2, plateY))
+  }
+  return { x: plateX, y: plateY, w: plateW, h: plateH }
+}
+
+function cityLabelLayout(box, extras) {
   const { x, y, w, h } = box
-  const labels = Object.keys(ZONE_POS).map(key => {
+  const skip = (extras && extras.skip) || {}
+  const busy = (extras && extras.busy) || []
+  const labels = Object.keys(ZONE_POS).filter(key => !skip[key]).map(key => {
     const p = ZONE_POS[key]
     const d = ZONE_LABEL[key] || { ox: 0, oy: 12 }
     const px = x + p.x * w
@@ -530,6 +546,13 @@ function cityLabelLayout(box) {
           fit(item)
         }
       }
+      busy.forEach(box => {
+        if (boxesOverlap(item, box, 3)) {
+          item.y += item.y >= box.y ? 15 : -15
+          item.x += item.x >= box.x ? 8 : -8
+          fit(item)
+        }
+      })
     })
   }
   labels.forEach(fit)
@@ -577,5 +600,6 @@ module.exports = {
   layoutRoom,
   useOptionList,
   boxesOverlap,
-  cityLabelLayout
+  cityLabelLayout,
+  pinPlateBox
 }
