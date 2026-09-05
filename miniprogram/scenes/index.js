@@ -168,8 +168,8 @@ module.exports = manager => ({
     })
     ui.text('极夜回收线', left, top + 52, 34, COLORS.text, '700')
     ui.text('带东西活着出来', left, top + 94, 18, COLORS.gold, '700')
-    const mapH = Math.max(108, Math.min(168, v.safe.bottom - top - 300))
-    const mapY = top + (this.meta.runs === 0 ? 148 : 198)
+    const mapH = Math.max(108, Math.min(156, v.safe.bottom - top - 310))
+    const mapY = top + (this.meta.runs === 0 ? 172 : 216)
     const firstTrip = this.meta.runs === 0
     const missedLever = this.meta.runs >= 1 && this.lastReport && (this.lastReport.levers || 0) < 1
     const hallTarget = firstTrip || missedLever ? 'core' : ''
