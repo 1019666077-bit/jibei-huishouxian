@@ -300,6 +300,11 @@ function drawSite(ctx, key, px, py, size, state) {
     rect(ctx, px - s * 0.82, py - s * 1.18, s * 1.64, s * 1.36)
     frame(ctx, px - s * 0.76, py - s * 1.12, s * 1.52, s * 1.28, '#7ee8c8')
     frame(ctx, px - s * 0.7, py - s * 1.06, s * 1.4, s * 1.16, '#65d6b4')
+  } else if (state.goal) {
+    fill(ctx, 'rgba(255,198,92,0.28)')
+    rect(ctx, px - s * 0.86, py - s * 1.22, s * 1.72, s * 1.44)
+    frame(ctx, px - s * 0.8, py - s * 1.16, s * 1.6, s * 1.36, '#ffe08a')
+    frame(ctx, px - s * 0.7, py - s * 1.04, s * 1.4, s * 1.16, '#ffc65c')
   } else if (state.reach) {
     fill(ctx, 'rgba(255,198,92,0.16)')
     rect(ctx, px - s * 0.76, py - s * 1.1, s * 1.52, s * 1.28)
@@ -341,11 +346,17 @@ function drawCityDots(ctx, box, options = {}) {
     const py = y + p.y * h
     const here = options.current === key
     const reach = !options.reachable || options.reachable[key]
+    const goal = options.target === key && !here
     if (here) {
       const pulse = 7 + (tick % 5)
       fill(ctx, options.hot ? 'rgba(255,107,107,0.4)' : 'rgba(101,214,180,0.4)')
       rect(ctx, px - pulse, py - pulse, pulse * 2, pulse * 2)
       frame(ctx, px - 11, py - 11, 22, 22, options.hot ? '#ff6b6b' : '#7ee8c8')
+    } else if (goal) {
+      const pulse = 6 + (tick % 4)
+      fill(ctx, 'rgba(255,198,92,0.38)')
+      rect(ctx, px - pulse, py - pulse, pulse * 2, pulse * 2)
+      frame(ctx, px - 10, py - 10, 20, 20, '#ffc65c')
     } else if (reach) {
       frame(ctx, px - 8, py - 8, 16, 16, '#ffc65c')
     }
@@ -409,10 +420,12 @@ function drawCity(ctx, box, options = {}) {
     const py = y + p.y * h
     const current = options.current === key
     const reach = !options.reachable || options.reachable[key]
+    const goal = options.target === key && !current
     drawSite(ctx, key, px, py, size, {
       current,
-      reach,
-      dim: !current && !reach,
+      reach: reach || goal,
+      goal,
+      dim: !current && !reach && !goal,
       tick
     })
     fill(ctx, 'rgba(8,12,18,0.84)')

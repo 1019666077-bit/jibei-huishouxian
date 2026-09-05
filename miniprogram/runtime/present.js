@@ -131,7 +131,7 @@ function caption(opt) {
   return verb(opt)
 }
 
-const OPTION_ROW_H = 64
+const OPTION_ROW_H = 72
 
 function isLever(opt) {
   if (!opt) return false
@@ -159,6 +159,11 @@ const TONE = {
   extract: { color: '#65a9ff', fill: '#15273a', label: '撤离' },
   lever: { color: '#ffc65c', fill: '#2a2410', label: '合闸' },
   loot: { color: '#ffc65c', fill: '#142131', label: '搜刮' }
+}
+
+function dangerPip(opt) {
+  if (!opt || opt.disabled || opt.chance == null || opt.safe) return false
+  return !!(opt.method === 'ambush' || (opt.rounds && opt.chance < 60))
 }
 
 function optionTone(opt) {
@@ -199,6 +204,18 @@ function leverPath(run) {
   return '合闸 0/2 → 索道'
 }
 
+function leverNudge(run) {
+  if (!run || run.ended) return false
+  return (run.levers || 0) < 1 && (run.step || 0) >= 3
+}
+
+function isLeverTarget(opt) {
+  if (!opt) return false
+  if (opt.moveTo === 'core') return true
+  const go = String(opt.goEvent || '')
+  return /coolant|compressor|entry_/.test(go)
+}
+
 function leverGuide(run) {
   if (!run || run.ended) return ''
   const node = run.node || {}
@@ -218,6 +235,7 @@ function leverGuide(run) {
     return run.levers === 1 ? '去另一处配电房合闸' : '冷却舱·压缩机房可合闸开索道'
   }
   if (hasHint) return '进内环可合闸开索道'
+  if (leverNudge(run)) return '冷却舱·压缩机房可合闸'
   return ''
 }
 
@@ -424,10 +442,13 @@ module.exports = {
   isLever,
   isLeverHint,
   isCable,
+  isLeverTarget,
   leverPath,
   leverGuide,
+  leverNudge,
   paceHint,
   stepChip,
+  dangerPip,
   optionTone,
   toneColor,
   toneFill,

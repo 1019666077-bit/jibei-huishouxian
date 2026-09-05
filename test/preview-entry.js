@@ -65,6 +65,13 @@ document.addEventListener('DOMContentLoaded', () => {
     enterLobby(manager)
   })
 
+  shot('index-nudge', '大厅合闸提示', manager => {
+    storage.meta_v1 = Object.assign({}, metaStore.load(), { runs: 2, lastLoadout: 'half' })
+    storage.last_report = { escaped: false, levers: 0, rating: 'D' }
+    enterLobby(manager)
+    if (manager.sceneName === 'index' && manager.scene.reload) manager.scene.reload()
+  })
+
   shot('run', '局内现场', manager => {
     enterLobby(manager)
     manager.go('run')
@@ -143,6 +150,40 @@ document.addEventListener('DOMContentLoaded', () => {
     scene.placeActor(run.node)
   })
 
+  shot('run-nudge', '合闸迟到提示', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    const scene = manager.scene
+    const run = scene.run
+    run.zone = 'harbor'
+    run.step = 4
+    run.levers = 0
+    run.node = {
+      id: 'preview_nudge',
+      type: 'event',
+      text: '冻港西堤还能走',
+      zone: 'harbor',
+      options: [
+        { idx: 0, text: '沿运冰线去热能管廊', verb: '管廊', moveTo: 'thermal', full: '沿运冰线去热能管廊' },
+        { idx: 1, text: '沿货运环轨去轨道升降场', verb: '升降场', moveTo: 'lift', full: '沿货运环轨去轨道升降场' },
+        { idx: 2, text: '刷通行芯片开启西堤气密门', verb: '刷门', moveTo: 'core', full: '刷通行芯片开启西堤气密门' },
+        { idx: 3, text: '只取门边维修箱', verb: '搜', safe: true, chance: 100, full: '只取门边维修箱' }
+      ]
+    }
+    scene.messages = ['冷却舱·压缩机房可合闸']
+    scene.hintedLate = true
+    scene.placeActor(run.node)
+  })
+
+  shot('run-juice', '拾取与失手', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    const scene = manager.scene
+    scene.pickup = makeItem('气压逻辑板')
+    scene.pickupUntil = Date.now() + 60000
+    scene.juice = { kind: 'bad', label: '失手', until: Date.now() + 60000 }
+  })
+
   shot('bag', '背包', manager => {
     enterLobby(manager)
     manager.go('run')
@@ -169,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
       wallet: { balanceAfter: 5600000 },
       causeChain: ['沿冻港西堤推进', '带出零号资产柜'],
       retryPlans: [{ id: 'p1', title: '再走冻港补给线', goal: '先装箱再上塔', loadout: 'half' }],
-      lootItems: [makeItem('北辰零号晶核')],
+      lootItems: [makeItem('北辰零号晶核'), makeItem('气压逻辑板'), makeItem('远古冰芯样本')],
       lostItems: [],
       medals: [
         { name: '归航标·A', desc: '活着回到回收署', tier: 'gold' },
@@ -187,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loadoutName: '标准勤务组',
       totalValue: 0,
       netProfit: -150000,
-      causeChain: ['冷却舱交火失血'],
+      causeChain: ['冷却舱交火失血，风险峰值被摸两次', '倒下时包里还剩 1 个医疗包没用'],
       retryPlans: [{ id: 'p2', title: '轻装再探冻港', goal: '少带少亏', loadout: 'knife' }],
       lootItems: [],
       lostItems: [],

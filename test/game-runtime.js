@@ -143,6 +143,29 @@ if (!storage.last_report.escaped) {
   assert.ok(scene.juice && scene.juice.kind === 'ok', '入匣没有即时对错标')
   scene.flashJuice('bad', '装不下')
   assert.ok(scene.juice && scene.juice.kind === 'bad', '装箱失败没有即时对错标')
+  scene.flashJuice('ok', '入手', { silent: true })
+  assert.ok(scene.juice && scene.juice.label === '入手', '拾取没有即时对错标')
+  scene.flashJuice('bad', '失手', { silent: true })
+  assert.ok(scene.juice && scene.juice.label === '失手', '交火失败没有即时对错标')
+}
+
+{
+  manager.go('run')
+  const scene = manager.scene
+  scene.run.zone = 'harbor'
+  scene.run.levers = 0
+  scene.run.step = 4
+  scene.run.node = {
+    id: 'teach_late',
+    type: 'event',
+    options: [
+      { idx: 0, text: '沿运冰线去热能管廊', verb: '管廊', moveTo: 'thermal' }
+    ]
+  }
+  scene.teach()
+  assert.ok(scene.messages.some(line => /冷却舱|压缩机/.test(line)), '长时间0合闸没有补提示')
+  assert.ok(present.leverGuide(scene.run).includes('冷却舱'), '外围残局没有合闸目标条')
+  assert.ok(present.leverNudge(scene.run), '外围残局没有合闸催促')
 }
 
 // 设置页清档必须连协议确认和广告记录一起清除

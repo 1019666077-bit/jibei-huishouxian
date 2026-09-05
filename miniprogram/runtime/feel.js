@@ -65,18 +65,32 @@ function classify(prev, next, messages) {
   const hpDelta = (next.hp || 0) - (prev.hp || 0)
   const lootGain = (next.loot ? next.loot.length : 0) - (prev.lootCount || 0)
   const text = (messages && messages[0]) || ''
-  if (hpDelta < 0) return { kind: 'hit', label: `${hpDelta} 生命`, hpDelta }
-  if (lootGain > 0 || /收入背包/.test(text)) {
+  const all = (messages || []).join(' ')
+  const fight = !!(prev && prev.fight)
+  const fail = /✗ |失败|失利/.test(all)
+  if (hpDelta < 0) {
+    if (fight || fail) {
+      return { kind: 'bad', label: `${hpDelta} 生命`, hpDelta, mark: 'bad', stamp: '失手' }
+    }
+    return { kind: 'hit', label: `${hpDelta} 生命`, hpDelta, mark: 'bad', stamp: '挨打' }
+  }
+  if (lootGain > 0 || /收入背包|顺手拿走|拿到 /.test(text)) {
     const item = next.loot && next.loot[next.loot.length - 1]
     return {
       kind: 'loot',
       label: item ? item.name : '物资入手',
       item: item || null,
-      lootGain
+      lootGain,
+      mark: 'ok',
+      stamp: '入手'
     }
   }
   if (hpDelta > 0) return { kind: 'heal', label: `+${hpDelta} 生命` }
-  if (/撤离成功|到手|制服|奏效/.test(text)) return { kind: 'ok', label: '得手' }
+  if (fail) return { kind: 'bad', label: '失手', mark: 'bad', stamp: '失手' }
+  if (fight && /✓ |到手|制服|奏效/.test(all)) {
+    return { kind: 'ok', label: '得手', mark: 'ok', stamp: '得手' }
+  }
+  if (/撤离成功|到手|制服|奏效/.test(text)) return { kind: 'ok', label: '得手', mark: 'ok', stamp: '得手' }
   return { kind: 'ok', label: '' }
 }
 

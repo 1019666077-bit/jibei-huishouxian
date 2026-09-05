@@ -1329,6 +1329,7 @@ function endRun(state, escaped, method, messages, valueRate = 1) {
     },
     keyMoments,
     steps: state.step,
+    levers: state.levers || 0,
     finalHp: state.hp,
     maxRisk: state.peakRisk
   }

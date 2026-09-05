@@ -72,7 +72,7 @@ module.exports = manager => ({
   render(ui, v) {
     if (!this.report) return
     const headerBottom = ui.header('行动结算', '本地战报 · 不上传、不生成编号', () => manager.go('index'))
-    const toolbarH = 68
+    const toolbarH = 76
     this.rect = {
       x: v.safe.left + 10,
       y: headerBottom,
@@ -88,7 +88,10 @@ module.exports = manager => ({
       const win = !!r.escaped
       const ratingColor = r.rating === 'S' ? COLORS.danger : r.rating === 'A' ? COLORS.gold : COLORS.text
       const profit = r.netProfit || 0
-      ui.panel(x, y, w, 176, {
+      const failLine = !win && r.causeChain[0] ? r.causeChain[0] : ''
+      const lootStrip = win ? (r.lootItems || []).slice(0, 8) : []
+      const headH = win ? (lootStrip.length ? 214 : 176) : (failLine ? 246 : 176)
+      ui.panel(x, y, w, headH, {
         fill: win ? '#132820' : '#2c171b',
         stroke: win ? '#2b6653' : '#703840',
         glow: win ? 'rgba(101,214,180,0.2)' : 'rgba(255,107,107,0.16)'
@@ -105,24 +108,45 @@ module.exports = manager => ({
         color: ratingColor,
         size: 13
       })
-      stage.drawMedal(ui.ctx, x + 16, y + 48, 44, {
+      let bodyY = y + 48
+      if (failLine) {
+        ui.panel(x + 12, bodyY, w - 24, 58, {
+          fill: '#4a2024',
+          stroke: COLORS.danger,
+          radius: 10,
+          glow: 'rgba(255,107,107,0.18)'
+        })
+        stage.drawJudge(ui.ctx, false, x + 34, bodyY + 29, 12)
+        ui.text('关键失误', x + 54, bodyY + 6, 12, COLORS.danger, '700')
+        ui.wrapped(failLine, x + 54, bodyY + 24, w - 82, {
+          size: 14, lineHeight: 18, maxLines: 2, weight: '700', color: '#ffe8e8'
+        })
+        bodyY += 68
+      }
+      stage.drawMedal(ui.ctx, x + 16, bodyY, 44, {
         tier: r.rating === 'S' || r.rating === 'A' ? 'gold' : win ? 'green' : 'red'
       })
-      ui.text(win ? '带出变现' : '本趟亏损', x + 72, y + 46, 13, COLORS.muted, '600')
+      ui.text(win ? '带出变现' : '本趟亏损', x + 72, bodyY - 2, 13, COLORS.muted, '600')
       ui.text(`${win ? engine.fmtVal(r.totalValue || 0) : engine.fmtVal(Math.abs(profit))} 配给点`,
-        x + 72, y + 66, 26, win ? COLORS.gold : COLORS.danger, '700', w - 90)
+        x + 72, bodyY + 18, 26, win ? COLORS.gold : COLORS.danger, '700', w - 90)
       ui.text(`${profit >= 0 ? '净入账 +' : '净损失 -'}${engine.fmtVal(Math.abs(profit))}`,
-        x + 72, y + 100, 14, profit >= 0 ? COLORS.accent : COLORS.danger, '700', w - 90)
-      ui.text(`${r.methodText || '未能撤离'} · ${r.loadoutName || ''}`, x + 16, y + 128, 13, COLORS.muted, '600', w - 32)
+        x + 72, bodyY + 52, 14, profit >= 0 ? COLORS.accent : COLORS.danger, '700', w - 90)
+      ui.text(`${r.methodText || '未能撤离'} · ${r.loadoutName || ''}`, x + 16, bodyY + 80, 13, COLORS.muted, '600', w - 32)
       const wallet = r.wallet && r.wallet.balanceAfter != null
         ? `仓库 ${engine.fmtVal(r.wallet.balanceAfter)}`
         : (win ? '配给点已入账，装备押金退回' : '本趟装备投入未返还')
-      ui.text(wallet, x + 16, y + 150, 12, COLORS.muted, '600', w - 32)
-      y += 190
+      ui.text(wallet, x + 16, bodyY + 102, 12, COLORS.muted, '600', w - 32)
+      if (lootStrip.length) {
+        lootStrip.forEach((item, i) => {
+          stage.drawItemIcon(ui.ctx, x + 16 + i * 28, bodyY + 126, 22, item)
+        })
+      }
+      y += headH + 14
 
-      if (r.causeChain.length) {
+      const review = failLine ? r.causeChain.slice(1) : r.causeChain
+      if (review.length) {
         y = ui.section(x, y, w, '复盘')
-        r.causeChain.forEach((line, index) => {
+        review.forEach((line, index) => {
           const h = ui.wrapped(`${index + 1}. ${line}`, x + 8, y, w - 16, {
             size: 13, lineHeight: 20, color: COLORS.muted
           })
@@ -191,16 +215,18 @@ module.exports = manager => ({
 
     const left = v.safe.left + 12
     const width = v.safe.right - v.safe.left - 24
-    const y = v.safe.bottom - 60
-    ui.button(left, y, width, 52,
+    const y = v.safe.bottom - 64
+    ui.button(left, y, width, 56,
       r.escaped ? '再出发' : '换方案再出发',
       () => this.again(), {
-        fill: r.escaped ? '#1e4f43' : '#3a2e10',
-        stroke: r.escaped ? COLORS.accent : COLORS.gold,
-        color: r.escaped ? COLORS.accent : COLORS.gold,
-        size: 18,
+        fill: r.escaped ? '#2a8f72' : '#d4a017',
+        stroke: r.escaped ? '#8ef0d0' : '#ffe08a',
+        color: r.escaped ? '#ffffff' : '#1a1408',
+        size: 20,
+        weight: '700',
         sub: r.loadoutName ? `${r.loadoutName} · 重开` : '用上一套战备重开',
-        glow: r.escaped ? 'rgba(101,214,180,0.16)' : 'rgba(255,198,92,0.14)'
+        subColor: r.escaped ? '#d7fff0' : '#3a2a08',
+        glow: r.escaped ? 'rgba(101,214,180,0.28)' : 'rgba(255,198,92,0.28)'
       })
   }
 })
