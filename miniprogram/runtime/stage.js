@@ -887,9 +887,9 @@ function drawFloor(ctx, x, y, w, h) {
   fill(ctx, '#2a3644')
   rect(ctx, x, y, w, 6)
   metalEdge(ctx, x, y, w)
-  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + 10, Math.max(w, h) * 0.58, [
-    [0, 'rgba(255,228,176,0.42)'],
-    [0.3, 'rgba(255,198,92,0.16)'],
+  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + 10, Math.max(w, h) * 0.62, [
+    [0, 'rgba(255,228,176,0.55)'],
+    [0.24, 'rgba(255,198,92,0.2)'],
     [1, 'rgba(0,0,0,0)']
   ]))
   rect(ctx, x + w * 0.16, y, w * 0.68, h)
@@ -994,13 +994,15 @@ function drawRoom(ctx, zone, box, tick) {
   metalEdge(ctx, x, y, w)
   const win = { x: x + w * 0.12, y: y + 10, w: w * 0.76, h: wall - 20 }
   drawZone(ctx, zone, win, tick)
-  fill(ctx, 'rgba(4,8,12,0.4)')
+  fill(ctx, 'rgba(2,6,10,0.52)')
   rect(ctx, win.x, win.y, win.w, win.h)
   fill(ctx, gfx.vgrad(ctx, win.x, win.y, win.h, [
-    [0, 'rgba(159,212,255,0.05)'],
-    [1, 'rgba(2,6,10,0.48)']
+    [0, 'rgba(80,120,160,0.08)'],
+    [0.45, 'rgba(12,24,36,0.28)'],
+    [1, 'rgba(2,4,8,0.62)']
   ]))
   rect(ctx, win.x, win.y, win.w, win.h)
+  gfx.grain(ctx, win.x, win.y, win.w, win.h, 3, 0.05)
   iceBloom(ctx, win.x, win.y, win.w * 0.36, 14)
   iceBloom(ctx, win.x + win.w * 0.54, win.y + win.h - 16, win.w * 0.38, 14)
   frost(ctx, win.x + 4, win.y + 2, win.w - 8, 7)
@@ -1033,23 +1035,23 @@ function drawRoom(ctx, zone, box, tick) {
   rect(ctx, lx - 12, ly - 6, 24, 7)
   fill(ctx, 'rgba(255,236,190,0.72)')
   rect(ctx, lx - 6, ly - 16, 12, 10)
-  fill(ctx, gfx.rgrad(ctx, lx, ly + 8, w * 0.52, [
-    [0, 'rgba(255,236,190,0.62)'],
-    [0.3, 'rgba(255,198,92,0.2)'],
+  fill(ctx, gfx.rgrad(ctx, lx, ly + 8, w * 0.58, [
+    [0, 'rgba(255,236,190,0.78)'],
+    [0.22, 'rgba(255,210,120,0.28)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x + w * 0.14, ly, w * 0.72, (h - wall) * 0.86)
-  gfx.circle(ctx, lx, ly + 14, 40, 'rgba(255,228,176,0.38)')
-  fill(ctx, gfx.hgrad(ctx, x, y, 34, [
-    [0, 'rgba(0,0,0,0.58)'],
+  rect(ctx, x + w * 0.12, ly, w * 0.76, (h - wall) * 0.88)
+  gfx.circle(ctx, lx, ly + 14, 52, 'rgba(255,228,176,0.48)')
+  fill(ctx, gfx.hgrad(ctx, x, y, 48, [
+    [0, 'rgba(0,0,0,0.72)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x, y, 34, h)
-  fill(ctx, gfx.hgrad(ctx, x + w - 34, y, 34, [
+  rect(ctx, x, y, 48, h)
+  fill(ctx, gfx.hgrad(ctx, x + w - 48, y, 48, [
     [0, 'rgba(0,0,0,0)'],
-    [1, 'rgba(0,0,0,0.62)']
+    [1, 'rgba(0,0,0,0.76)']
   ]))
-  rect(ctx, x + w - 34, y, 34, h)
+  rect(ctx, x + w - 48, y, 48, h)
   fill(ctx, '#2a3644')
   rect(ctx, x, ly - 3, w, 5)
   frost(ctx, x + 10, ly - 3, w - 20, 4)

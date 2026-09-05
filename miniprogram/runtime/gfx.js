@@ -148,6 +148,19 @@ function noGlow(ctx) {
   if ('shadowColor' in ctx) ctx.shadowColor = 'transparent'
 }
 
+function grain(ctx, x, y, w, h, seed, alpha) {
+  if (w < 8 || h < 8) return
+  const dots = Math.min(72, Math.max(10, Math.floor((w * h) / 140)))
+  const a = alpha == null ? 0.07 : alpha
+  const s = seed || 1
+  for (let i = 0; i < dots; i++) {
+    const px = x + 1 + ((i * 53 + s * 17) % Math.max(1, w - 2))
+    const py = y + 1 + ((i * 37 + s * 11) % Math.max(1, h - 2))
+    ctx.fillStyle = i % 3 ? `rgba(214,232,248,${a})` : `rgba(0,0,0,${a * 1.6})`
+    ctx.fillRect(px, py, i % 7 === 0 ? 2 : 1, 1)
+  }
+}
+
 module.exports = {
   FONT,
   can,
@@ -166,5 +179,6 @@ module.exports = {
   line,
   quad,
   glow,
-  noGlow
+  noGlow,
+  grain
 }

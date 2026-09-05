@@ -61,6 +61,9 @@ module.exports = manager => ({
       accent: COLORS.gold,
       depth: true,
       rim: COLORS.gold,
+      material: 'metal',
+      bezel: 3,
+      metal: '#7a6230',
       hairline: 'rgba(255,220,140,0.2)'
     })
     ui.text(`${healthNotice.title}  ·  16+`, left + 12, bannerY + 10, 13, COLORS.gold, '700')

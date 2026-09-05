@@ -227,15 +227,11 @@ module.exports = manager => ({
   useMed() {
     if (!this.run || this.run.ended) return
     if (!this.run.meds) {
-      this.flashJuice('bad', '没药', { kind: 'bad', sub: '先搜或看补给', silent: true })
-      this.messages.unshift('没药')
-      manager.requestRender()
+      this.noteLock('没药', '先搜或看补给', 'warn')
       return
     }
     if (this.run.hp >= 100) {
-      this.flashJuice('ok', '满血', { kind: 'heal', sub: '不用打药', silent: true })
-      this.messages.unshift('满血')
-      manager.requestRender()
+      this.noteLock('满血', '不用打药', 'warn')
       return
     }
     const result = engine.useMed(this.run)
@@ -270,20 +266,25 @@ module.exports = manager => ({
   },
 
   explainExtract() {
-    const why = present.extractLockReason(this.run)
-    this.messages.unshift(why)
-    this.flashJuice('ok', '还早', { kind: 'extract', sub: why, silent: true })
-    manager.requestRender()
+    this.noteLock('还早', present.extractLockReason(this.run), 'warn')
   },
 
   refuse(option) {
     const why = this.pip(option) || '现在不行'
-    this.messages.unshift(why)
-    this.flashJuice('bad', why, {
-      kind: 'bad',
-      sub: present.clip(option && option.disabledReason ? option.disabledReason : '换一条能走的', 14),
-      silent: true
-    })
+    this.noteLock(why, present.clip(option && option.disabledReason ? option.disabledReason : '换一条能走的', 14), 'warn')
+  },
+
+  noteLock(label, sub, kind) {
+    const key = `${label}|${sub}`
+    const now = Date.now()
+    if (this.lockNote === key && now - (this.lockAt || 0) < 800) {
+      if (this.juice) this.juice.until = now + 1400
+      manager.requestRender()
+      return
+    }
+    this.lockNote = key
+    this.lockAt = now
+    this.flashJuice(kind || 'warn', label, { kind: kind || 'warn', sub, silent: true })
     manager.requestRender()
   },
 
@@ -581,6 +582,8 @@ module.exports = manager => ({
       radius: 16,
       rim: COLORS.ice,
       depth: true,
+      material: 'metal',
+      bezel: 2,
       hairline: 'rgba(186,220,255,0.14)'
     })
     ui.text(zone, left + 16, top + 10, 13, COLORS.body, '700', 52)
@@ -592,12 +595,15 @@ module.exports = manager => ({
       fill: powerOn ? '#132820' : '#2a2410',
       stroke: powerOn ? COLORS.accent : COLORS.gold,
       color: powerOn ? COLORS.accent : COLORS.gold,
-      size: 15,
+      size: 16,
       depth: true,
+      material: 'metal',
+      bezel: 2,
+      metal: powerOn ? '#3d6a58' : '#7a6230',
       hairline: powerOn ? 'rgba(101,214,180,0.28)' : 'rgba(255,220,140,0.32)',
       glow: needLever
-        ? `rgba(255,198,92,${0.14 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.24))})`
-        : `rgba(101,214,180,${0.1 + 0.1 * Math.abs(Math.sin((this.tick || 0) * 0.2))})`
+        ? `rgba(255,198,92,${0.18 + 0.16 * Math.abs(Math.sin((this.tick || 0) * 0.24))})`
+        : `rgba(101,214,180,${0.12 + 0.12 * Math.abs(Math.sin((this.tick || 0) * 0.2))})`
     })
     const late = (this.run.step || 0) >= 6
     const stepLabel = runMeta.stepText || present.stepChip(this.run)
@@ -625,7 +631,7 @@ module.exports = manager => ({
       inset: false
     })
     const bits = [
-      { glyph: 'ammo', label: `${runMeta.ammoRounds}`, color: runMeta.ammoClass === 'ammo-out' ? COLORS.danger : COLORS.text },
+      { glyph: 'ammo', label: `${runMeta.ammoRounds}`, color: runMeta.ammoClass === 'ammo-out' ? COLORS.danger : COLORS.body },
       { glyph: 'med', label: `${this.run.meds}`, color: this.run.meds ? COLORS.accent : COLORS.danger },
       { glyph: 'grid', label: present.bagLoadText(this.run, runMeta), color: COLORS.text },
       { glyph: 'card', label: `${this.run.cards || 0}`, color: this.run.cards ? COLORS.gold : COLORS.muted }
@@ -679,9 +685,9 @@ module.exports = manager => ({
     ui.panel(x, y, w, h, this.cardSkin(look, option, { glow }))
     stage.drawToneMark(ui.ctx, look.tone, x + 12, y + 12, 26)
     const title = present.listTitle(option)
-    ui.wrapped(title, x + 46, y + 10, w - 72, {
-      size: 14,
-      lineHeight: 18,
+    ui.wrapped(title, x + 46, y + 8, w - 72, {
+      size: look.highlight || present.dangerPip(option) ? 16 : 15,
+      lineHeight: 19,
       maxLines: 3,
       weight: '700',
       color: option.disabled ? '#59697a' : COLORS.text
@@ -690,18 +696,20 @@ module.exports = manager => ({
     const cost = option.costText ? present.clip(option.costText, 14) : ''
     const risky = present.dangerPip(option)
     if (risky) {
-      ui.chip(x + 46, y + 50, 28, 20, '险', {
+      ui.chip(x + 46, y + 50, 30, 22, '险', {
         fill: '#4a2024',
         stroke: COLORS.danger,
-        color: COLORS.danger,
-        size: 12
+        color: '#ffd0d0',
+        size: 13,
+        material: 'metal',
+        metal: '#6a3034'
       })
-      ui.text([pip, cost].filter(Boolean).join(' · ') || look.label, x + 80, y + 52, 12,
+      ui.text([pip, cost].filter(Boolean).join(' · ') || look.label, x + 82, y + 52, 13,
         option.disabled ? '#4b5968' : COLORS.danger, '700', w - 94)
     } else {
       const detail = [look.label, pip, cost].filter(Boolean).join(' · ')
-      ui.text(detail || option.verb || '', x + 46, y + 52, 12,
-        option.disabled ? '#4b5968' : look.color, '700', w - 60)
+      ui.text(detail || option.verb || '', x + 46, y + 54, 11,
+        option.disabled ? '#4b5968' : (look.highlight ? COLORS.gold : COLORS.body), '700', w - 60)
     }
     ui.addHit(x, y, w, h, () => option.disabled ? this.refuse(option) : this.pick(option.idx))
     return h
@@ -901,13 +909,20 @@ module.exports = manager => ({
     })
     if (listMode) {
       const seamY = rect.y + rect.h - listH
-      ui.ctx.fillStyle = gfx.vgrad(ui.ctx, rect.x, seamY - 20, 20, [
+      ui.ctx.fillStyle = gfx.vgrad(ui.ctx, rect.x, seamY - 36, 36, [
         [0, 'rgba(0,0,0,0)'],
-        [1, 'rgba(0,0,0,0.55)']
+        [1, 'rgba(0,0,0,0.78)']
       ])
-      ui.ctx.fillRect(rect.x, seamY - 20, rect.w, 20)
-      ui.ctx.fillStyle = 'rgba(186,220,255,0.16)'
-      ui.ctx.fillRect(rect.x + 12, seamY - 1, rect.w - 24, 1)
+      ui.ctx.fillRect(rect.x, seamY - 36, rect.w, 36)
+      ui.panel(rect.x + 10, seamY - 8, rect.w - 20, 8, {
+        fill: '#1c2a36',
+        stroke: '#7aa0bc',
+        radius: 3,
+        sheen: false,
+        material: 'metal',
+        bezel: 1,
+        metal: '#8aa8c0'
+      })
       this.renderOptionList(ui, {
         x: rect.x + 6,
         y: seamY,
@@ -935,12 +950,15 @@ module.exports = manager => ({
     this.mainScroll.setBounds(listNeed, listRect.h)
     const rows = props.slice().sort((a, b) => Number(present.isLever(b.opt)) - Number(present.isLever(a.opt)))
     ui.panel(listRect.x, listRect.y, listRect.w, listRect.h, {
-      fill: 'rgba(6,10,14,0.94)',
-      stroke: '#5a86a4',
-      radius: 12,
+      fill: '#0a1016',
+      stroke: '#6a96b4',
+      radius: 14,
       sheen: false,
       depth: true,
-      hairline: 'rgba(186,220,255,0.1)'
+      material: 'well',
+      bezel: 4,
+      metal: '#4a6780',
+      hairline: 'rgba(186,220,255,0.12)'
     })
     const inner = { x: listRect.x + 10, y: listRect.y + 10, w: listRect.w - 20, h: listRect.h - 20 }
     ui.withClip(inner, () => {
@@ -959,9 +977,9 @@ module.exports = manager => ({
         const risky = present.dangerPip(option)
         const railW = risky ? 64 : 58
         const textW = inner.w - 140 - railW
-        ui.wrapped(present.listTitle(option), inner.x + 50, y + 12, textW, {
-          size: 14,
-          lineHeight: 18,
+        ui.wrapped(present.listTitle(option), inner.x + 50, y + 10, textW, {
+          size: look.highlight || risky ? 16 : 15,
+          lineHeight: 19,
           maxLines: 3,
           weight: '700',
           color: option.disabled ? '#6a7a88' : COLORS.text
@@ -971,15 +989,18 @@ module.exports = manager => ({
         ui.chip(railX, y + 8, railW, 22, look.label, {
           fill: look.fill,
           stroke: look.color,
-          color: look.color,
-          size: 12
+          color: look.highlight ? COLORS.gold : look.color,
+          size: 12,
+          material: look.highlight || risky ? 'metal' : 'flat'
         })
         if (risky) {
           ui.chip(railX, y + 34, 32, 24, '险', {
             fill: '#4a2024',
             stroke: COLORS.danger,
-            color: COLORS.danger,
-            size: 14
+            color: '#ffd0d0',
+            size: 14,
+            material: 'metal',
+            metal: '#6a3034'
           })
           ui.ctx.textAlign = 'right'
           ui.text(pip, railX + railW, y + 38, 13, COLORS.danger, '700', railW - 36)
@@ -1043,6 +1064,7 @@ module.exports = manager => ({
       radius: 12,
       sheen: false,
       depth: true,
+      material: 'well',
       hairline: 'rgba(186,220,255,0.1)'
     })
     ui.text('去哪', rect.x + 12, rect.y + 6, 11, COLORS.gold, '700')
@@ -1273,6 +1295,9 @@ module.exports = manager => ({
     if (kind === 'loot' || kind === 'lever' || kind === 'win') {
       return { ok: true, fill: '#2a2410', stroke: COLORS.gold, glow: 'rgba(255,198,92,0.24)', color: COLORS.gold }
     }
+    if (kind === 'warn' || kind === 'lock') {
+      return { ok: null, fill: '#2a2410', stroke: COLORS.gold, glow: 'rgba(255,198,92,0.16)', color: COLORS.gold }
+    }
     if (kind === 'extract') {
       return { ok: true, fill: '#15273a', stroke: COLORS.blue, glow: 'rgba(101,169,255,0.22)', color: COLORS.ice }
     }
@@ -1281,7 +1306,6 @@ module.exports = manager => ({
 
   renderJuice(ui, v) {
     if (!this.juice || Date.now() > this.juice.until) return
-    if (this.pickup && Date.now() < this.pickupUntil) return
     const look = this.juiceLook(this.juice.kind || this.juice.mark)
     const fail = look.ok === false
     const w = Math.min(300, v.safe.right - v.safe.left - 20)
@@ -1354,12 +1378,15 @@ module.exports = manager => ({
       stroke: hot ? COLORS.gold : COLORS.accent,
       radius: 14,
       glow: hot ? 'rgba(255,198,92,0.22)' : 'rgba(101,214,180,0.18)',
-      rim: hot ? COLORS.gold : COLORS.accent
+      rim: hot ? COLORS.gold : COLORS.accent,
+      material: 'metal',
+      bezel: 3,
+      metal: hot ? '#8a6a30' : '#3d6a58'
     })
     stage.drawJudge(ui.ctx, true, x + 28, y + 32, 12)
     stage.drawItemIcon(ui.ctx, x + 48, y + 28, 24, item)
     ui.text('入手', x + 82, y + 12, 13, COLORS.gold, '700')
     ui.text(item.name, x + 82, y + 32, 16, COLORS.text, '700', w - 98)
-    ui.text(engine.fmtVal(item.value), x + 82, y + 56, 13, COLORS.accent, '700')
+    ui.text(`${engine.fmtVal(item.value)} · ${item.weight || 1}格`, x + 82, y + 56, 13, COLORS.accent, '700', w - 98)
   }
 })

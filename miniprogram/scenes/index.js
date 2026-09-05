@@ -185,6 +185,8 @@ module.exports = manager => ({
       rim: COLORS.ice,
       sheen: false,
       depth: true,
+      material: 'well',
+      bezel: 4,
       hairline: 'rgba(186,220,255,0.12)'
     })
     stage.drawJobPlan(ui.ctx, { x: left, y: mapY, w: width, h: mapH }, {

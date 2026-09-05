@@ -57,6 +57,33 @@ function carve(ctx, x, y, w, h, r, options = {}) {
   }
 }
 
+function metalSkin(ctx, x, y, w, h, r, options) {
+  const pad = options.bezel == null ? (h >= 56 ? 4 : 3) : options.bezel
+  roundedRect(ctx, x, y, w, h, r)
+  ctx.fillStyle = options.metal || gfx.vgrad(ctx, x, y, h, [
+    [0, '#6a849c'],
+    [0.18, '#3d566c'],
+    [0.72, '#243848'],
+    [1, '#1a2a38']
+  ])
+  ctx.fill()
+  const ix = x + pad
+  const iy = y + pad
+  const iw = w - pad * 2
+  const ih = h - pad * 2
+  const ir = Math.max(0, r - 2)
+  roundedRect(ctx, ix, iy, iw, ih, ir)
+  const base = options.fill || COLORS.panel
+  ctx.fillStyle = gfx.vgrad(ctx, ix, iy, ih, [
+    [0, options.washTop || '#1a2a38'],
+    [0.42, base],
+    [1, options.washBot || '#0a1218']
+  ])
+  ctx.fill()
+  gfx.grain(ctx, ix + 2, iy + 2, iw - 4, ih - 4, options.seed || Math.round(x + y + w), options.grain)
+  return { ix, iy, iw, ih, ir }
+}
+
 function tidyCut(text) {
   const trimmed = String(text || '').replace(/[的了在与和及到向于·，、（(\s]+$/g, '')
   return trimmed.length >= 2 ? trimmed : String(text || '')
@@ -145,6 +172,7 @@ class UI {
       [1, 'rgba(0,0,0,0.36)']
     ])
     ctx.fillRect(viewport.width - 28, 0, 28, viewport.height)
+    gfx.grain(ctx, 0, 0, viewport.width, viewport.height, 9, 0.035)
     ctx.textBaseline = 'top'
     ctx.textAlign = 'left'
     gfx.noGlow(ctx)
@@ -218,24 +246,48 @@ class UI {
   panel(x, y, w, h, options = {}) {
     const ctx = this.ctx
     const radius = options.radius == null ? 12 : options.radius
+    const material = options.material || ((h >= 40 && options.stroke !== false) ? 'metal' : 'flat')
     if (options.depth && w > 8 && h > 16) lift(ctx, x, y, w, h, radius)
-    roundedRect(ctx, x, y, w, h, radius)
-    ctx.fillStyle = options.fill || COLORS.panel
-    ctx.fill()
-    if (options.glow) {
-      gfx.glow(ctx, options.glow, 10)
+    if (material === 'metal' || material === 'well') {
+      metalSkin(ctx, x, y, w, h, radius, {
+        fill: options.fill || (material === 'well' ? '#0a1016' : COLORS.panel),
+        metal: options.metal,
+        washTop: options.washTop,
+        washBot: options.washBot,
+        bezel: options.bezel || (material === 'well' ? 3 : (h >= 56 ? 4 : 3)),
+        seed: options.seed,
+        grain: material === 'well' ? 0.05 : 0.08
+      })
+    } else {
       roundedRect(ctx, x, y, w, h, radius)
+      ctx.fillStyle = options.fill || COLORS.panel
+      ctx.fill()
+    }
+    if (options.glow) {
+      gfx.glow(ctx, options.glow, 12)
+      roundedRect(ctx, x, y, w, h, radius)
+      ctx.fillStyle = options.fill || COLORS.panel
       ctx.fill()
       gfx.noGlow(ctx)
+      if (material === 'metal' || material === 'well') {
+        metalSkin(ctx, x, y, w, h, radius, {
+          fill: options.fill || COLORS.panel,
+          metal: options.metal,
+          bezel: options.bezel,
+          seed: options.seed,
+          grain: 0.06
+        })
+      }
     }
     if (options.stroke !== false) {
       ctx.strokeStyle = options.stroke || COLORS.line
-      ctx.lineWidth = options.lineWidth || 1
+      ctx.lineWidth = options.lineWidth || (material === 'metal' ? 1.5 : 1)
+      roundedRect(ctx, x, y, w, h, radius)
       if (typeof ctx.stroke === 'function') ctx.stroke()
     }
     if (options.accent) {
       ctx.fillStyle = options.accent
-      ctx.fillRect(x, y + 8, 4, Math.max(8, h - 16))
+      ctx.fillRect(x + (material === 'flat' ? 0 : 3), y + 10, 4, Math.max(8, h - 20))
     }
     if (options.inset !== false && h >= 26) {
       carve(ctx, x, y, w, h, radius, {
@@ -245,12 +297,12 @@ class UI {
       })
     }
     if (options.sheen !== false && h > 20) {
-      ctx.fillStyle = 'rgba(186,220,255,0.08)'
-      ctx.fillRect(x + 3, y + 2, w - 6, Math.min(12, h * 0.18))
+      ctx.fillStyle = 'rgba(186,220,255,0.1)'
+      ctx.fillRect(x + 5, y + 3, w - 10, Math.min(14, h * 0.16))
     }
     if (options.rim) {
       ctx.fillStyle = options.rim
-      ctx.fillRect(x + 10, y, Math.max(24, w - 20), 2)
+      ctx.fillRect(x + 12, y + 1, Math.max(24, w - 24), 2)
     }
   }
 
@@ -328,7 +380,10 @@ class UI {
       sheen: false,
       depth: options.depth || false,
       hairline: options.hairline || null,
-      inset: h >= 26
+      inset: h >= 26,
+      material: options.material || (h >= 28 ? 'metal' : 'flat'),
+      bezel: options.bezel || 2,
+      metal: options.metal
     })
     const size = options.size || 11
     gfx.applyFont(this.ctx, size, options.weight || '700')

@@ -247,6 +247,9 @@ const feel = require('../miniprogram/runtime/feel')
   assert.ok(present.extractCue({ levers: 2 }).includes('索道'), '双电源撤离应指向索道')
   assert.ok(present.extractLockReason({ step: 0, hp: 80, risk: 10 }).includes('第3步'), '开局锁撤离要说清步数')
   assert.ok(present.extractLockReason({ node: { type: 'escape' }, step: 7 }).includes('撤离线'))
+  const board = require('../miniprogram/data/items').makeItem('气压逻辑板')
+  assert.strictEqual(board.weight, 2)
+  assert.ok(`${board.name} · ${board.weight}格`.includes('2格'))
 }
 
 const ui = new UI(ctx)

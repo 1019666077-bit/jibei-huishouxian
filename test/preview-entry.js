@@ -233,7 +233,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const scene = manager.scene
     scene.pickup = makeItem('气压逻辑板')
     scene.pickupUntil = Date.now() + 60000
-    scene.juice = { kind: 'loot', label: '入手', sub: '气压逻辑板', mark: 'ok', until: Date.now() + 60000 }
+    scene.juice = {
+      kind: 'loot',
+      label: '入手',
+      sub: `${scene.pickup.name} · ${scene.pickup.weight || 2}格`,
+      mark: 'ok',
+      until: Date.now() + 60000
+    }
   })
 
   shot('run-scratch', '首局擦伤', manager => {

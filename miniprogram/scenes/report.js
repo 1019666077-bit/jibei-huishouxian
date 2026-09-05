@@ -96,13 +96,16 @@ module.exports = manager => ({
       const profit = r.netProfit || 0
       const failLine = !win && r.causeChain[0] ? r.causeChain[0] : ''
       const lootStrip = win ? (r.lootItems || []).slice(0, 8) : []
-      const headH = win ? (lootStrip.length ? 272 : 232) : (failLine ? 314 : 232)
+      const headH = win ? (lootStrip.length ? 296 : 256) : (failLine ? 338 : 256)
       ui.panel(x, y, w, headH, {
-        fill: win ? '#0e221a' : '#281216',
+        fill: win ? '#0c1c16' : '#241014',
         stroke: win ? COLORS.accent : COLORS.danger,
-        glow: win ? 'rgba(101,214,180,0.16)' : 'rgba(255,107,107,0.14)',
+        glow: win ? 'rgba(101,214,180,0.2)' : 'rgba(255,107,107,0.16)',
         rim: win ? COLORS.accent : COLORS.danger,
         depth: true,
+        material: 'metal',
+        bezel: 4,
+        metal: win ? '#3d6a58' : '#6a3038',
         hairline: win ? 'rgba(101,214,180,0.22)' : 'rgba(255,160,160,0.2)'
       })
       ui.chip(x + 16, y + 16, 108, 28, win ? '撤收成功' : '未能归署', {
@@ -111,21 +114,25 @@ module.exports = manager => ({
         color: win ? '#b8ffe8' : '#ffd0d0',
         size: 14,
         depth: true,
+        material: 'metal',
         hairline: win ? 'rgba(184,255,232,0.28)' : 'rgba(255,208,208,0.24)'
       })
-      ui.panel(x + w - 62, y + 12, 46, 44, {
+      ui.panel(x + w - 70, y + 10, 54, 54, {
         fill: win ? '#163028' : '#3a181c',
         stroke: ratingColor,
-        radius: 10,
+        radius: 12,
         sheen: false,
         depth: true,
-        hairline: 'rgba(255,220,140,0.22)'
+        material: 'metal',
+        bezel: 3,
+        metal: '#8a6a30',
+        hairline: 'rgba(255,220,140,0.28)'
       })
       ui.ctx.textAlign = 'center'
-      ui.text(r.rating || 'C', x + w - 39, y + 16, 28, ratingColor, '700')
+      ui.text(r.rating || 'C', x + w - 43, y + 16, 34, ratingColor, '700')
       ui.ctx.textAlign = 'left'
-      ui.divider(x + 16, y + 64, w - 32)
-      let bodyY = y + 72
+      ui.divider(x + 16, y + 72, w - 32)
+      let bodyY = y + 82
       if (failLine) {
         ui.panel(x + 14, bodyY, w - 28, 68, {
           fill: '#4a2024',
@@ -143,11 +150,20 @@ module.exports = manager => ({
       stage.drawMedal(ui.ctx, x + 18, bodyY, 52, {
         tier: r.rating === 'S' || r.rating === 'A' ? 'gold' : win ? 'green' : 'red'
       })
-      ui.text(win ? '带出变现' : '本趟亏损', x + 82, bodyY + 2, 12, COLORS.body, '700')
-      ui.text(`${win ? engine.fmtVal(r.totalValue || 0) : engine.fmtVal(Math.abs(profit))} 配给点`,
-        x + 82, bodyY + 18, 30, win ? COLORS.gold : '#ffd0d0', '700', w - 104)
-      ui.text(`${profit >= 0 ? '净入账 +' : '净损失 -'}${engine.fmtVal(Math.abs(profit))}`,
-        x + 82, bodyY + 54, 15, profit >= 0 ? COLORS.accent : COLORS.danger, '700', w - 104)
+      ui.panel(x + 76, bodyY, w - 96, 70, {
+        fill: win ? '#1a2a14' : '#3a1818',
+        stroke: win ? COLORS.gold : COLORS.danger,
+        radius: 12,
+        material: 'well',
+        bezel: 3,
+        metal: win ? '#8a6a30' : '#6a3034',
+        sheen: false
+      })
+      ui.text(win ? '带出变现' : '本趟亏损', x + 88, bodyY + 6, 11, COLORS.body, '700')
+      ui.text(`${win ? engine.fmtVal(r.totalValue || 0) : engine.fmtVal(Math.abs(profit))}`,
+        x + 88, bodyY + 22, 34, win ? COLORS.gold : '#ffd0d0', '700', w - 128)
+      ui.text(`${profit >= 0 ? '净入账 +' : '净损失 -'}${engine.fmtVal(Math.abs(profit))} · 配给点`,
+        x + 88, bodyY + 56, 12, profit >= 0 ? COLORS.accent : COLORS.danger, '700', w - 128)
       ui.text(`${r.methodText || '未能撤离'} · ${r.loadoutName || ''}`, x + 18, bodyY + 88, 13, COLORS.body, '600', w - 36)
       const wallet = r.wallet && r.wallet.balanceAfter != null
         ? `仓库还剩 ${engine.fmtVal(r.wallet.balanceAfter)}`
