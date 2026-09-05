@@ -35,6 +35,24 @@ function roundedRect(ctx, x, y, w, h, r) {
   gfx.roundRect(ctx, x, y, w, h, r)
 }
 
+function tidyCut(text) {
+  const trimmed = String(text || '').replace(/[的了在与和及到向于·，、（(\s]+$/g, '')
+  return trimmed.length >= 2 ? trimmed : String(text || '')
+}
+
+function ellipsize(ctx, text, maxWidth) {
+  const source = copy(text)
+  if (!maxWidth || maxWidth <= 0 || typeof ctx.measureText !== 'function') return source
+  if (ctx.measureText(source).width <= maxWidth) return source
+  let shown = source
+  while (shown.length > 0 && ctx.measureText(`${shown}…`).width > maxWidth) {
+    shown = shown.slice(0, -1)
+  }
+  shown = tidyCut(shown)
+  if (!shown) shown = source.slice(0, 1)
+  return `${shown}…`
+}
+
 function wrapLines(ctx, text, maxWidth) {
   const source = copy(text).split('\n')
   const lines = []
@@ -136,15 +154,7 @@ class UI {
     const ctx = this.ctx
     gfx.applyFont(ctx, size, weight)
     ctx.fillStyle = color
-    let shown = copy(text)
-    if (maxWidth != null && maxWidth > 0 && typeof ctx.measureText === 'function') {
-      if (ctx.measureText(shown).width > maxWidth) {
-        while (shown.length > 0 && ctx.measureText(`${shown}…`).width > maxWidth) {
-          shown = shown.slice(0, -1)
-        }
-        shown += '…'
-      }
-    }
+    const shown = ellipsize(ctx, text, maxWidth)
     ctx.fillText(shown, x, y)
   }
 
@@ -159,10 +169,7 @@ class UI {
     lines.slice(0, limit).forEach((line, index) => {
       let shown = line
       if (index === limit - 1 && lines.length > limit) {
-        while (shown.length && ctx.measureText(`${shown}…`).width > maxWidth) {
-          shown = shown.slice(0, -1)
-        }
-        shown += '…'
+        shown = ellipsize(ctx, line, maxWidth)
       }
       ctx.fillText(shown, x, y + index * lineHeight)
     })

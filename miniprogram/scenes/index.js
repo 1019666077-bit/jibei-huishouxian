@@ -170,7 +170,10 @@ module.exports = manager => ({
     ui.text('带东西活着出来', left, top + 94, 18, COLORS.gold, '700')
     const mapH = Math.max(108, Math.min(168, v.safe.bottom - top - 300))
     const mapY = top + (this.meta.runs === 0 ? 148 : 198)
-    ui.section(left, mapY - 22, width, '冻港作业图')
+    const firstTrip = this.meta.runs === 0
+    const missedLever = this.meta.runs >= 1 && this.lastReport && (this.lastReport.levers || 0) < 1
+    const hallTarget = firstTrip || missedLever ? 'core' : ''
+    ui.section(left, mapY - 22, width, firstTrip || missedLever ? '作业图 · 先合闸再索道' : '冻港作业图')
     ui.panel(left - 4, mapY - 4, width + 8, mapH + 8, {
       fill: '#071018',
       stroke: COLORS.rim,
@@ -178,21 +181,12 @@ module.exports = manager => ({
       rim: COLORS.ice,
       sheen: false
     })
-    const missedLever = this.meta.runs >= 1 && this.lastReport && (this.lastReport.levers || 0) < 1
-    stage.drawCity(ui.ctx, { x: left, y: mapY, w: width, h: mapH }, {
+    stage.drawJobPlan(ui.ctx, { x: left, y: mapY, w: width, h: mapH }, {
       current: 'harbor',
       tick: this.tick,
-      marker: 'pulse',
-      target: missedLever ? 'core' : ''
+      target: hallTarget,
+      reachable: { harbor: true, core: true, extract: !firstTrip && !missedLever }
     })
-    if (missedLever) {
-      ui.chip(left + 8, mapY + 6, Math.min(width - 16, 268), 22, '①冷却舱 ②压缩机房 → 索道', {
-        fill: '#2a2410',
-        stroke: COLORS.gold,
-        color: COLORS.gold,
-        size: 11
-      })
-    }
     const kit = engine.LOADOUTS[this.kit] || engine.LOADOUTS.half
     if (this.meta.runs === 0) {
       ui.text(`首趟配发${kit.name}，倒了不扣押金`, left, top + 120, 13, COLORS.gold, '600', width)

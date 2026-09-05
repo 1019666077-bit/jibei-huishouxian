@@ -254,7 +254,7 @@ module.exports = manager => ({
       mark: kind,
       label,
       sub: opts.sub || '',
-      until: Date.now() + 1100
+      until: Date.now() + 1400
     }
     if (opts.silent) return
     if (typeof manager.pulse === 'function') manager.pulse(opts.kind || kind, label)
@@ -740,11 +740,17 @@ module.exports = manager => ({
     stage.drawRoom(ui.ctx, zone, rect, this.tick)
     ui.panel(rect.x + 8, rect.y + 6, 44, 18, { fill: 'rgba(8,16,20,0.7)', stroke: false, radius: 6, sheen: false })
     ui.text('现场', rect.x + 14, rect.y + 8, 11, COLORS.gold, '700')
-    ui.text(present.spot(node) || node.text, rect.x + 58, rect.y + 7, 14, COLORS.text, '700', rect.w - 70)
+    ui.wrapped(present.spot(node) || node.text, rect.x + 58, rect.y + 6, rect.w - 70, {
+      size: 14,
+      lineHeight: 18,
+      maxLines: 2,
+      weight: '700',
+      color: COLORS.text
+    })
     if (node.revealItem) {
       const it = node.revealItem
-      stage.drawItemIcon(ui.ctx, rect.x + 14, rect.y + 28, 16, it)
-      ui.text(it.name, rect.x + 38, rect.y + 30, 13, COLORS.text, '700', rect.w - 54)
+      stage.drawItemIcon(ui.ctx, rect.x + 14, rect.y + 42, 16, it)
+      ui.text(it.name, rect.x + 38, rect.y + 44, 13, COLORS.text, '700', rect.w - 54)
     }
     const listMode = present.useOptionList(node)
     const rowH = present.OPTION_ROW_H
@@ -789,21 +795,25 @@ module.exports = manager => ({
       }
       const look = this.optionLook(option)
       const plateY = prop.y + 24
-      ui.panel(prop.x - 50, plateY, 100, 40, {
+      ui.panel(prop.x - 58, plateY, 116, 52, {
         fill: hot || look.highlight ? look.fill : '#101820',
         stroke: option.disabled ? COLORS.line : look.color,
         radius: 8,
         glow: look.highlight ? `rgba(255,198,92,${0.16 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.28))})` : null
       })
-      stage.drawToneMark(ui.ctx, look.tone, prop.x - 46, plateY + 8, 18)
-      ui.ctx.textAlign = 'center'
-      ui.text(present.plateText(option, look), prop.x + 8, plateY + 4, 13, option.disabled ? '#6a7a88' : COLORS.text, '700', 76)
+      stage.drawToneMark(ui.ctx, look.tone, prop.x - 54, plateY + 8, 18)
+      ui.wrapped(present.listTitle(option), prop.x - 32, plateY + 4, 86, {
+        size: 12,
+        lineHeight: 16,
+        maxLines: 2,
+        weight: '700',
+        color: option.disabled ? '#6a7a88' : COLORS.text
+      })
       const pip = this.pip(option)
-      const cost = option.costText ? present.clip(option.costText, 8) : ''
-      ui.text(look.highlight ? '开索道' : ([pip, cost].filter(Boolean).join(' · ') || look.label), prop.x + 8, plateY + 22, 11,
-        option.disabled ? '#6a7a88' : look.color, '700')
-      ui.ctx.textAlign = 'left'
-      ui.addHit(prop.x - 52, prop.y - 58, 104, 116, () => activate(option, prop))
+      const cost = option.costText ? present.clip(option.costText, 10) : ''
+      ui.text(look.highlight ? '开索道' : ([pip, cost].filter(Boolean).join(' · ') || look.label), prop.x - 32, plateY + 34, 11,
+        option.disabled ? '#6a7a88' : look.color, '700', 86)
+      ui.addHit(prop.x - 60, prop.y - 58, 120, 128, () => activate(option, prop))
     })
     if (listMode) {
       this.renderOptionList(ui, {
@@ -947,16 +957,21 @@ module.exports = manager => ({
         const look = this.optionLook(option)
         const x = rect.x + 10 + i * (chipW + gap)
         const y = rect.y + 22
-        ui.panel(x, y, chipW, 42, {
+        ui.panel(x, y, chipW, 58, {
           fill: option.disabled ? '#101820' : look.fill,
           stroke: option.disabled ? COLORS.line : look.color,
           radius: 10,
           glow: look.highlight ? 'rgba(255,198,92,0.22)' : null
         })
-        ui.text(present.travelLabel(option, node), x + 8, y + 5, 14, option.disabled ? '#6a7a88' : COLORS.text, '700', chipW - 16)
-        ui.text(look.highlight ? '合闸开索道' : (look.label || present.verb(option)), x + 8, y + 22, 11,
-          option.disabled ? '#6a7a88' : look.color, '700', chipW - 16)
-        ui.addHit(x, y, chipW, 42, () => {
+        ui.text(present.travelLabel(option, node), x + 8, y + 4, 14, option.disabled ? '#6a7a88' : COLORS.text, '700', chipW - 16)
+        ui.wrapped(look.highlight ? '合闸开索道' : present.listTitle(option), x + 8, y + 22, chipW - 16, {
+          size: 11,
+          lineHeight: 15,
+          maxLines: 2,
+          weight: '700',
+          color: option.disabled ? '#6a7a88' : look.color
+        })
+        ui.addHit(x, y, chipW, 58, () => {
           if (option.disabled) {
             this.messages.unshift(this.pip(option) || '现在不行')
             manager.requestRender()
@@ -969,17 +984,22 @@ module.exports = manager => ({
     }
     travel.forEach((option, i) => {
       const look = this.optionLook(option)
-      const y = rect.y + 22 + i * 48
-      ui.panel(rect.x + 8, y, rect.w - 16, 42, {
+      const y = rect.y + 22 + i * 52
+      ui.panel(rect.x + 8, y, rect.w - 16, 48, {
         fill: option.disabled ? '#101820' : look.fill,
         stroke: option.disabled ? COLORS.line : look.color,
         radius: 10,
         glow: look.highlight ? 'rgba(255,198,92,0.22)' : null
       })
-      ui.text(present.travelLabel(option, node), rect.x + 16, y + 5, 14, option.disabled ? '#6a7a88' : COLORS.text, '700', rect.w - 36)
-      ui.text(present.clip(present.listTitle(option), 16), rect.x + 16, y + 22, 11,
-        option.disabled ? '#6a7a88' : look.color, '700', rect.w - 36)
-      ui.addHit(rect.x + 8, y, rect.w - 16, 42, () => {
+      ui.text(present.travelLabel(option, node), rect.x + 16, y + 4, 14, option.disabled ? '#6a7a88' : COLORS.text, '700', rect.w - 36)
+      ui.wrapped(present.listTitle(option), rect.x + 16, y + 22, rect.w - 36, {
+        size: 12,
+        lineHeight: 16,
+        maxLines: 1,
+        weight: '700',
+        color: option.disabled ? '#6a7a88' : look.color
+      })
+      ui.addHit(rect.x + 8, y, rect.w - 16, 48, () => {
         if (option.disabled) {
           this.messages.unshift(this.pip(option) || '现在不行')
           manager.requestRender()
@@ -1162,7 +1182,7 @@ module.exports = manager => ({
     if (!this.juice || Date.now() > this.juice.until) return
     if (this.pickup && Date.now() < this.pickupUntil) return
     const left = Math.max(0, this.juice.until - Date.now())
-    const t = 1 - left / 860
+    const t = 1 - left / 1100
     const scale = 1.18 - t * 0.26
     const look = this.juiceLook(this.juice.kind || this.juice.mark)
     const fail = look.ok === false

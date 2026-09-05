@@ -32,10 +32,15 @@ function rect(ctx, x, y, w, h) {
 }
 
 function windows(ctx, x, y, w, h, tint, seed) {
+  const cols = w > 36 ? 2 : 1
+  const rows = h > 40 ? 2 : 1
+  const pw = Math.max(6, (w - 10) / cols - 4)
+  const ph = Math.max(7, (h - 10) / rows - 4)
   fill(ctx, tint)
-  for (let row = 4; row < h - 6; row += 7) {
-    for (let col = 3; col < w - 4; col += 6) {
-      if ((row + col + seed) % 3 === 0) rect(ctx, x + col, y + row, 3, 4)
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if ((r + c + seed) % 5 === 0) continue
+      rect(ctx, x + 5 + c * (pw + 4), y + 5 + r * (ph + 4), pw, ph)
     }
   }
 }
@@ -435,11 +440,12 @@ function drawCity(ctx, box, options = {}) {
     const current = options.current === lab.key
     const reach = !options.reachable || options.reachable[lab.key]
     const goal = options.target === lab.key && !current
+    if (!current && !reach && !goal) return
     gfx.roundRect(ctx, lab.x, lab.y, lab.w, lab.h, 6)
     fill(ctx, 'rgba(8,12,18,0.9)')
     ctx.fill()
-    gfx.applyFont(ctx, current || reach || goal ? 12 : 10, '700')
-    fill(ctx, current ? '#7ee8c8' : (reach || goal) ? '#ffe08a' : '#6a7a88')
+    gfx.applyFont(ctx, 12, '700')
+    fill(ctx, current ? '#7ee8c8' : '#ffe08a')
     ctx.fillText(ZONE_SHORT[lab.key] || lab.key, lab.x + lab.w / 2, lab.y + 1)
   })
   fill(ctx, '#8fa3b8')
@@ -459,6 +465,65 @@ function drawCity(ctx, box, options = {}) {
       rect(ctx, hx - pulse / 2, hy - size * 0.55 - pulse / 2, pulse, pulse)
     }
   }
+}
+
+function drawJobPlan(ctx, box, options = {}) {
+  const { x, y, w, h } = box
+  const tick = options.tick || 0
+  sky(ctx, x, y, w, h, tick)
+  fill(ctx, gfx.vgrad(ctx, x, y + h * 0.58, h * 0.42, [
+    [0, 'rgba(70,130,160,0.3)'],
+    [1, 'rgba(10,20,30,0.72)']
+  ]))
+  rect(ctx, x, y + h * 0.58, w, h * 0.42)
+  const nodes = [
+    { key: 'harbor', title: '冻港', sub: '出发', nx: 0.16, ny: 0.62 },
+    { key: 'core', title: '内环', sub: '合闸', nx: 0.50, ny: 0.32 },
+    { key: 'extract', title: '索道', sub: '撤离', nx: 0.84, ny: 0.58 }
+  ]
+  const pts = nodes.map(n => ({
+    ...n,
+    px: x + n.nx * w,
+    py: y + n.ny * h
+  }))
+  for (let i = 0; i < pts.length - 1; i++) {
+    drawRoad(ctx, x, y, w, h,
+      { x: pts[i].nx, y: pts[i].ny },
+      { x: pts[i + 1].nx, y: pts[i + 1].ny }
+    )
+  }
+  gfx.line(ctx, pts[0].px, pts[0].py, pts[2].px, pts[2].py, 'rgba(140,210,255,0.16)', 1)
+  const align = ctx.textAlign
+  ctx.textAlign = 'center'
+  pts.forEach(n => {
+    const here = options.current === n.key
+    const goal = options.target === n.key && !here
+    const reach = !options.reachable || options.reachable[n.key]
+    const size = Math.max(28, Math.min(w, h) * 0.26)
+    drawSite(ctx, n.key, n.px, n.py, size, {
+      current: here,
+      goal,
+      reach: reach || goal,
+      dim: !here && !reach && !goal,
+      tick
+    })
+    const plateW = 52
+    const plateH = 28
+    let plateX = n.px - plateW / 2
+    let plateY = n.key === 'core' ? n.py - size * 0.82 - plateH : n.py + 16
+    plateX = Math.min(x + w - plateW - 4, Math.max(x + 4, plateX))
+    plateY = Math.min(y + h - plateH - 4, Math.max(y + 4, plateY))
+    gfx.roundRect(ctx, plateX, plateY, plateW, plateH, 8)
+    fill(ctx, here ? 'rgba(18,52,40,0.94)' : goal ? 'rgba(42,36,16,0.94)' : 'rgba(8,14,20,0.92)')
+    ctx.fill()
+    gfx.applyFont(ctx, 13, '700')
+    fill(ctx, here ? '#7ee8c8' : goal ? '#ffe08a' : '#f4f8fc')
+    ctx.fillText(n.title, plateX + plateW / 2, plateY + 2)
+    gfx.applyFont(ctx, 11, '700')
+    fill(ctx, here ? '#8ef0d0' : goal ? '#ffc65c' : '#9aafc2')
+    ctx.fillText(n.sub, plateX + plateW / 2, plateY + 15)
+  })
+  ctx.textAlign = align || 'left'
 }
 
 function gem(ctx, x, y, size, color) {
@@ -567,82 +632,125 @@ function drawActor(ctx, x, y, tick, options) {
 }
 
 function drawCrate(ctx, x, y, lit, hot) {
-  fill(ctx, 'rgba(0,0,0,0.42)')
-  rect(ctx, x - 30, y - 2, 64, 9)
-  const front = hot ? '#d4a45a' : lit ? '#9a6e38' : '#4a4e46'
-  const top = hot ? '#f0d080' : lit ? '#c4924c' : '#6a6e64'
+  fill(ctx, gfx.rgrad(ctx, x + 2, y + 4, 34, [
+    [0, 'rgba(0,0,0,0.55)'],
+    [1, 'rgba(0,0,0,0)']
+  ]))
+  rect(ctx, x - 36, y - 8, 74, 22)
+  if (lit || hot) {
+    fill(ctx, gfx.rgrad(ctx, x, y - 22, 42, [
+      [0, hot ? 'rgba(255,198,92,0.28)' : 'rgba(255,210,140,0.14)'],
+      [1, 'rgba(0,0,0,0)']
+    ]))
+    rect(ctx, x - 40, y - 58, 80, 68)
+  }
+  const front = hot ? '#d8a85c' : lit ? '#9a6e38' : '#4a4e46'
+  const top = hot ? '#f2d488' : lit ? '#c89850' : '#6a6e64'
   const side = hot ? '#8a6428' : lit ? '#6a4a22' : '#32362e'
   fill(ctx, side)
-  rect(ctx, x + 20, y - 36, 12, 34)
+  rect(ctx, x + 20, y - 38, 14, 36)
   fill(ctx, front)
-  rect(ctx, x - 24, y - 36, 46, 34)
+  rect(ctx, x - 26, y - 38, 48, 36)
   fill(ctx, top)
-  rect(ctx, x - 20, y - 48, 46, 14)
+  rect(ctx, x - 22, y - 52, 48, 16)
   fill(ctx, side)
-  rect(ctx, x + 26, y - 48, 8, 14)
-  fill(ctx, hot ? '#eee0b0' : '#8a8e84')
-  rect(ctx, x - 6, y - 36, 8, 34)
-  rect(ctx, x - 24, y - 20, 46, 4)
-  fill(ctx, 'rgba(200,230,255,0.22)')
-  rect(ctx, x - 20, y - 48, 18, 8)
+  rect(ctx, x + 26, y - 52, 10, 16)
+  fill(ctx, hot ? '#eee4b8' : '#8a8e84')
+  rect(ctx, x - 8, y - 38, 8, 36)
+  rect(ctx, x - 26, y - 22, 48, 5)
+  fill(ctx, 'rgba(40,22,10,0.45)')
+  rect(ctx, x - 22, y - 34, 6, 18)
+  rect(ctx, x + 8, y - 34, 6, 18)
+  fill(ctx, 'rgba(220,236,255,0.28)')
+  rect(ctx, x - 20, y - 52, 20, 7)
   fill(ctx, hot ? '#ffc65c' : '#d4a84a')
-  gfx.roundRect(ctx, x - 6, y - 22, 16, 14, 3)
+  gfx.roundRect(ctx, x - 6, y - 24, 18, 15, 3)
   ctx.fill()
-  fill(ctx, '#1a1c20')
-  rect(ctx, x + 1, y - 18, 4, 7)
-  fill(ctx, '#65d6b4')
-  rect(ctx, x + 16, y - 32, 8, 5)
-  fill(ctx, 'rgba(8,12,16,0.35)')
-  rect(ctx, x - 18, y - 30, 10, 3)
+  fill(ctx, '#14161a')
+  rect(ctx, x + 2, y - 19, 5, 7)
+  fill(ctx, hot ? '#8ef0d0' : '#65d6b4')
+  rect(ctx, x + 16, y - 34, 9, 5)
+  fill(ctx, 'rgba(8,12,16,0.4)')
+  rect(ctx, x - 20, y - 32, 12, 3)
 }
 
 function drawDoor(ctx, x, y, lit, hot) {
-  fill(ctx, 'rgba(0,0,0,0.35)')
-  rect(ctx, x - 28, y - 4, 56, 8)
+  fill(ctx, gfx.rgrad(ctx, x, y + 4, 30, [
+    [0, 'rgba(0,0,0,0.5)'],
+    [1, 'rgba(0,0,0,0)']
+  ]))
+  rect(ctx, x - 32, y - 6, 64, 18)
+  if (lit || hot) {
+    gfx.quad(ctx, x - 18, y - 6, x, y + 26, x + 18, y - 6,
+      hot ? 'rgba(255,198,92,0.2)' : 'rgba(101,214,180,0.16)')
+  }
   fill(ctx, lit ? '#1e3a34' : '#161a20')
-  rect(ctx, x - 28, y - 68, 56, 66)
+  rect(ctx, x - 30, y - 72, 60, 70)
   fill(ctx, hot ? '#0a1814' : '#080c10')
-  rect(ctx, x - 20, y - 58, 40, 52)
+  rect(ctx, x - 20, y - 60, 40, 54)
   fill(ctx, lit ? '#65d6b4' : '#3d5a52')
-  rect(ctx, x - 28, y - 68, 56, 7)
-  rect(ctx, x - 28, y - 68, 7, 66)
-  rect(ctx, x + 21, y - 68, 7, 66)
-  fill(ctx, lit ? 'rgba(142,240,208,0.28)' : 'rgba(80,100,110,0.18)')
-  rect(ctx, x - 14, y - 52, 16, 22)
+  rect(ctx, x - 30, y - 72, 60, 8)
+  rect(ctx, x - 30, y - 72, 8, 70)
+  rect(ctx, x + 22, y - 72, 8, 70)
+  fill(ctx, '#243040')
+  rect(ctx, x - 32, y - 4, 64, 6)
+  fill(ctx, lit ? 'rgba(142,240,208,0.34)' : 'rgba(80,100,110,0.18)')
+  rect(ctx, x - 14, y - 54, 18, 24)
+  fill(ctx, 'rgba(8,12,16,0.35)')
+  rect(ctx, x - 6, y - 54, 3, 24)
+  rect(ctx, x - 14, y - 43, 18, 3)
   fill(ctx, hot ? '#ffc65c' : '#65d6b4')
-  gfx.circle(ctx, x + 12, y - 32, 5, hot ? '#ffc65c' : '#65d6b4')
+  gfx.circle(ctx, x + 12, y - 32, 6, hot ? '#ffc65c' : '#65d6b4')
   fill(ctx, '#1a2430')
   rect(ctx, x + 10, y - 34, 5, 5)
   fill(ctx, lit ? '#8ef0d0' : '#3d5a52')
-  rect(ctx, x - 8, y - 64, 16, 4)
-  fill(ctx, 'rgba(255,198,92,0.35)')
-  rect(ctx, x - 4, y - 72, 8, 5)
+  rect(ctx, x - 8, y - 68, 16, 4)
+  fill(ctx, 'rgba(255,198,92,0.45)')
+  rect(ctx, x - 4, y - 76, 8, 5)
 }
 
 function drawLoot(ctx, x, y, lit, hot) {
-  fill(ctx, 'rgba(0,0,0,0.36)')
-  rect(ctx, x - 20, y - 2, 40, 8)
+  fill(ctx, gfx.rgrad(ctx, x, y, 24, [
+    [0, 'rgba(0,0,0,0.48)'],
+    [1, 'rgba(0,0,0,0)']
+  ]))
+  rect(ctx, x - 24, y - 6, 48, 16)
+  if (lit || hot) {
+    fill(ctx, gfx.rgrad(ctx, x, y - 28, 28, [
+      [0, 'rgba(255,198,92,0.28)'],
+      [1, 'rgba(0,0,0,0)']
+    ]))
+    rect(ctx, x - 28, y - 52, 56, 52)
+  }
   fill(ctx, '#2a3848')
   rect(ctx, x - 18, y - 16, 36, 14)
   fill(ctx, '#1a2430')
   rect(ctx, x - 16, y - 14, 32, 5)
   fill(ctx, hot || lit ? '#3a2e16' : '#243040')
   rect(ctx, x - 14, y - 22, 28, 8)
-  gem(ctx, x - 13, y - 46, 26, hot || lit ? '#ffc65c' : '#65d6b4')
+  gem(ctx, x - 13, y - 48, 26, hot || lit ? '#ffc65c' : '#65d6b4')
   fill(ctx, '#ffe08a')
-  rect(ctx, x - 2, y - 40, 5, 5)
+  rect(ctx, x - 2, y - 42, 5, 5)
 }
 
 function drawThreat(ctx, x, y, tick, hot) {
-  fill(ctx, 'rgba(90,12,18,0.35)')
-  rect(ctx, x - 26, y - 6, 52, 10)
+  fill(ctx, gfx.rgrad(ctx, x, y + 2, 28, [
+    [0, 'rgba(90,12,18,0.5)'],
+    [1, 'rgba(0,0,0,0)']
+  ]))
+  rect(ctx, x - 32, y - 8, 64, 20)
+  fill(ctx, gfx.rgrad(ctx, x, y - 36, 36, [
+    [0, hot ? 'rgba(255,107,107,0.28)' : 'rgba(255,107,107,0.14)'],
+    [1, 'rgba(0,0,0,0)']
+  ]))
+  rect(ctx, x - 34, y - 72, 68, 72)
   drawPerson(ctx, x, y, tick, { hostile: true, facing: -1, walking: !!hot })
   fill(ctx, '#ff6b6b')
-  rect(ctx, x - 8, y - 66, 16, 5)
-  rect(ctx, x - 4, y - 70, 8, 5)
-  gfx.strokeCircle(ctx, x, y - 28, hot ? 24 : 20, 'rgba(255,107,107,0.62)', 2)
-  fill(ctx, 'rgba(255,107,107,0.16)')
-  rect(ctx, x - 24, y - 58, 48, 6)
+  rect(ctx, x - 10, y - 70, 20, 6)
+  rect(ctx, x - 5, y - 76, 10, 7)
+  gfx.strokeCircle(ctx, x, y - 28, hot ? 26 : 21, 'rgba(255,107,107,0.7)', 2)
+  fill(ctx, 'rgba(255,107,107,0.2)')
+  rect(ctx, x - 26, y - 60, 52, 6)
 }
 
 function drawProp(ctx, kind, x, y, lit, tick, hot) {
@@ -679,53 +787,77 @@ function drawPropTag(ctx, kind, x, y) {
 
 function drawFloor(ctx, x, y, w, h) {
   fill(ctx, gfx.vgrad(ctx, x, y, h, [
-    [0, '#1c242e'],
-    [1, '#0e141a']
+    [0, '#1a222c'],
+    [0.55, '#121820'],
+    [1, '#0a1016']
   ]))
   rect(ctx, x, y, w, h)
   fill(ctx, '#2a3644')
-  rect(ctx, x, y, w, 6)
-  fill(ctx, 'rgba(8,12,16,0.28)')
-  rect(ctx, x, y + h * 0.28, w, h * 0.22)
-  fill(ctx, 'rgba(20,28,36,0.55)')
-  rect(ctx, x, y + h * 0.62, w, h * 0.16)
-  fill(ctx, 'rgba(90,140,160,0.08)')
-  rect(ctx, x + w * 0.08, y + h * 0.7, w * 0.28, 18)
-  fill(ctx, 'rgba(255,198,92,0.05)')
-  rect(ctx, x + w * 0.62, y + h * 0.8, w * 0.24, 12)
-  fill(ctx, 'rgba(186,220,255,0.06)')
-  rect(ctx, x + w * 0.42, y, 28, h * 0.38)
+  rect(ctx, x, y, w, 5)
+  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + 6, Math.max(w, h) * 0.62, [
+    [0, 'rgba(255,220,160,0.16)'],
+    [0.42, 'rgba(255,198,92,0.05)'],
+    [1, 'rgba(0,0,0,0)']
+  ]))
+  rect(ctx, x, y, w, h)
+  const stains = [
+    [0.1, 0.42, 0.2, 0.1, 'rgba(8,12,16,0.28)'],
+    [0.58, 0.18, 0.18, 0.09, 'rgba(20,28,36,0.32)'],
+    [0.36, 0.68, 0.26, 0.08, 'rgba(90,140,160,0.08)'],
+    [0.7, 0.72, 0.16, 0.07, 'rgba(255,198,92,0.06)']
+  ]
+  stains.forEach(s => {
+    fill(ctx, s[4])
+    rect(ctx, x + w * s[0], y + h * s[1], w * s[2], h * s[3])
+  })
+  fill(ctx, gfx.hgrad(ctx, x, y, w * 0.2, [
+    [0, 'rgba(0,0,0,0.4)'],
+    [1, 'rgba(0,0,0,0)']
+  ]))
+  rect(ctx, x, y, w * 0.2, h)
+  fill(ctx, gfx.hgrad(ctx, x + w * 0.8, y, w * 0.2, [
+    [0, 'rgba(0,0,0,0)'],
+    [1, 'rgba(0,0,0,0.44)']
+  ]))
+  rect(ctx, x + w * 0.8, y, w * 0.2, h)
 }
 
 function drawClutter(ctx, zone, x, y, w, h, tick) {
   if (zone === 'harbor' || zone === 'lift') {
+    fill(ctx, 'rgba(0,0,0,0.28)')
+    rect(ctx, x + 8, y + h * 0.28, 40, 8)
     fill(ctx, '#3a2e16')
-    rect(ctx, x + 10, y + h * 0.16, 32, 20)
-    rect(ctx, x + 16, y + h * 0.06, 24, 16)
+    rect(ctx, x + 10, y + h * 0.12, 34, 22)
+    rect(ctx, x + 16, y + h * 0.02, 26, 16)
+    fill(ctx, '#c4924c')
+    rect(ctx, x + 14, y + h * 0.12, 26, 4)
     fill(ctx, '#6a6e74')
-    rect(ctx, x + 24, y + h * 0.1, 6, 14)
-    fill(ctx, 'rgba(200,220,255,0.12)')
-    rect(ctx, x + w * 0.52, y + h * 0.72, 48, 6)
+    rect(ctx, x + 24, y + h * 0.06, 6, 16)
+    fill(ctx, 'rgba(200,220,255,0.1)')
+    rect(ctx, x + w * 0.56, y + h * 0.74, 42, 5)
   }
   if (zone === 'thermal') {
     fill(ctx, '#2a1c18')
-    rect(ctx, x + 8, y + 8, 12, h - 18)
+    rect(ctx, x + 8, y + 8, 14, h - 18)
     fill(ctx, '#ff8c50')
-    rect(ctx, x + 10, y + 24, 8, 8)
+    rect(ctx, x + 11, y + 26, 8, 8)
     fill(ctx, 'rgba(255,140,80,0.22)')
-    rect(ctx, x + 10, y + 18 - ((tick || 0) % 10), 8, 16)
+    rect(ctx, x + 11, y + 18 - ((tick || 0) % 10), 8, 16)
   }
   if (zone === 'weather' || zone === 'aurora') {
     fill(ctx, '#15263a')
-    rect(ctx, x + w - 24, y + 6, 10, h * 0.42)
+    rect(ctx, x + w - 26, y + 6, 12, h * 0.4)
     fill(ctx, 'rgba(101,169,255,0.35)')
-    rect(ctx, x + w - 22, y + 2, 6, 8)
+    rect(ctx, x + w - 24, y + 2, 8, 8)
   }
   if (zone === 'core') {
     fill(ctx, '#152033')
-    rect(ctx, x + w - 40, y + 10, 28, h * 0.38)
-    fill(ctx, 'rgba(101,214,180,0.22)')
-    for (let i = 0; i < 5; i++) rect(ctx, x + w - 36, y + 16 + i * 10, 20, 4)
+    rect(ctx, x + w - 44, y + 8, 32, h * 0.4)
+    fill(ctx, 'rgba(101,214,180,0.2)')
+    rect(ctx, x + w - 38, y + 16, 20, 8)
+    rect(ctx, x + w - 38, y + 30, 20, 8)
+    fill(ctx, '#65d6b4')
+    rect(ctx, x + w - 20, y + 18, 4, 4)
   }
 }
 
@@ -752,10 +884,25 @@ function drawRoom(ctx, zone, box, tick) {
   fill(ctx, 'rgba(255,198,92,0.35)')
   rect(ctx, x + w * 0.47, y + 3, 6, 6)
   drawFloor(ctx, x, y + wall, w, h - wall)
-  fill(ctx, 'rgba(255,220,160,0.08)')
-  rect(ctx, x + w * 0.36, y + wall, w * 0.28, h - wall)
+  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + wall + 4, w * 0.42, [
+    [0, 'rgba(255,220,160,0.14)'],
+    [1, 'rgba(0,0,0,0)']
+  ]))
+  rect(ctx, x + w * 0.22, y + wall, w * 0.56, (h - wall) * 0.72)
   fill(ctx, '#d4a84a')
-  rect(ctx, x + w * 0.47, y + wall - 2, 10, 5)
+  rect(ctx, x + w * 0.46, y + wall - 4, 14, 6)
+  fill(ctx, 'rgba(255,220,160,0.35)')
+  rect(ctx, x + w * 0.48, y + wall - 10, 8, 7)
+  fill(ctx, gfx.hgrad(ctx, x, y, 18, [
+    [0, 'rgba(0,0,0,0.28)'],
+    [1, 'rgba(0,0,0,0)']
+  ]))
+  rect(ctx, x, y, 18, h)
+  fill(ctx, gfx.hgrad(ctx, x + w - 18, y, 18, [
+    [0, 'rgba(0,0,0,0)'],
+    [1, 'rgba(0,0,0,0.32)']
+  ]))
+  rect(ctx, x + w - 18, y, 18, h)
   drawClutter(ctx, zone, x, y + wall, w, h - wall, tick)
 }
 
@@ -1035,6 +1182,7 @@ module.exports = {
   TIER_COLOR,
   drawZone,
   drawCity,
+  drawJobPlan,
   gem,
   drawItemIcon,
   drawMedal,

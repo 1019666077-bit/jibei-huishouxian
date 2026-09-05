@@ -30,8 +30,10 @@ assert.ok(present.caption({ verb: '砸柜', full: '冲过去砸开柜子' }).len
 assert.strictEqual(present.ZONE_SHORT.extract, '撤离')
 assert.ok(present.clip('这是一段超过十六个字的转移选项标题', 16).endsWith('…'))
 assert.ok(present.clip('短标', 16) === '短标')
+assert.ok(!/的…$/.test(present.clip('冷却舱配电柄的说明文字', 8)), '省略号前不应留虚字')
 assert.ok(present.useOptionList({ options: [1, 2, 3, 4] }))
 assert.ok(!present.useOptionList({ options: [1, 2, 3] }))
+assert.ok(present.useOptionList({ id: 'opener_fog', options: [1, 2, 3] }), '首局三选项应走完整列表')
 assert.ok(present.useTravelList({
   options: [
     { moveTo: 'thermal', verb: '管廊' },
@@ -42,7 +44,7 @@ assert.ok(present.useTravelList({
 assert.ok(!present.useTravelList({
   options: [{ moveTo: 'thermal' }, { moveTo: 'core' }]
 }))
-assert.strictEqual(present.travelStripH(2), 72)
+assert.strictEqual(present.travelStripH(2), 88)
 assert.ok(present.travelStripH(5) > present.travelStripH(2))
 assert.strictEqual(present.travelLabel({ moveTo: 'core' }), '内环')
 assert.ok(present.OPTION_ROW_H >= 76, '四选项行高仍偏矮')
@@ -142,6 +144,8 @@ const box = { x: 0, y: 0, w: 320, h: 180 }
 })
 stage.drawCity(ctx, { x: 0, y: 0, w: 360, h: 220 }, { current: 'harbor', tick: 5, reachable: { harbor: true, thermal: true }, target: 'core' })
 stage.drawCity(ctx, { x: 0, y: 0, w: 360, h: 100 }, { current: 'core', compact: true, tick: 2, target: 'core' })
+stage.drawJobPlan(ctx, { x: 0, y: 0, w: 360, h: 160 }, { current: 'harbor', tick: 3, target: 'core', reachable: { harbor: true, core: true } })
+assert.ok(typeof stage.drawJobPlan === 'function')
 stage.drawItemIcon(ctx, 10, 10, 22, { name: '北辰零号晶核', tier: 'red' })
 stage.drawItemIcon(ctx, 40, 10, 22, { name: '气压逻辑板', tier: 'blue' })
 stage.drawMedal(ctx, 10, 40, 36, { tier: 'gold', name: '归航标' })

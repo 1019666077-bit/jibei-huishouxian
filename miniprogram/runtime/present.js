@@ -43,7 +43,10 @@ function clip(text, n) {
   const source = String(text == null ? '' : text).replace(/\s+/g, '')
   if (source.length <= n) return source
   if (n <= 1) return '…'
-  return source.slice(0, n - 1) + '…'
+  let cut = source.slice(0, n - 1)
+  const trimmed = cut.replace(/[的了在与和及到向于·，、（(]+$/g, '')
+  if (trimmed.length >= Math.min(4, n - 2)) cut = trimmed
+  return cut + '…'
 }
 
 function firstBeat(text) {
@@ -55,7 +58,7 @@ function firstBeat(text) {
 function spot(node) {
   if (!node) return ''
   if (node.text && /货运雪橇已离站/.test(node.text)) return '货运雪橇已离站'
-  if (node.spot) return clip(node.spot, 16)
+  if (node.spot) return clip(node.spot, 18)
   if (node.type === 'move') return '下一段走哪'
   if (node.type === 'escape') return '选一条撤'
   if (node.type === 'loadout') return '带什么进场'
@@ -211,8 +214,11 @@ function listTitle(opt) {
   if (!opt) return '继续'
   const raw = String(opt.full || opt.text || '').replace(/\s+/g, '')
   if (!raw) return verb(opt)
-  const beat = raw.split(/[。！？]/)[0]
-  return beat || raw
+  const beat = raw.split(/[。！？]/)[0] || raw
+  if (beat.length <= 22) return beat
+  const half = beat.split(/[，；：]/)[0]
+  if (half.length >= 8 && half.length <= 22) return half
+  return clip(beat, 22)
 }
 
 function leverPath(run) {
@@ -352,8 +358,8 @@ function useTravelList(node) {
 
 function travelStripH(count) {
   const n = Math.max(0, count || 0)
-  if (n <= 3) return 72
-  return Math.min(12 + n * 50, 176)
+  if (n <= 3) return 88
+  return Math.min(12 + n * 54, 188)
 }
 
 function travelLabel(opt, node) {
@@ -403,13 +409,15 @@ function propName(opt) {
     if (opt && opt.lootAction === 'flee') return '出口'
     return '门口'
   }
-  if (kind === 'take') return clip(String((opt && (opt.full || opt.text)) || '这件'), 8)
+  if (kind === 'take') return clip(String((opt && (opt.full || opt.text)) || '这件'), 10)
   if (opt && opt.lootAction === 'grabAll') return '一堆'
   return '货柜'
 }
 
 function useOptionList(node) {
-  return ((node && node.options) || []).length >= 4
+  const n = ((node && node.options) || []).length
+  if (n >= 4) return true
+  return n >= 3 && !!(node && (node.id === 'opener_fog' || node.entryOnly))
 }
 
 function layoutRoom(node, rect) {
