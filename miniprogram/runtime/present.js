@@ -543,6 +543,12 @@ function layoutPins(node, rect, forceMap) {
   })
 }
 
+function bagLoadText(run, meta) {
+  const grids = meta && meta.loadGrids != null ? meta.loadGrids : 0
+  const cap = (run && run.capacity) || 0
+  return `${grids}/${cap}格`
+}
+
 function fitBox(box, bounds, pad) {
   const g = pad == null ? 10 : pad
   if (!box || !bounds) return box
@@ -669,6 +675,7 @@ module.exports = {
   layoutRoom,
   useOptionList,
   listFitH,
+  bagLoadText,
   fitBox,
   boxesOverlap,
   cityLabelLayout,

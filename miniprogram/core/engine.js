@@ -1652,5 +1652,6 @@ module.exports = {
   analyzeRun, applyLoadout, canExtractNow, forceExtract,
   phaseOf, WHEN, // 给 test/routes.js 静态校验事件的 phase/when 字段用
   TOTAL_STEPS, ZONES, TIERS, ROOM_NAMES,
-  LOADOUTS  // 局外存档(core/meta.js)和大厅按它算价钱，价目表只有这一份
+  LOADOUTS,  // 局外存档(core/meta.js)和大厅按它算价钱，价目表只有这一份
+  tutorialWound, tutorialHit, tutorialGuard
 }

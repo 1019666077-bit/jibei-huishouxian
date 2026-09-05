@@ -118,9 +118,6 @@ function classify(prev, next, messages) {
     return { kind: 'extract', label: '撤离', mark: 'ok', stamp: '撤离', sub: '选一条撤出' }
   }
   if (/撤离成功|到手|制服|奏效/.test(text)) return { kind: 'ok', label: '得手', mark: 'ok', stamp: '得手' }
-  if (prev.tutorial && (prev.step || 0) <= 2) {
-    return { kind: 'ok', label: '得手', mark: 'ok', stamp: '得手', sub: '继续合闸' }
-  }
   return { kind: 'ok', label: '' }
 }
 

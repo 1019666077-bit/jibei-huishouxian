@@ -2,6 +2,8 @@
 const { createGame } = require('../miniprogram/runtime/app')
 const { makeItem } = require('../miniprogram/data/items')
 const metaStore = require('../miniprogram/core/meta')
+const engine = require('../miniprogram/core/engine')
+const feel = require('../miniprogram/runtime/feel')
 
 const storage = {}
 
@@ -236,7 +238,20 @@ document.addEventListener('DOMContentLoaded', () => {
   shot('run-scratch', '首局擦伤', manager => {
     enterLobby(manager)
     manager.go('run')
-    manager.scene.juice = { kind: 'scratch', label: '擦伤', sub: '-6 生命', mark: 'ok', until: Date.now() + 60000 }
+    const raw = -8
+    const wound = engine.tutorialWound({ tutorial: true, step: 1 }, raw)
+    const fx = feel.classify(
+      { hp: 80, lootCount: 0, tutorial: true, step: 1 },
+      { hp: 80 + wound, loot: [], ended: false },
+      ['柜开了。擦了一下']
+    )
+    manager.scene.juice = {
+      kind: fx.kind,
+      label: fx.stamp,
+      sub: fx.sub,
+      mark: fx.mark,
+      until: Date.now() + 60000
+    }
   })
 
   shot('run-miss', '交火失手', manager => {

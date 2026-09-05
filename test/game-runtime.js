@@ -90,6 +90,11 @@ assert.strictEqual(manager.scene.run.cost, 0, '首局进场不该扣押金')
 assert.ok(manager.scene.messages.some(line => /合闸/.test(line)), '首局进场没有合闸目标')
 assert.ok(present.leverGuide(manager.scene.run).includes('冷却舱'), '首局现场没有合闸条')
 assert.ok(present.leverNudge(manager.scene.run), '首局没有提前催合闸')
+assert.ok(!manager.scene.juice, '进场印章不得伪装合闸成功')
+{
+  const runMeta = require('../miniprogram/core/engine').getRunMeta(manager.scene.run)
+  assert.strictEqual(present.bagLoadText(manager.scene.run, runMeta), `${runMeta.loadGrids}/${manager.scene.run.capacity}格`)
+}
 const meta = require('../miniprogram/core/meta')
 assert.ok(!storage.meta_v1 || storage.meta_v1.balance === meta.START_BALANCE, '首局尚未结算却已扣仓库')
 let guard = 0

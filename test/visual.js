@@ -236,7 +236,13 @@ const feel = require('../miniprogram/runtime/feel')
     { hp: 80, loot: [], ended: false },
     ['没碰封条，转入冷却舱合闸']
   )
-  assert.strictEqual(pass.stamp, '得手', '首局前几步成功没有印章')
+  assert.ok(!pass.stamp, '空成功不该盖得手/继续合闸印章')
+}
+
+{
+  const engine = require('../miniprogram/core/engine')
+  assert.strictEqual(engine.tutorialWound({ tutorial: true, step: 1 }, -8), -4, '演示伤感应与教程封顶一致')
+  assert.strictEqual(present.bagLoadText({ capacity: 25 }, { loadGrids: 2 }), '2/25格')
 }
 
 const ui = new UI(ctx)

@@ -93,7 +93,6 @@ module.exports = manager => ({
     this.seenNode = ''
     this.tick = 0
     this.teach()
-    if (opener) this.flashJuice('ok', '合闸开索道', { kind: 'lever', sub: '冷却舱·压缩机房', silent: true })
     Scroll.resetView(manager.canvas)
     if (this.breath) clearInterval(this.breath)
     this.breath = setInterval(() => {
@@ -390,7 +389,6 @@ module.exports = manager => ({
   },
 
   pointerStart(point) {
-    if (this.lessonOpen) return
     if (!this.contentRect) return
     if (point.y < this.contentRect.y || point.y > this.contentRect.y + this.contentRect.h) return
     if (this.bagOpen) {
@@ -531,7 +529,9 @@ module.exports = manager => ({
     const top = v.safe.top + 6
     const runMeta = engine.getRunMeta(this.run)
     const zone = present.ZONE_SHORT[this.run.zone] || '冻港'
-    const toast = present.toast(this.messages)
+    const rawToast = present.toast(this.messages)
+    const leverDup = /合闸|供电|索道|通电/.test(rawToast)
+    const toast = leverDup ? '' : rawToast
     const paceRaw = present.paceHint(this.run)
     const pace = toast ? '' : (/残局|选一条撤/.test(paceRaw) ? paceRaw : '')
     const hudH = toast || pace ? 140 : 108
@@ -578,7 +578,7 @@ module.exports = manager => ({
     const bits = [
       { glyph: 'ammo', label: `${runMeta.ammoRounds}`, color: runMeta.ammoClass === 'ammo-out' ? COLORS.danger : COLORS.text },
       { glyph: 'med', label: `${this.run.meds}`, color: this.run.meds ? COLORS.accent : COLORS.danger },
-      { glyph: 'grid', label: `${runMeta.loadGrids}/${this.run.capacity}`, color: COLORS.text },
+      { glyph: 'grid', label: present.bagLoadText(this.run, runMeta), color: COLORS.text },
       { glyph: 'card', label: `${this.run.cards || 0}`, color: this.run.cards ? COLORS.gold : COLORS.muted }
     ]
     const bitW = (width - 40) / 4
@@ -602,21 +602,6 @@ module.exports = manager => ({
       })
     }
     let next = top + hudH + 10
-    const guide = present.leverGuide(this.run)
-    if (guide) {
-      const card = present.lesson(this.run)
-      ui.panel(left, next, width, 64, {
-        fill: '#241c0c',
-        stroke: COLORS.gold,
-        radius: 12,
-        rim: COLORS.gold,
-        sheen: false,
-        glow: `rgba(255,198,92,${0.16 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.22))})`
-      })
-      stage.drawLessonRail(ui.ctx, { x: left + 14, y: next + 8, w: width - 28, h: 24 }, card.steps, this.tick)
-      ui.text(guide, left + 16, next + 38, 13, '#ffe08a', '700', width - 32)
-      next += 74
-    }
     return next
   },
 
@@ -852,7 +837,7 @@ module.exports = manager => ({
         color: option.disabled ? '#6a7a88' : COLORS.text
       })
       const pip = this.pip(option)
-      ui.text(look.highlight ? '开索道' : (pip || look.label), plate.x + 32, plate.y + 54, 11,
+      ui.text(look.highlight && present.isCable(option) ? '开索道' : (pip || look.label), plate.x + 32, plate.y + 54, 11,
         option.disabled ? '#6a7a88' : look.color, '700', plate.w - 46)
       ui.addHit(plate.x - 4, prop.y - 58, plate.w + 8, 132, () => activate(option, prop))
     })
@@ -933,7 +918,7 @@ module.exports = manager => ({
           ui.ctx.textAlign = 'left'
         } else {
           ui.ctx.textAlign = 'right'
-          ui.text(pip || (look.highlight ? '开索道' : present.propName(option)), railX + railW, y + 38, 12,
+          ui.text(pip || (look.highlight && present.isCable(option) ? '开索道' : present.propName(option)), railX + railW, y + 38, 12,
             option.disabled ? '#6a7a88' : look.color, '700', railW)
           ui.ctx.textAlign = 'left'
         }
@@ -1006,7 +991,7 @@ module.exports = manager => ({
           glow: look.highlight ? 'rgba(255,198,92,0.22)' : null
         })
         ui.text(present.travelLabel(option, node), x + 10, y + 6, 14, option.disabled ? '#6a7a88' : COLORS.text, '700', chipW - 20)
-        ui.wrapped(look.highlight ? '合闸开索道' : present.listTitle(option), x + 10, y + 24, chipW - 28, {
+        ui.wrapped(present.listTitle(option), x + 10, y + 24, chipW - 28, {
           size: 10,
           lineHeight: 14,
           maxLines: 2,
@@ -1106,7 +1091,7 @@ module.exports = manager => ({
     const start = y
     const runMeta = engine.getRunMeta(this.run)
     ui.panel(x, y, w, 70, { fill: '#122018', stroke: COLORS.accent, radius: 12 })
-    ui.text(`背包 ${runMeta.loadGrids}/${this.run.capacity} 格`, x + 14, y + 10, 18, COLORS.text, '700')
+    ui.text(`背包 ${present.bagLoadText(this.run, runMeta)}`, x + 14, y + 10, 18, COLORS.text, '700')
     ui.text(`低温回收匣 ${runMeta.secureWeight}/${this.run.safebox} 格 · 贵重先装箱`, x + 14, y + 40, 12, COLORS.accent)
     y += 84
     if (this.run.loot.length) {
@@ -1119,7 +1104,9 @@ module.exports = manager => ({
     }
     if (!this.run.loot.length) {
       ui.panel(x, y, w, 70)
-      ui.text('背包还是空的。', x + 14, y + 24, 13, COLORS.muted)
+      ui.text(runMeta.loadGrids
+        ? `弹药占 ${runMeta.ammoGrids} 格，还没搜到货`
+        : '背包还是空的。', x + 14, y + 24, 13, COLORS.muted)
       y += 80
     }
     this.run.loot.forEach(item => {
@@ -1171,7 +1158,7 @@ module.exports = manager => ({
     const medHot = medEnabled && this.run.hp < 60
     const extractOn = engine.canExtractNow(this.run) && !this.run.ended
     const extractHot = extractOn && (this.run.hp < 60 || this.run.risk >= 70 || this.run.levers >= 2)
-    ui.button(left, y, bw, 52, this.bagOpen ? '关闭' : `背包 ${this.run.loot.length}`,
+    ui.button(left, y, bw, 52, this.bagOpen ? '关闭' : `背包 ${present.bagLoadText(this.run, engine.getRunMeta(this.run))}`,
       () => this.toggleBag(), {
         size: 15,
         fill: this.bagOpen ? '#1e4f43' : (bagHot ? '#3a2e16' : '#121c28'),
@@ -1227,25 +1214,24 @@ module.exports = manager => ({
   renderJuice(ui, v) {
     if (!this.juice || Date.now() > this.juice.until) return
     if (this.pickup && Date.now() < this.pickupUntil) return
-    const left = Math.max(0, this.juice.until - Date.now())
-    const t = 1 - left / 1100
-    const scale = 1.18 - t * 0.26
     const look = this.juiceLook(this.juice.kind || this.juice.mark)
     const fail = look.ok === false
-    const w = Math.min(fail ? 260 : 236, v.safe.right - v.safe.left - 40)
+    const w = Math.min(300, v.safe.right - v.safe.left - 20)
     const x = (v.width - w) / 2
-    const y = v.height * 0.24
-    const h = this.juice.sub ? 100 : 84
+    const y = v.safe.top + 4
+    const h = 40
     ui.panel(x, y, w, h, {
       fill: look.fill,
       stroke: look.stroke,
-      radius: 16,
+      radius: 10,
       glow: look.glow,
       rim: look.stroke
     })
-    stage.drawStamp(ui.ctx, this.juice.kind || this.juice.mark, x + 44, y + h / 2, (fail ? 18 : 16) * scale)
-    ui.text(this.juice.label, x + 76, y + (this.juice.sub ? 18 : 26), fail ? 28 : 22, look.color, '700', w - 96)
-    if (this.juice.sub) ui.text(this.juice.sub, x + 76, y + 56, 15, fail ? '#ffd0d0' : COLORS.body, '700', w - 96)
+    stage.drawStamp(ui.ctx, this.juice.kind || this.juice.mark, x + 22, y + h / 2, fail ? 12 : 11)
+    ui.text(this.juice.label, x + 40, y + 10, 16, look.color, '700', 72)
+    if (this.juice.sub) {
+      ui.text(this.juice.sub, x + 116, y + 12, 13, fail ? '#ffd0d0' : COLORS.body, '700', w - 130)
+    }
   },
 
   renderLesson(ui, v) {
@@ -1253,27 +1239,24 @@ module.exports = manager => ({
     const card = present.lesson(this.run)
     const w = Math.min(320, v.safe.right - v.safe.left - 28)
     const x = (v.width - w) / 2
-    const y = v.safe.top + 86
-    ui.ctx.fillStyle = 'rgba(5,10,16,0.55)'
-    ui.ctx.fillRect(0, 0, v.width, v.height)
-    ui.panel(x, y, w, 168, {
+    const y = v.safe.top + 52
+    ui.panel(x, y, w, 148, {
       fill: '#162018',
       stroke: COLORS.gold,
       radius: 14,
       glow: 'rgba(255,198,92,0.28)',
       rim: COLORS.gold
     })
-    ui.text(card.title, x + 20, y + 14, 20, COLORS.gold, '700', w - 40)
-    ui.text(card.cue, x + 20, y + 44, 14, COLORS.text, '700', w - 40)
-    stage.drawLessonRail(ui.ctx, { x: x + 20, y: y + 72, w: w - 40, h: 28 }, card.steps, this.tick)
-    ui.button(x + 20, y + 114, w - 40, 40, card.kind === 'cable' ? '知道了，点索道' : '知道了，去合闸', () => this.dismissLesson(), {
+    ui.text(card.title, x + 20, y + 12, 18, COLORS.gold, '700', w - 40)
+    ui.text(card.cue, x + 20, y + 38, 13, COLORS.text, '700', w - 40)
+    stage.drawLessonRail(ui.ctx, { x: x + 20, y: y + 64, w: w - 40, h: 24 }, card.steps, this.tick)
+    ui.button(x + 20, y + 98, w - 40, 38, card.kind === 'cable' ? '知道了，点索道' : '知道了，去合闸', () => this.dismissLesson(), {
       fill: '#d4a017',
       stroke: '#ffe08a',
       color: '#1a1408',
       size: 16,
       weight: '700'
     })
-    ui.addHit(0, 0, v.width, v.height, () => this.dismissLesson())
   },
 
   renderEnding(ui, v) {
