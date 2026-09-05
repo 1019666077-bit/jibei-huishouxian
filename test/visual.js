@@ -275,6 +275,14 @@ ui.well(10, 260, 200, 72)
 ui.cta(10, 340, 200, 64, '出发回收', () => {})
 ui.cta(10, 410, 200, 42, '设置', () => {}, { kind: 'ghost', size: 13 })
 {
+  const lobby = require('../miniprogram/scenes/index')
+  assert.ok(typeof lobby.drawCover === 'function')
+  lobby.drawCover(ui, {
+    width: 390, height: 844,
+    safe: { left: 0, top: 44, right: 390, bottom: 810 }
+  }, 4)
+}
+{
   let scrolled = 80
   global.window = { scrollTo() { scrolled = 0 } }
   Scroll.resetView({ scrollIntoView() { scrolled = 0 } })
