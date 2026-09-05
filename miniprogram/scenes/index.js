@@ -225,14 +225,9 @@ module.exports = manager => ({
     }
 
     const startY = Math.min(v.safe.bottom - 196, Math.max(mapY + mapH + 16, v.height * 0.54))
-    const glow = 0.55 + 0.45 * Math.sin((this.tick || 0) / 4.2)
-    const startFill = `rgb(${Math.round(22 + 18 * glow)},${Math.round(90 + 30 * glow)},${Math.round(75 + 20 * glow)})`
-    ui.button(left, startY, width, 64, '出发回收', () => this.start(), {
-      fill: startFill,
-      stroke: '#8ef0d0',
-      color: '#ffffff',
-      size: 22,
-      glow: 'rgba(101,214,180,0.32)'
+    const glow = 0.22 + 0.14 * Math.abs(Math.sin((this.tick || 0) / 4.2))
+    ui.cta(left, startY, width, 64, '出发回收', () => this.start(), {
+      glow: `rgba(101,214,180,${glow})`
     })
 
     ui.button(left, startY + 76, (width - 10) / 2, 42, '仓库图鉴', () => manager.go('codex'), {

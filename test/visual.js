@@ -2,7 +2,7 @@
 const assert = require('assert')
 const present = require('../miniprogram/runtime/present')
 const stage = require('../miniprogram/runtime/stage')
-const { UI } = require('../miniprogram/runtime/ui')
+const { UI, COLORS, TYPE, INK, METAL, wellLook, ctaLook } = require('../miniprogram/runtime/ui')
 
 const ctx = new Proxy({
   fillStyle: '', strokeStyle: '', lineWidth: 1, font: '', textBaseline: '', textAlign: '',
@@ -264,6 +264,16 @@ ui.section(10, 140, 200, '路线')
 ui.button(10, 180, 120, 40, '出发', () => {}, { sub: '标准勤务组' })
 ui.text('这是一段会被窄板裁切的长标题文字', 10, 230, 12, '#fff', '700', 48)
 assert.ok(String(ctx.fillStyle || '#fff'))
+assert.ok(TYPE.display >= 32 && TYPE.title >= 20 && TYPE.lead >= 14, '字阶未抽出')
+assert.strictEqual(INK.lead, COLORS.gold)
+assert.ok(METAL.well && METAL.ok && METAL.ice, '金属井色阶未抽出')
+assert.strictEqual(wellLook().material, 'well')
+assert.strictEqual(ctaLook('primary').material, 'metal')
+assert.strictEqual(ctaLook('primary').metal, METAL.ok)
+assert.ok(typeof ui.cta === 'function' && typeof ui.well === 'function')
+ui.well(10, 260, 200, 72)
+ui.cta(10, 340, 200, 64, '出发回收', () => {})
+ui.cta(10, 410, 200, 42, '设置', () => {}, { kind: 'ghost', size: 13 })
 {
   let scrolled = 80
   global.window = { scrollTo() { scrolled = 0 } }
