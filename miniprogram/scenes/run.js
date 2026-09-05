@@ -402,46 +402,30 @@ module.exports = manager => ({
     const top = v.safe.top + 6
     const runMeta = engine.getRunMeta(this.run)
     const zone = runMeta.zoneName || present.ZONE_SHORT[this.run.zone] || '冻港'
-    ui.panel(left, top, width, 72, {
-      fill: '#0c1620',
-      stroke: '#243646',
+    const toast = present.toast(this.messages)
+    ui.panel(left, top, width, toast ? 108 : 86, {
+      fill: '#10202c',
+      stroke: '#3d5c74',
       radius: 12
     })
-    ui.text(zone, left + 12, top + 8, 16, COLORS.text, '700', width * 0.62)
+    ui.text(zone, left + 12, top + 8, 18, '#ffffff', '700', width * 0.58)
     ui.ctx.textAlign = 'right'
-    ui.text(`${runMeta.timeText} · ${runMeta.phase || ''}`, left + width - 12, top + 10, 12, COLORS.accent, '700')
+    ui.text(`${runMeta.timeText} · ${runMeta.phase || ''}`, left + width - 12, top + 10, 13, '#9ff0d4', '700')
     ui.ctx.textAlign = 'left'
     const meterW = (width - 36) / 2
-    ui.meter(left + 12, top + 30, meterW, '生命', this.run.hp, this.run.hp / 100,
+    ui.meter(left + 12, top + 32, meterW, '生命', this.run.hp, this.run.hp / 100,
       this.run.hp < 60 ? COLORS.danger : COLORS.accent)
-    ui.meter(left + 24 + meterW, top + 30, meterW, '风险', this.run.risk, this.run.risk / 100,
+    ui.meter(left + 24 + meterW, top + 32, meterW, '风险', this.run.risk, this.run.risk / 100,
       this.run.risk >= 70 ? COLORS.danger : COLORS.gold)
-    const chipsY = top + 78
-    const chipW = (width - 18) / 4
-    ui.chip(left, chipsY, chipW, 26, `弹 ${runMeta.ammoRounds}`, {
-      fill: runMeta.ammoClass === 'ammo-out' ? '#2a1618' : '#14202c',
-      color: runMeta.ammoClass === 'ammo-out' ? COLORS.danger : COLORS.text
-    })
-    ui.chip(left + chipW + 6, chipsY, chipW, 26, `药 ${this.run.meds}`, {
-      color: this.run.meds ? COLORS.accent : COLORS.muted
-    })
-    ui.chip(left + (chipW + 6) * 2, chipsY, chipW, 26, `${runMeta.loadGrids}/${this.run.capacity}格`)
-    ui.chip(left + (chipW + 6) * 3, chipsY, chipW, 26, `芯片 ${this.run.cards || 0}`, {
-      color: this.run.cards ? COLORS.gold : COLORS.muted
-    })
-    const toast = present.toast(this.messages)
+    const ammoColor = runMeta.ammoClass === 'ammo-out' ? COLORS.danger : '#eef4fa'
+    ui.text(`弹 ${runMeta.ammoRounds}   药 ${this.run.meds}   ${runMeta.loadGrids}/${this.run.capacity}格   芯片 ${this.run.cards || 0}`,
+      left + 12, top + 64, 13, ammoColor, '700', width - 24)
     if (toast) {
       const hurt = /^-|倒/.test(toast)
-      ui.panel(left, chipsY + 32, width, 26, {
-        fill: hurt ? '#2a1618' : '#1a2418',
-        stroke: hurt ? COLORS.danger : COLORS.gold,
-        radius: 8,
-        sheen: false
-      })
-      ui.text(toast, left + 10, chipsY + 37, 12, hurt ? COLORS.danger : COLORS.gold, '700', width - 20)
-      return chipsY + 64
+      ui.text(toast, left + 12, top + 84, 13, hurt ? COLORS.danger : COLORS.gold, '700', width - 24)
+      return top + 116
     }
-    return chipsY + 34
+    return top + 94
   },
 
   renderOption(ui, x, y, w, option) {
@@ -480,8 +464,10 @@ module.exports = manager => ({
       marker: 'pulse',
       reachable
     })
-    ui.panel(rect.x + 6, rect.y + 4, 52, 18, { fill: 'rgba(8,16,20,0.72)', stroke: false, radius: 6, sheen: false })
-    ui.text(this.run.node.type === 'escape' ? '撤法' : '路线', rect.x + 12, rect.y + 6, 11, COLORS.gold, '700')
+    if (rect.h >= 130) {
+      ui.panel(rect.x + 6, rect.y + 4, 52, 18, { fill: 'rgba(8,16,20,0.72)', stroke: false, radius: 6, sheen: false })
+      ui.text(this.run.node.type === 'escape' ? '撤法' : '路线', rect.x + 12, rect.y + 6, 11, COLORS.gold, '700')
+    }
     const hasMethods = pins.some(pin => pin.opt.method || pin.opt.wait)
     Object.keys(present.ZONE_POS).forEach(key => {
       if (key === 'extract' && hasMethods) return
@@ -628,7 +614,7 @@ module.exports = manager => ({
     const showMap = travel.length > 0 || present.useMap(node)
     const showSite = local.length > 0 || (!showMap && present.useRoom(node))
     if (showMap && showSite) {
-      const mapH = Math.max(96, Math.min(118, Math.round(rect.h * 0.3)))
+      const mapH = Math.max(80, Math.min(96, Math.round(rect.h * 0.22)))
       const mapRect = { x: rect.x, y: rect.y, w: rect.w, h: mapH }
       stage.drawCity(ui.ctx, mapRect, {
         current: this.run.zone,

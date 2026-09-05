@@ -12,10 +12,21 @@ const ctx = new Proxy({
   createRadialGradient() { return { addColorStop() {} } }
 }, { get(t, k) { return k in t ? t[k] : () => {} } })
 
+const Scroll = require('../miniprogram/runtime/scroll')
+const scroll = new Scroll()
+scroll.setBounds(400, 100)
+assert.strictEqual(scroll.wheel(80), true)
+assert.strictEqual(scroll.offset, 80)
+assert.ok(!scroll.atEnd())
+assert.ok(scroll.progress() > 0)
+scroll.wheel(1000)
+assert.ok(scroll.atEnd())
+
 assert.strictEqual(present.verb({ verb: '砸柜', text: '冲过去砸开柜子' }), '砸柜')
 assert.strictEqual(present.caption({ verb: '砸柜', text: '冲过去砸开柜子', full: '冲过去砸开柜子' }), '冲过去砸开柜子')
-assert.ok(present.caption({ verb: '撤', text: '不碰，贴墙撤', full: '不碰，贴墙撤' }).length > 2)
+assert.ok(present.caption({ verb: '撤', text: '不碰，贴墙撤', full: '不碰，贴墙撤' }).includes('不碰'))
 assert.ok(present.caption({ verb: '重装', text: '重装回收组 · 45万配给点' }).includes('重装回收组'))
+assert.ok(present.caption({ verb: '砸柜', full: '冲过去砸开柜子' }).length > 2)
 
 const box = { x: 0, y: 0, w: 320, h: 180 }
 ;['harbor', 'weather', 'thermal', 'lift', 'core', 'aurora', 'extract'].forEach(zone => {

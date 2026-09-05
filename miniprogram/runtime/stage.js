@@ -295,8 +295,16 @@ function drawSite(ctx, key, px, py, size, state) {
     rect(ctx, px + s * 0.08, py - s * 0.55, s * 0.4, s * 0.36)
   }
 
-  if (state.current) frame(ctx, px - s * 0.72, py - s * 1.08, s * 1.44, s * 1.2, '#65d6b4')
-  else if (state.reach) frame(ctx, px - s * 0.68, py - s * 1.02, s * 1.36, s * 1.12, 'rgba(255,198,92,0.7)')
+  if (state.current) {
+    fill(ctx, 'rgba(101,214,180,0.22)')
+    rect(ctx, px - s * 0.82, py - s * 1.18, s * 1.64, s * 1.36)
+    frame(ctx, px - s * 0.76, py - s * 1.12, s * 1.52, s * 1.28, '#7ee8c8')
+    frame(ctx, px - s * 0.7, py - s * 1.06, s * 1.4, s * 1.16, '#65d6b4')
+  } else if (state.reach) {
+    fill(ctx, 'rgba(255,198,92,0.16)')
+    rect(ctx, px - s * 0.76, py - s * 1.1, s * 1.52, s * 1.28)
+    frame(ctx, px - s * 0.7, py - s * 1.04, s * 1.4, s * 1.16, '#ffc65c')
+  }
 }
 
 function drawCityDots(ctx, box, options = {}) {
@@ -327,23 +335,31 @@ function drawCityDots(ctx, box, options = {}) {
   const align = ctx.textAlign
   const font = ctx.font
   ctx.textAlign = 'center'
-  gfx.applyFont(ctx, 9, '700')
   Object.keys(ZONE_POS).forEach(key => {
     const p = ZONE_POS[key]
     const px = x + p.x * w
     const py = y + p.y * h
     const here = options.current === key
     const reach = !options.reachable || options.reachable[key]
-    const sz = here ? 8 : 5
-    fill(ctx, here ? (options.hot ? '#ff6b6b' : '#65d6b4') : (reach ? (TINT[key] || '#65d6b4') : '#2a3a48'))
-    rect(ctx, px - sz / 2, py - sz / 2, sz, sz)
     if (here) {
-      const pulse = 4 + (tick % 4)
-      fill(ctx, 'rgba(101,214,180,0.35)')
+      const pulse = 7 + (tick % 5)
+      fill(ctx, options.hot ? 'rgba(255,107,107,0.4)' : 'rgba(101,214,180,0.4)')
       rect(ctx, px - pulse, py - pulse, pulse * 2, pulse * 2)
+      frame(ctx, px - 11, py - 11, 22, 22, options.hot ? '#ff6b6b' : '#7ee8c8')
+    } else if (reach) {
+      frame(ctx, px - 8, py - 8, 16, 16, '#ffc65c')
     }
-    fill(ctx, here ? '#65d6b4' : reach ? '#eef4fa' : '#6a7a88')
-    ctx.fillText(ZONE_SHORT[key] || key, px, py + 8)
+    const sz = here ? 10 : reach ? 7 : 4
+    fill(ctx, here ? (options.hot ? '#ff6b6b' : '#7ee8c8') : (reach ? (TINT[key] || '#ffc65c') : '#243040'))
+    rect(ctx, px - sz / 2, py - sz / 2, sz, sz)
+    if (here || reach) {
+      gfx.applyFont(ctx, here ? 11 : 10, '700')
+      const label = ZONE_SHORT[key] || key
+      fill(ctx, 'rgba(6,12,18,0.82)')
+      rect(ctx, px - 22, py + 8, 44, 13)
+      fill(ctx, here ? '#7ee8c8' : '#ffe08a')
+      ctx.fillText(label, px, py + 9)
+    }
   })
   ctx.textAlign = align || 'left'
   ctx.font = font || gfx.font(14)
@@ -397,9 +413,10 @@ function drawCity(ctx, box, options = {}) {
       dim: !current && !reach,
       tick
     })
-    fill(ctx, 'rgba(8,12,18,0.78)')
-    rect(ctx, px - 24, py + 6, 48, 15)
-    fill(ctx, current ? '#65d6b4' : reach ? '#eef4fa' : '#6a7a88')
+    fill(ctx, 'rgba(8,12,18,0.84)')
+    rect(ctx, px - 26, py + 6, 52, 16)
+    gfx.applyFont(ctx, current || reach ? 12 : 10, '700')
+    fill(ctx, current ? '#7ee8c8' : reach ? '#ffe08a' : '#6a7a88')
     ctx.fillText(ZONE_SHORT[key] || key, px, py + 8)
   })
   fill(ctx, '#8fa3b8')

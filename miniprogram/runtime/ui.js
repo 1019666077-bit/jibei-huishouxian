@@ -209,12 +209,24 @@ class UI {
   }
 
   meter(x, y, w, label, value, ratio, fill) {
-    this.text(label, x, y, 10, COLORS.muted, '700')
-    gfx.applyFont(this.ctx, 12, '700')
+    this.text(label, x, y, 12, '#c5d4e4', '700')
+    gfx.applyFont(this.ctx, 15, '700')
     const num = copy(value)
     const nw = this.ctx.measureText(num).width
-    this.text(num, x + w - nw, y - 1, 12, fill || COLORS.text, '700')
-    this.bar(x, y + 15, w, 7, ratio, fill || COLORS.accent)
+    this.text(num, x + w - nw, y - 1, 15, fill || COLORS.text, '700')
+    this.bar(x, y + 18, w, 9, ratio, fill || COLORS.accent, '#0a141c')
+  }
+
+  scrollbar(rect, scroll) {
+    if (!scroll || scroll.max <= 0 || !rect) return
+    const trackW = 5
+    const x = rect.x + rect.w - 9
+    const y = rect.y + 6
+    const h = Math.max(24, rect.h - 12)
+    const thumbH = Math.max(28, Math.round(h * (rect.h / (rect.h + scroll.max))))
+    const thumbY = y + (h - thumbH) * scroll.progress()
+    this.panel(x, y, trackW, h, { fill: '#0a141c', stroke: '#2a4156', radius: 3, sheen: false })
+    this.panel(x, thumbY, trackW, thumbH, { fill: COLORS.accent, stroke: false, radius: 3, sheen: false })
   }
 
   chip(x, y, w, h, label, options = {}) {

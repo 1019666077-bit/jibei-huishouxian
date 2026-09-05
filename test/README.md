@@ -23,11 +23,11 @@ node device-smoke.js
 
 本机没有开发者工具时，只跑 `npm test`。通过即表示绘制函数和玩法回归是绿的，但不能替代真机或模拟器截图。
 
-若只想在桌面浏览器里看程序化画面（不是提审截图），可在 `test` 目录执行：
+若只想在桌面浏览器里试玩或看画面（不是提审截图），可在 `test` 目录执行：
 
 ```bash
-npx esbuild preview-entry.js --bundle --outfile=preview-bundle.js --platform=browser
+npx esbuild play-entry.js --bundle --outfile=play-bundle.js --platform=browser
 python3 -m http.server 8765
 ```
 
-然后打开 `http://127.0.0.1:8765/preview.html`。`preview-bundle.js` 是生成物，不要提交。
+然后打开 `http://127.0.0.1:8765/play.html`。协议页把鼠标悬在画布上滚动滚轮，或拖动正文区，直到底部提示消失、「同意并进入」亮起。静态分屏预览仍可用 `preview-entry.js` → `preview.html`。生成的 `*-bundle.js` 不要提交。

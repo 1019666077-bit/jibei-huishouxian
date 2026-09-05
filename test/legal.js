@@ -134,6 +134,8 @@ assert.ok(lobbySrc.includes('healthNotice.lines[1]'), '大厅必须展示健康�
 const legalSrc = fs.readFileSync(path.join(GAME_ROOT, 'scenes/legal.js'), 'utf8')
 assert.ok(legalSrc.includes('canAccept()'), '首次同意必须校验是否读完')
 assert.ok(legalSrc.includes('请先滑动读完全部协议'), '未读完时必须提示用户继续阅读')
+assert.ok(legalSrc.includes('wheel'), '协议页必须处理滚轮')
+assert.ok(legalSrc.includes('继续下滑'), '未读完必须提示继续下滑')
 
 const userAgreement = fs.readFileSync(path.join(ROOT, 'compliance/user-agreement.md'), 'utf8')
 const privacyPolicy = fs.readFileSync(path.join(ROOT, 'compliance/privacy-policy.md'), 'utf8')

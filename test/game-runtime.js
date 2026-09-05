@@ -54,6 +54,11 @@ const present = require('../miniprogram/runtime/present')
 const manager = createGame({ adUnitId: '' })
 assert.strictEqual(manager.sceneName, 'legal', '首次启动没有先展示协议与隐私')
 assert.strictEqual(manager.scene.firstUse, true, '协议页没有进入首次确认模式')
+assert.ok(manager.scene.scroll.max > 0, '协议正文没有超出一屏，滚轮/下滑无从验证')
+const beforeWheel = manager.scene.scroll.offset
+assert.ok(manager.wheel(160, { x: 200, y: 360 }), '协议页滚轮没有推动 Scroll')
+assert.ok(manager.scene.scroll.offset > beforeWheel, '协议页滚轮没有改变偏移')
+assert.ok(!manager.scene.canAccept(), '只滚了一段不应立刻允许同意')
 manager.scene.accept()
 assert.strictEqual(manager.sceneName, 'legal', '未读完协议不应进入大厅')
 manager.scene.scroll.offset = manager.scene.scroll.max
