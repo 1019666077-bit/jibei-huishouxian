@@ -27,6 +27,25 @@ assert.strictEqual(present.caption({ verb: '砸柜', text: '冲过去砸开柜�
 assert.ok(present.caption({ verb: '撤', text: '不碰，贴墙撤', full: '不碰，贴墙撤' }).includes('不碰'))
 assert.ok(present.caption({ verb: '重装', text: '重装回收组 · 45万配给点' }).includes('重装回收组'))
 assert.ok(present.caption({ verb: '砸柜', full: '冲过去砸开柜子' }).length > 2)
+assert.strictEqual(present.ZONE_SHORT.extract, '撤离')
+assert.ok(present.clip('这是一段超过十六个字的转移选项标题', 16).endsWith('…'))
+assert.ok(present.clip('短标', 16) === '短标')
+assert.ok(present.useOptionList({ options: [1, 2, 3, 4] }))
+assert.ok(!present.useOptionList({ options: [1, 2, 3] }))
+{
+  const packed = present.layoutRoom({
+    options: [
+      { text: '砸开柜子', verb: '砸柜' },
+      { text: '贴墙撤', verb: '撤', safe: true },
+      { text: '开火', verb: '开火', rounds: 20 },
+      { text: '搜角落', verb: '搜', safe: true }
+    ]
+  }, { x: 0, y: 0, w: 320, h: 220 })
+  const overlap = packed.some((a, i) => packed.slice(i + 1).some(b =>
+    Math.abs(a.x - b.x) < 70 && Math.abs(a.y - b.y) < 36
+  ))
+  assert.ok(!overlap, '四选项房间铭牌仍严重重叠')
+}
 
 const box = { x: 0, y: 0, w: 320, h: 180 }
 ;['harbor', 'weather', 'thermal', 'lift', 'core', 'aurora', 'extract'].forEach(zone => {
@@ -54,6 +73,14 @@ ui.meter(10, 60, 160, '生命', 72, 0.72)
 ui.chip(10, 100, 64, 24, '弹 120')
 ui.section(10, 140, 200, '路线')
 ui.button(10, 180, 120, 40, '出发', () => {}, { sub: '标准勤务组' })
+ui.text('这是一段会被窄板裁切的长标题文字', 10, 230, 12, '#fff', '700', 48)
+assert.ok(String(ctx.fillStyle || '#fff'))
+{
+  let scrolled = 80
+  global.window = { scrollTo() { scrolled = 0 } }
+  Scroll.resetView({ scrollIntoView() { scrolled = 0 } })
+  assert.strictEqual(scrolled, 0, '进局滚动重置没有把页面拉回顶部')
+}
 
 assert.ok(typeof stage.drawItemIcon === 'function')
 assert.ok(typeof stage.drawMedal === 'function')

@@ -52,4 +52,30 @@ class Scroll {
   }
 }
 
+function resetViewScroll(canvas) {
+  try {
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo(0, 0)
+    }
+  } catch (e) { /* 浏览器外无 window */ }
+  try {
+    if (typeof document !== 'undefined') {
+      if (document.documentElement) document.documentElement.scrollTop = 0
+      if (document.body) document.body.scrollTop = 0
+    }
+  } catch (e) { /* ignore */ }
+  try {
+    if (canvas && typeof canvas.scrollIntoView === 'function') {
+      canvas.scrollIntoView({ block: 'start' })
+    }
+  } catch (e) { /* ignore */ }
+  try {
+    if (typeof wx !== 'undefined' && typeof wx.scrollTo === 'function') {
+      wx.scrollTo({ top: 0, duration: 0 })
+    }
+  } catch (e) { /* 小游戏运行时可能无页面滚动接口 */ }
+}
+
+Scroll.resetView = resetViewScroll
+
 module.exports = Scroll

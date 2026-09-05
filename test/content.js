@@ -249,6 +249,8 @@ const LATE_STEP = 6
   engine.refreshNode(s)
   const hinted = (s.node.options || []).filter(o => /途中很可能交火/.test(o.costText || ''))
   assert.ok(hinted.length > 0, '风险偏高时转移选项必须提示途中交火')
+  const gated = (s.node.options || []).filter(o => o.moveTo === 'core' && /可合闸/.test(o.costText || ''))
+  assert.ok(gated.length > 0, '未接通双电源时进入内环的路线应提示可合闸')
 }
 
 // ===== 9) 配电柄是房间设施，不是随机遭遇 =====
@@ -432,7 +434,7 @@ const injectedOption = node => {
   engine.refreshNode(s)
   assert.ok(engine.canExtractNow(s), '搜过一轮后应能提前撤')
   const jumped = engine.forceExtract(s)
-  assert.ok(jumped.messages.some(m => /撤收线/.test(m)))
+  assert.ok(jumped.messages.some(m => /撤离线/.test(m)))
   assert.strictEqual(s.node.type, 'escape')
   assert.ok(!engine.canExtractNow(s), '已经在撤收点不应再显示撤离')
 }

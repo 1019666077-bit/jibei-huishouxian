@@ -6,7 +6,7 @@ const ZONE_SHORT = {
   lift: '升降场',
   core: '内环',
   aurora: '指挥塔',
-  extract: '撤收'
+  extract: '撤离'
 }
 
 const ZONE_POS = {
@@ -16,7 +16,7 @@ const ZONE_POS = {
   core: { x: 0.50, y: 0.46 },
   thermal: { x: 0.50, y: 0.64 },
   lift: { x: 0.84, y: 0.42 },
-  extract: { x: 0.84, y: 0.78 }
+  extract: { x: 0.84, y: 0.80 }
 }
 
 const ROOM_POS = {
@@ -31,7 +31,8 @@ const ROOM_POS = {
 function clip(text, n) {
   const source = String(text == null ? '' : text).replace(/\s+/g, '')
   if (source.length <= n) return source
-  return source.slice(0, n)
+  if (n <= 1) return '…'
+  return source.slice(0, n - 1) + '…'
 }
 
 function firstBeat(text) {
@@ -189,14 +190,18 @@ function propName(opt) {
   return '货柜'
 }
 
+function useOptionList(node) {
+  return ((node && node.options) || []).length >= 4
+}
+
 function layoutRoom(node, rect) {
   const options = (node && node.options) || []
   const slots = [
-    { nx: 0.22, ny: 0.62 },
-    { nx: 0.50, ny: 0.44 },
-    { nx: 0.78, ny: 0.60 },
-    { nx: 0.34, ny: 0.78 },
-    { nx: 0.66, ny: 0.78 }
+    { nx: 0.20, ny: 0.50 },
+    { nx: 0.50, ny: 0.34 },
+    { nx: 0.80, ny: 0.50 },
+    { nx: 0.30, ny: 0.76 },
+    { nx: 0.70, ny: 0.76 }
   ]
   const used = {}
   const take = prefers => {
@@ -215,7 +220,7 @@ function layoutRoom(node, rect) {
     }
     return slots[0]
   }
-  return options.map(opt => {
+  const placed = options.map(opt => {
     const kind = propKind(opt)
     const slot = kind === 'threat' ? take([2, 1, 4])
       : kind === 'door' ? take([0, 3, 4])
@@ -230,6 +235,20 @@ function layoutRoom(node, rect) {
       ny: slot.ny
     }
   })
+  placed.forEach((item, index) => {
+    for (let prev = 0; prev < index; prev++) {
+      const other = placed[prev]
+      if (Math.abs(item.x - other.x) < 96 && Math.abs(item.y - other.y) < 50) {
+        item.x += item.x >= other.x ? 22 : -22
+        item.y += item.y >= other.y ? 18 : -18
+        item.x = Math.min(rect.x + rect.w - 40, Math.max(rect.x + 40, item.x))
+        item.y = Math.min(rect.y + rect.h - 28, Math.max(rect.y + 24, item.y))
+        item.nx = rect.w ? (item.x - rect.x) / rect.w : item.nx
+        item.ny = rect.h ? (item.y - rect.y) / rect.h : item.ny
+      }
+    }
+  })
+  return placed
 }
 
 function layoutPins(node, rect, forceMap) {
@@ -294,5 +313,6 @@ module.exports = {
   layoutPins,
   propKind,
   propName,
-  layoutRoom
+  layoutRoom,
+  useOptionList
 }

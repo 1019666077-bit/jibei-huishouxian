@@ -123,7 +123,16 @@ class UI {
     const ctx = this.ctx
     gfx.applyFont(ctx, size, weight)
     ctx.fillStyle = color
-    ctx.fillText(copy(text), x, y, maxWidth)
+    let shown = copy(text)
+    if (maxWidth != null && maxWidth > 0 && typeof ctx.measureText === 'function') {
+      if (ctx.measureText(shown).width > maxWidth) {
+        while (shown.length > 0 && ctx.measureText(`${shown}…`).width > maxWidth) {
+          shown = shown.slice(0, -1)
+        }
+        shown += '…'
+      }
+    }
+    ctx.fillText(shown, x, y)
   }
 
   wrapped(text, x, y, maxWidth, options = {}) {

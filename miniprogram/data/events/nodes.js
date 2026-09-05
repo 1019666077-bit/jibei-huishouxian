@@ -64,7 +64,7 @@ const MOVE_CHOICE_CORE = {
   options: [
     { text: '登上极光指挥塔，争夺零号资产柜', verb: '上塔', moveTo: 'aurora', risk: 18, need: { hpMin: 45 }, goEvent: 'aurora_corridor' },
     { text: '留在内环继续搜索六个技术房间', verb: '再搜', moveTo: 'core', risk: 6 },
-    { text: '沿排压道前往轨道升降场撤收线', verb: '撤收线', moveTo: 'lift', risk: -6 }
+    { text: '沿排压道前往轨道升降场撤离线', verb: '撤离线', moveTo: 'lift', risk: -6 }
   ]
 }
 

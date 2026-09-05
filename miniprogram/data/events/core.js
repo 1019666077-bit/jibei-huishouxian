@@ -39,7 +39,7 @@ const CORE_EVENTS = [
       R('破解冷却舱密封柜', 58,
         { loot: 'core_vault', lootCount: 2, risk: 20, log: '冷却舱密封柜回收完成' },
         { hp: -22, risk: 25, log: '解锁时遭雾中伏击' }),
-      S('合上冷却舱配电柄', { levers: 1, leverRoom: 'coolant', risk: 8, log: '冷却舱配电柄已合上' },
+      S('合上冷却舱配电柄', { levers: 1, leverRoom: 'coolant', risk: 4, log: '冷却舱配电柄已合上' },
         { need: { maxLevers: 2, leverRoom: 'coolant' } }),
       R('扫描结霜平台的散落仪器', 75,
         { loot: 'core', lootCount: 1, risk: 10, log: '平台仪器入包' },
@@ -91,7 +91,7 @@ const CORE_EVENTS = [
       R('打开二层压力档案柜', 58,
         { loot: 'core_vault', lootCount: 2, risk: 18, log: '压力档案柜回收完成' },
         { hp: -20, risk: 22, log: '检修梯暗处出现伏击者' }),
-      S('合上压缩机房配电柄', { levers: 1, leverRoom: 'compressor', risk: 8, log: '压缩机房配电柄已合上' },
+      S('合上压缩机房配电柄', { levers: 1, leverRoom: 'compressor', risk: 4, log: '压缩机房配电柄已合上' },
         { need: { maxLevers: 2, leverRoom: 'compressor' } }),
       S('沿设备背面快速通过', { risk: 4, log: '穿过压缩机房' })
     ]),

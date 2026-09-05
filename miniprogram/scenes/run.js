@@ -79,6 +79,7 @@ module.exports = manager => ({
     this.fight = null
     this.seenNode = ''
     this.tick = 0
+    Scroll.resetView(manager.canvas)
     if (this.breath) clearInterval(this.breath)
     this.breath = setInterval(() => {
       this.tick += 1
@@ -206,7 +207,7 @@ module.exports = manager => ({
       this.messages = rankMessages(result.messages).concat(this.messages).slice(0, 8)
       this.mainScroll.reset()
       this.teach()
-      manager.pulse('ok', '转向撤收线')
+      manager.pulse('ok', '转向撤离线')
     } catch (e) {
       this.messages.unshift('现在还不能撤离，请再试一次。')
     }
@@ -253,7 +254,7 @@ module.exports = manager => ({
     }
     if (!this.hintedExtract && engine.canExtractNow(this.run) && this.run.loot.length) {
       this.hintedExtract = true
-      this.messages.unshift('点右下撤收点。')
+      this.messages.unshift('点右下撤离。')
     }
     if (this.run.node && this.run.node.type === 'escape' && this.run.loot.length && runMeta.secureWeight === 0) {
       this.messages.unshift('匣是空的。先装箱。')
@@ -393,6 +394,9 @@ module.exports = manager => ({
     }
     if (option.chance == null) return ''
     if (option.safe) return '稳'
+    if (option.method === 'ambush' || (option.rounds && option.chance < 60)) {
+      return `险 ${option.chance}%`
+    }
     return `${option.chance}%`
   },
 
@@ -403,7 +407,8 @@ module.exports = manager => ({
     const runMeta = engine.getRunMeta(this.run)
     const zone = runMeta.zoneName || present.ZONE_SHORT[this.run.zone] || '冻港'
     const toast = present.toast(this.messages)
-    ui.panel(left, top, width, toast ? 108 : 86, {
+    const hudH = toast ? 132 : 112
+    ui.panel(left, top, width, hudH, {
       fill: '#10202c',
       stroke: '#3d5c74',
       radius: 12
@@ -418,14 +423,37 @@ module.exports = manager => ({
     ui.meter(left + 24 + meterW, top + 32, meterW, '风险', this.run.risk, this.run.risk / 100,
       this.run.risk >= 70 ? COLORS.danger : COLORS.gold)
     const ammoColor = runMeta.ammoClass === 'ammo-out' ? COLORS.danger : '#eef4fa'
-    ui.text(`弹 ${runMeta.ammoRounds}   药 ${this.run.meds}   ${runMeta.loadGrids}/${this.run.capacity}格   芯片 ${this.run.cards || 0}`,
-      left + 12, top + 64, 13, ammoColor, '700', width - 24)
+    const chipW = (width - 36) / 2
+    const chipY = top + 64
+    ui.chip(left + 12, chipY, chipW, 20, `弹 ${runMeta.ammoRounds}`, {
+      fill: '#0c1822',
+      stroke: '#2a4156',
+      color: ammoColor,
+      size: 12
+    })
+    ui.chip(left + 24 + chipW, chipY, chipW, 20, `药 ${this.run.meds}`, {
+      fill: '#0c1822',
+      stroke: '#2a4156',
+      color: this.run.meds ? COLORS.accent : COLORS.danger,
+      size: 12
+    })
+    ui.chip(left + 12, chipY + 24, chipW, 20, `${runMeta.loadGrids}/${this.run.capacity}格`, {
+      fill: '#0c1822',
+      stroke: '#2a4156',
+      color: '#eef4fa',
+      size: 12
+    })
+    ui.chip(left + 24 + chipW, chipY + 24, chipW, 20, `芯片 ${this.run.cards || 0}`, {
+      fill: '#0c1822',
+      stroke: '#2a4156',
+      color: this.run.cards ? COLORS.gold : COLORS.muted,
+      size: 12
+    })
     if (toast) {
       const hurt = /^-|倒/.test(toast)
-      ui.text(toast, left + 12, top + 84, 13, hurt ? COLORS.danger : COLORS.gold, '700', width - 24)
-      return top + 116
+      ui.text(toast, left + 12, top + 112, 13, hurt ? COLORS.danger : COLORS.gold, '700', width - 24)
     }
-    return top + 94
+    return top + hudH + 8
   },
 
   renderOption(ui, x, y, w, option) {
@@ -558,6 +586,7 @@ module.exports = manager => ({
       h: rect.h * (1 - wall)
     }
     const props = present.layoutRoom(node, floor)
+    const listMode = present.useOptionList(node)
     const hotIdx = this.walk ? this.walk.idx : (this.fight ? this.fight.idx : null)
     if (!this.actor) this.actor = { nx: 0.5, ny: 0.82 }
     const ax = floor.x + this.actor.nx * floor.w
@@ -567,10 +596,23 @@ module.exports = manager => ({
       const ty = floor.y + this.walk.toY * floor.h
       stage.drawWalk(ui.ctx, ax, ay, tx, ty, this.tick)
     }
+    const activate = (option, prop) => {
+      if (option.disabled) {
+        const why = this.pip(option) || '现在不行'
+        this.messages.unshift(why)
+        manager.requestRender()
+        return
+      }
+      this.approach(option, prop.kind === 'threat' ? Math.max(0.08, prop.nx - 0.14) : prop.nx, prop.ny)
+    }
     props.forEach(prop => {
       const option = prop.opt
       const hot = hotIdx === option.idx
       stage.drawProp(ui.ctx, prop.kind, prop.x, prop.y, !option.disabled, this.tick, hot)
+      if (listMode) {
+        ui.addHit(prop.x - 28, prop.y - 36, 56, 64, () => activate(option, prop))
+        return
+      }
       const plateY = prop.y + 6
       ui.panel(prop.x - 50, plateY, 100, 46, {
         fill: hot ? '#1e4f43' : '#101820',
@@ -584,16 +626,33 @@ module.exports = manager => ({
       ui.text([pip, cost].filter(Boolean).join(' · ') || present.propName(option), prop.x, plateY + 26, 11,
         option.disabled ? '#6a7a88' : (prop.kind === 'threat' ? COLORS.danger : COLORS.gold), '700')
       ui.ctx.textAlign = 'left'
-      ui.addHit(prop.x - 52, prop.y - 58, 104, 116, () => {
-        if (option.disabled) {
-          const why = this.pip(option) || '现在不行'
-          this.messages.unshift(why)
-          manager.requestRender()
-          return
-        }
-        this.approach(option, prop.kind === 'threat' ? Math.max(0.08, prop.nx - 0.14) : prop.nx, prop.ny)
-      })
+      ui.addHit(prop.x - 52, prop.y - 58, 104, 116, () => activate(option, prop))
     })
+    if (listMode) {
+      const rowH = 34
+      const listH = props.length * rowH + 4
+      let ly = Math.min(floor.y + floor.h - listH - 4, floor.y + 10)
+      ly = Math.max(floor.y + 4, ly)
+      const lx = floor.x + 8
+      const lw = floor.w - 16
+      props.forEach((prop, i) => {
+        const option = prop.opt
+        const hot = hotIdx === option.idx
+        const y = ly + i * rowH
+        ui.panel(lx, y, lw, rowH - 4, {
+          fill: hot ? '#1e4f43' : '#101820',
+          stroke: option.disabled ? COLORS.line : (prop.kind === 'threat' ? COLORS.danger : COLORS.gold),
+          radius: 8
+        })
+        ui.text(present.caption(option), lx + 10, y + 6, 12, option.disabled ? '#6a7a88' : COLORS.text, '700', lw - 88)
+        const pip = this.pip(option)
+        ui.ctx.textAlign = 'right'
+        ui.text(pip || present.propName(option), lx + lw - 10, y + 7, 11,
+          option.disabled ? '#6a7a88' : (prop.kind === 'threat' ? COLORS.danger : COLORS.gold), '700')
+        ui.ctx.textAlign = 'left'
+        ui.addHit(lx, y, lw, rowH - 4, () => activate(option, prop))
+      })
+    }
     if (this.fight) {
       const threat = props.find(item => item.opt.idx === this.fight.idx)
       if (threat) stage.drawFight(ui.ctx, ax, ay, threat.x, threat.y, this.tick)
@@ -614,7 +673,7 @@ module.exports = manager => ({
     const showMap = travel.length > 0 || present.useMap(node)
     const showSite = local.length > 0 || (!showMap && present.useRoom(node))
     if (showMap && showSite) {
-      const mapH = Math.max(80, Math.min(96, Math.round(rect.h * 0.22)))
+      const mapH = Math.max(124, Math.min(150, Math.round(rect.h * 0.30)))
       const mapRect = { x: rect.x, y: rect.y, w: rect.w, h: mapH }
       stage.drawCity(ui.ctx, mapRect, {
         current: this.run.zone,
@@ -662,9 +721,32 @@ module.exports = manager => ({
     })
     pins.forEach(pin => {
       const option = pin.opt
-      if (!option.method && !option.wait) return
-      stage.drawPad(ui.ctx, option.method || 'wait', pin.x, pin.y, !option.disabled, false)
-      ui.addHit(pin.x - 40, pin.y - 40, 80, 80, () => {
+      const zone = present.pinZone(option, node)
+      const zoneLabel = present.ZONE_SHORT[zone]
+      const extra = !!(option.method || option.wait || (option.verb && option.verb !== zoneLabel))
+      if (option.method || option.wait) {
+        stage.drawPad(ui.ctx, option.method || 'wait', pin.x, pin.y, !option.disabled, false)
+      }
+      if (extra) {
+        const above = pin.ny > 0.52
+        const plateW = 52
+        const plateH = 16
+        let plateX = pin.x - plateW / 2
+        let plateY = above ? pin.y - plateH - 8 : pin.y + 12
+        plateX = Math.min(rect.x + rect.w - plateW - 2, Math.max(rect.x + 2, plateX))
+        plateY = Math.min(rect.y + rect.h - plateH - 2, Math.max(rect.y + 2, plateY))
+        ui.panel(plateX, plateY, plateW, plateH, {
+          fill: option.disabled ? '#101820' : '#142131',
+          stroke: option.disabled ? COLORS.line : (option.rounds ? COLORS.danger : COLORS.gold),
+          radius: 6,
+          sheen: false
+        })
+        ui.ctx.textAlign = 'center'
+        ui.text(option.verb || present.caption(option), plateX + plateW / 2, plateY + 2, 10,
+          option.disabled ? '#6a7a88' : COLORS.text, '700', plateW - 8)
+        ui.ctx.textAlign = 'left'
+      }
+      ui.addHit(pin.x - 36, pin.y - 28, 72, 56, () => {
         if (option.disabled) {
           this.messages.unshift(this.pip(option) || '现在不行')
           manager.requestRender()

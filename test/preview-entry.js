@@ -27,6 +27,13 @@ function bindWx(canvas) {
   }
 }
 
+function enterLobby(manager) {
+  if (manager.sceneName === 'legal') {
+    manager.scene.scroll.offset = manager.scene.scroll.max
+    manager.scene.accept()
+  }
+}
+
 function shot(id, title, setup) {
   const host = document.getElementById('shots')
   const wrap = document.createElement('figure')
@@ -42,27 +49,73 @@ function shot(id, title, setup) {
   host.appendChild(wrap)
   bindWx(canvas)
   const manager = createGame({})
-  setup(manager)
-  manager.render()
+  try {
+    setup(manager)
+    manager.render()
+  } catch (e) {
+    cap.textContent = title + '（绘制失败）'
+    console.error(id, e)
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   shot('legal', '协议', () => {})
 
   shot('index', '大厅', manager => {
-    manager.scene.scroll.offset = manager.scene.scroll.max
-    manager.scene.accept()
+    enterLobby(manager)
   })
 
   shot('run', '局内现场', manager => {
-    manager.scene.scroll.offset = manager.scene.scroll.max
-    manager.scene.accept()
+    enterLobby(manager)
     manager.go('run')
   })
 
+  shot('run-map', '双栏地图短铭牌', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    const scene = manager.scene
+    const run = scene.run
+    run.zone = 'harbor'
+    run.step = 3
+    run.node = {
+      id: 'preview_split',
+      type: 'event',
+      text: '冻港西堤还能走',
+      zone: 'harbor',
+      options: [
+        { idx: 0, text: '沿运冰线去热能管廊', verb: '管廊', moveTo: 'thermal', full: '沿运冰线去热能管廊' },
+        { idx: 1, text: '沿货运环轨去轨道升降场', verb: '升降场', moveTo: 'lift', full: '沿货运环轨去轨道升降场' },
+        { idx: 2, text: '刷通行芯片开启西堤气密门', verb: '刷门', moveTo: 'core', full: '刷通行芯片开启西堤气密门', costText: '可合闸' },
+        { idx: 3, text: '只取门边维修箱', verb: '搜', safe: true, chance: 100, full: '只取门边维修箱' }
+      ]
+    }
+    scene.messages = ['点右下撤离。']
+    scene.placeActor(run.node)
+  })
+
+  shot('run-list', '四选项列表', manager => {
+    enterLobby(manager)
+    manager.go('run')
+    const scene = manager.scene
+    const run = scene.run
+    run.zone = 'harbor'
+    run.node = {
+      id: 'preview_list',
+      type: 'event',
+      text: '雾里四条路',
+      zone: 'harbor',
+      options: [
+        { idx: 0, text: '冲过去砸开柜子', verb: '砸柜', chance: 72, full: '冲过去砸开柜子' },
+        { idx: 1, text: '对着呼吸声开枪', verb: '开枪', chance: 48, rounds: 30, full: '对着呼吸声开枪' },
+        { idx: 2, text: '不碰，贴墙撤', verb: '撤', safe: true, chance: 100, full: '不碰，贴墙撤' },
+        { idx: 3, text: '搜角落工具堆', verb: '搜', safe: true, chance: 100, full: '搜角落工具堆' }
+      ]
+    }
+    scene.placeActor(run.node)
+  })
+
   shot('bag', '背包', manager => {
-    manager.scene.scroll.offset = manager.scene.scroll.max
-    manager.scene.accept()
+    enterLobby(manager)
     manager.go('run')
     const core = manager.scene.run
     const a = makeItem('北辰零号晶核')
@@ -96,8 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 
   shot('codex', '图鉴', manager => {
-    manager.scene.scroll.offset = manager.scene.scroll.max
-    manager.scene.accept()
+    enterLobby(manager)
     const meta = metaStore.load()
     meta.runs = 4
     meta.escapes = 2
