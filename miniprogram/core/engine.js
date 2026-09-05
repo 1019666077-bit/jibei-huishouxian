@@ -23,11 +23,25 @@ function resupplyCost(state) {
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
 
-// 首局前两步只擦伤：不改事件经济表，只在教程态把过量掉血压住。
+// 首局只擦伤：不改事件经济表，教程态把过量掉血和暴毙压住。
 function tutorialWound(state, hp) {
   if (!state || !state.tutorial || hp >= 0) return hp
-  if ((state.step || 0) > 1) return hp
-  return Math.max(hp, -12)
+  if ((state.step || 0) > 2) return hp
+  return Math.max(hp, -10)
+}
+
+function tutorialHit(state, dmg) {
+  if (!state || !state.tutorial) return dmg
+  const step = state.step || 0
+  if (step <= 2) return Math.min(dmg, 8)
+  if (step <= 4) return Math.min(dmg, 14)
+  return dmg
+}
+
+function tutorialGuard(state, nextHp) {
+  if (!state || !state.tutorial) return nextHp
+  if ((state.step || 0) <= 3 && nextHp < 20) return 20
+  return nextHp
 }
 
 // 护板减伤：重装、标准、轻装承伤不同。
@@ -679,8 +693,8 @@ function choose(state, optIdx) {
         messages.push(`收入背包 [${it.tierLabel}] ${it.name}（${fmtVal(it.value)}配给点 / ${it.weight}格）`)
         if (it.tier === 'red') pushLog(state, `发现绝密资产：${it.name}！`, 'red')
       }
-      const dmg = armored(state, 22 + Math.floor(Math.random() * 18))
-      state.hp = clamp(state.hp - dmg, 0, 100)
+      const dmg = tutorialHit(state, armored(state, 22 + Math.floor(Math.random() * 18)))
+      state.hp = tutorialGuard(state, clamp(state.hp - dmg, 0, 100))
       changeRisk(state, 8)
       pushLog(state, `顶着枪声薅完了柜子，交火损失${dmg}生命`, 'crit')
       messages.push(`⚠ 对面贴脸了，边翻边挨打 -${dmg} HP`)
@@ -764,9 +778,8 @@ function choose(state, optIdx) {
   }
   if (encounterText) {
     // 基础伤害经护板档位修正。
-    let dmg = armored(state, 22 + Math.floor(Math.random() * 18))
-    if (state.tutorial && (state.step || 0) <= 2) dmg = Math.min(dmg, 10)
-    state.hp = clamp(state.hp - dmg, 0, 100)
+    const dmg = tutorialHit(state, armored(state, 22 + Math.floor(Math.random() * 18)))
+    state.hp = tutorialGuard(state, clamp(state.hp - dmg, 0, 100))
     changeRisk(state, 4)
     state.sig.encounters += 1
     state.sig.encounterDmg += dmg
@@ -843,7 +856,7 @@ function resolveEvent(state, opt, messages) {
   // 跳弹后仍然交火失败：对面护板和火力占优，反击伤害再加三成
   if (eff.hp) {
     const raw = !pass && iron ? Math.round(eff.hp * 1.3) : eff.hp
-    state.hp = clamp(state.hp + tutorialWound(state, raw), 0, 100)
+    state.hp = tutorialGuard(state, clamp(state.hp + tutorialWound(state, raw), 0, 100))
   }
   if (eff.risk) changeRisk(state, eff.risk)
   if (eff.rounds) {

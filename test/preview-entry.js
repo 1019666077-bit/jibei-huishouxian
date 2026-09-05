@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     manager.go('run')
   })
 
-  shot('run-map', '双栏地图短铭牌', manager => {
+  shot('run-map', '双栏转移列表', manager => {
     enterLobby(manager)
     manager.go('run')
     const scene = manager.scene

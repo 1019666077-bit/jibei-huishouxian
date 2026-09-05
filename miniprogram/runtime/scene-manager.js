@@ -20,7 +20,7 @@ class SceneManager {
     feel.vibrate(kind)
     this.fx.kind = kind
     this.fx.label = label || ''
-    this.fx.until = Date.now() + ((kind === 'dead' || kind === 'win' || kind === 'loot' || kind === 'ok' || kind === 'bad' || kind === 'lever' || kind === 'extract') ? 860 : 420)
+    this.fx.until = Date.now() + ((kind === 'dead' || kind === 'win' || kind === 'loot' || kind === 'ok' || kind === 'bad' || kind === 'hit' || kind === 'lever' || kind === 'extract') ? 1100 : 420)
     if (kind === 'hit' || kind === 'dead') {
       this.fx.shake = kind === 'dead' ? 1 : 0.85
       this.fx.flash = 1
@@ -38,9 +38,9 @@ class SceneManager {
       this.fx.flash = 0.78
       this.fx.color = 'rgba(101,214,180,0.26)'
     } else if (kind === 'bad') {
-      this.fx.shake = 0.4
-      this.fx.flash = 0.92
-      this.fx.color = 'rgba(255,80,80,0.3)'
+      this.fx.shake = 0.72
+      this.fx.flash = 1
+      this.fx.color = 'rgba(255,70,70,0.36)'
     } else {
       this.fx.shake = 0.12
       this.fx.flash = 0.45

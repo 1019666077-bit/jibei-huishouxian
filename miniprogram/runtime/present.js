@@ -342,6 +342,28 @@ function useMap(node) {
   return travel >= 2 && travel * 2 >= options.length
 }
 
+function useTravelList(node) {
+  if (!node) return false
+  const options = node.options || []
+  const travel = options.filter(isTravel)
+  const local = options.filter(opt => !isTravel(opt))
+  return travel.length > 0 && local.length > 0
+}
+
+function travelStripH(count) {
+  const n = Math.max(0, count || 0)
+  if (n <= 3) return 72
+  return Math.min(12 + n * 50, 176)
+}
+
+function travelLabel(opt, node) {
+  if (!opt) return '转移'
+  if (opt.method === 'heli') return '索道'
+  if (opt.method) return verb(opt)
+  const zone = pinZone(opt, node)
+  return ZONE_SHORT[zone] || verb(opt)
+}
+
 function useRoom(node) {
   if (!node) return false
   if (useMap(node)) return false
@@ -592,6 +614,9 @@ module.exports = {
   toneFill,
   toneLabel,
   useMap,
+  useTravelList,
+  travelStripH,
+  travelLabel,
   useRoom,
   pinZone,
   layoutPins,

@@ -567,66 +567,82 @@ function drawActor(ctx, x, y, tick, options) {
 }
 
 function drawCrate(ctx, x, y, lit, hot) {
-  fill(ctx, 'rgba(0,0,0,0.38)')
-  rect(ctx, x - 28, y - 2, 56, 8)
-  const wood = hot ? '#e0bc74' : lit ? '#a0783c' : '#4a524c'
-  fill(ctx, wood)
-  rect(ctx, x - 26, y - 38, 52, 38)
-  fill(ctx, lit ? '#7a582c' : '#2c3438')
-  rect(ctx, x - 26, y - 38, 52, 8)
-  for (let i = 1; i < 5; i++) rect(ctx, x - 26, y - 38 + i * 8, 52, 2)
+  fill(ctx, 'rgba(0,0,0,0.42)')
+  rect(ctx, x - 30, y - 2, 64, 9)
+  const front = hot ? '#d4a45a' : lit ? '#9a6e38' : '#4a4e46'
+  const top = hot ? '#f0d080' : lit ? '#c4924c' : '#6a6e64'
+  const side = hot ? '#8a6428' : lit ? '#6a4a22' : '#32362e'
+  fill(ctx, side)
+  rect(ctx, x + 20, y - 36, 12, 34)
+  fill(ctx, front)
+  rect(ctx, x - 24, y - 36, 46, 34)
+  fill(ctx, top)
+  rect(ctx, x - 20, y - 48, 46, 14)
+  fill(ctx, side)
+  rect(ctx, x + 26, y - 48, 8, 14)
   fill(ctx, hot ? '#eee0b0' : '#8a8e84')
-  rect(ctx, x - 5, y - 38, 10, 38)
-  rect(ctx, x - 26, y - 20, 52, 4)
-  fill(ctx, 'rgba(255,236,190,0.28)')
-  rect(ctx, x - 26, y - 38, 16, 10)
+  rect(ctx, x - 6, y - 36, 8, 34)
+  rect(ctx, x - 24, y - 20, 46, 4)
+  fill(ctx, 'rgba(200,230,255,0.22)')
+  rect(ctx, x - 20, y - 48, 18, 8)
   fill(ctx, hot ? '#ffc65c' : '#d4a84a')
-  gfx.roundRect(ctx, x - 7, y - 24, 14, 14, 3)
+  gfx.roundRect(ctx, x - 6, y - 22, 16, 14, 3)
   ctx.fill()
   fill(ctx, '#1a1c20')
-  rect(ctx, x - 1, y - 20, 3, 6)
+  rect(ctx, x + 1, y - 18, 4, 7)
   fill(ctx, '#65d6b4')
-  rect(ctx, x + 14, y - 34, 6, 4)
+  rect(ctx, x + 16, y - 32, 8, 5)
+  fill(ctx, 'rgba(8,12,16,0.35)')
+  rect(ctx, x - 18, y - 30, 10, 3)
 }
 
 function drawDoor(ctx, x, y, lit, hot) {
-  fill(ctx, lit ? '#1a322c' : '#141820')
-  rect(ctx, x - 26, y - 62, 52, 62)
-  fill(ctx, hot ? '#0c1c16' : '#080c10')
-  rect(ctx, x - 18, y - 54, 36, 50)
+  fill(ctx, 'rgba(0,0,0,0.35)')
+  rect(ctx, x - 28, y - 4, 56, 8)
+  fill(ctx, lit ? '#1e3a34' : '#161a20')
+  rect(ctx, x - 28, y - 68, 56, 66)
+  fill(ctx, hot ? '#0a1814' : '#080c10')
+  rect(ctx, x - 20, y - 58, 40, 52)
   fill(ctx, lit ? '#65d6b4' : '#3d5a52')
-  rect(ctx, x - 26, y - 62, 52, 6)
-  rect(ctx, x - 26, y - 62, 6, 62)
-  rect(ctx, x + 20, y - 62, 6, 62)
+  rect(ctx, x - 28, y - 68, 56, 7)
+  rect(ctx, x - 28, y - 68, 7, 66)
+  rect(ctx, x + 21, y - 68, 7, 66)
+  fill(ctx, lit ? 'rgba(142,240,208,0.28)' : 'rgba(80,100,110,0.18)')
+  rect(ctx, x - 14, y - 52, 16, 22)
   fill(ctx, hot ? '#ffc65c' : '#65d6b4')
-  gfx.circle(ctx, x + 10, y - 30, 5, hot ? '#ffc65c' : '#65d6b4')
+  gfx.circle(ctx, x + 12, y - 32, 5, hot ? '#ffc65c' : '#65d6b4')
   fill(ctx, '#1a2430')
-  rect(ctx, x + 8, y - 32, 5, 5)
-  fill(ctx, 'rgba(101,214,180,0.2)')
-  rect(ctx, x - 16, y - 6, 32, 10)
+  rect(ctx, x + 10, y - 34, 5, 5)
   fill(ctx, lit ? '#8ef0d0' : '#3d5a52')
-  rect(ctx, x - 8, y - 58, 16, 3)
+  rect(ctx, x - 8, y - 64, 16, 4)
+  fill(ctx, 'rgba(255,198,92,0.35)')
+  rect(ctx, x - 4, y - 72, 8, 5)
 }
 
 function drawLoot(ctx, x, y, lit, hot) {
-  fill(ctx, 'rgba(0,0,0,0.32)')
-  rect(ctx, x - 18, y - 2, 36, 7)
+  fill(ctx, 'rgba(0,0,0,0.36)')
+  rect(ctx, x - 20, y - 2, 40, 8)
   fill(ctx, '#2a3848')
-  rect(ctx, x - 16, y - 14, 32, 12)
+  rect(ctx, x - 18, y - 16, 36, 14)
   fill(ctx, '#1a2430')
-  rect(ctx, x - 14, y - 12, 28, 4)
-  gem(ctx, x - 12, y - 42, 24, hot || lit ? '#ffc65c' : '#65d6b4')
+  rect(ctx, x - 16, y - 14, 32, 5)
+  fill(ctx, hot || lit ? '#3a2e16' : '#243040')
+  rect(ctx, x - 14, y - 22, 28, 8)
+  gem(ctx, x - 13, y - 46, 26, hot || lit ? '#ffc65c' : '#65d6b4')
   fill(ctx, '#ffe08a')
-  rect(ctx, x - 2, y - 36, 4, 4)
+  rect(ctx, x - 2, y - 40, 5, 5)
 }
 
 function drawThreat(ctx, x, y, tick, hot) {
+  fill(ctx, 'rgba(90,12,18,0.35)')
+  rect(ctx, x - 26, y - 6, 52, 10)
   drawPerson(ctx, x, y, tick, { hostile: true, facing: -1, walking: !!hot })
-  fill(ctx, 'rgba(255,107,107,0.22)')
-  rect(ctx, x - 22, y - 56, 44, 8)
   fill(ctx, '#ff6b6b')
-  rect(ctx, x - 10, y - 62, 20, 4)
-  gfx.strokeCircle(ctx, x, y - 28, hot ? 22 : 18, 'rgba(255,107,107,0.55)', 2)
+  rect(ctx, x - 8, y - 66, 16, 5)
+  rect(ctx, x - 4, y - 70, 8, 5)
+  gfx.strokeCircle(ctx, x, y - 28, hot ? 24 : 20, 'rgba(255,107,107,0.62)', 2)
+  fill(ctx, 'rgba(255,107,107,0.16)')
+  rect(ctx, x - 24, y - 58, 48, 6)
 }
 
 function drawProp(ctx, kind, x, y, lit, tick, hot) {
@@ -650,30 +666,35 @@ function drawPropTag(ctx, kind, x, y) {
   const color = kind === 'threat' ? '#ff6b6b' : kind === 'door' ? '#65d6b4' : '#ffc65c'
   const align = ctx.textAlign
   ctx.textAlign = 'center'
-  gfx.roundRect(ctx, x - 20, y, 40, 14, 5)
-  fill(ctx, 'rgba(8,12,18,0.88)')
+  gfx.roundRect(ctx, x - 22, y, 44, 16, 6)
+  fill(ctx, 'rgba(6,10,14,0.92)')
   ctx.fill()
-  gfx.applyFont(ctx, 10, '700')
   fill(ctx, color)
-  ctx.fillText(label, x, y + 1)
+  rect(ctx, x - 18, y + 5, 4, 6)
+  gfx.applyFont(ctx, 11, '700')
+  fill(ctx, color)
+  ctx.fillText(label, x + 4, y + 2)
   ctx.textAlign = align || 'left'
 }
 
 function drawFloor(ctx, x, y, w, h) {
   fill(ctx, gfx.vgrad(ctx, x, y, h, [
-    [0, '#1a222c'],
-    [1, '#10161c']
+    [0, '#1c242e'],
+    [1, '#0e141a']
   ]))
   rect(ctx, x, y, w, h)
-  fill(ctx, '#243040')
-  rect(ctx, x, y, w, 5)
-  fill(ctx, 'rgba(12,16,20,0.45)')
-  rect(ctx, x, y + h * 0.42, w, 10)
-  rect(ctx, x + w * 0.46, y, 8, h)
-  fill(ctx, 'rgba(90,140,160,0.1)')
-  rect(ctx, x + w * 0.08, y + h * 0.62, w * 0.34, 14)
-  fill(ctx, 'rgba(255,198,92,0.06)')
-  rect(ctx, x + w * 0.58, y + h * 0.78, w * 0.28, 10)
+  fill(ctx, '#2a3644')
+  rect(ctx, x, y, w, 6)
+  fill(ctx, 'rgba(8,12,16,0.28)')
+  rect(ctx, x, y + h * 0.28, w, h * 0.22)
+  fill(ctx, 'rgba(20,28,36,0.55)')
+  rect(ctx, x, y + h * 0.62, w, h * 0.16)
+  fill(ctx, 'rgba(90,140,160,0.08)')
+  rect(ctx, x + w * 0.08, y + h * 0.7, w * 0.28, 18)
+  fill(ctx, 'rgba(255,198,92,0.05)')
+  rect(ctx, x + w * 0.62, y + h * 0.8, w * 0.24, 12)
+  fill(ctx, 'rgba(186,220,255,0.06)')
+  rect(ctx, x + w * 0.42, y, 28, h * 0.38)
 }
 
 function drawClutter(ctx, zone, x, y, w, h, tick) {
@@ -731,6 +752,10 @@ function drawRoom(ctx, zone, box, tick) {
   fill(ctx, 'rgba(255,198,92,0.35)')
   rect(ctx, x + w * 0.47, y + 3, 6, 6)
   drawFloor(ctx, x, y + wall, w, h - wall)
+  fill(ctx, 'rgba(255,220,160,0.08)')
+  rect(ctx, x + w * 0.36, y + wall, w * 0.28, h - wall)
+  fill(ctx, '#d4a84a')
+  rect(ctx, x + w * 0.47, y + wall - 2, 10, 5)
   drawClutter(ctx, zone, x, y + wall, w, h - wall, tick)
 }
 

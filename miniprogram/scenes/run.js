@@ -254,7 +254,7 @@ module.exports = manager => ({
       mark: kind,
       label,
       sub: opts.sub || '',
-      until: Date.now() + 860
+      until: Date.now() + 1100
     }
     if (opts.silent) return
     if (typeof manager.pulse === 'function') manager.pulse(opts.kind || kind, label)
@@ -525,67 +525,61 @@ module.exports = manager => ({
     const toast = present.toast(this.messages)
     const paceRaw = present.paceHint(this.run)
     const pace = toast ? '' : (/残局|选一条撤/.test(paceRaw) ? paceRaw : '')
-    const hudH = toast || pace ? 134 : 116
+    const hudH = toast || pace ? 128 : 108
     ui.panel(left, top, width, hudH, {
-      fill: '#0a1620',
-      stroke: '#4a7190',
-      radius: 14,
+      fill: '#08141c',
+      stroke: '#5a86a4',
+      radius: 16,
       rim: COLORS.ice
     })
-    ui.text(zone, left + 14, top + 10, 18, COLORS.text, '700', 56)
+    ui.text(zone, left + 16, top + 10, 13, COLORS.body, '700', 52)
     const powerOn = this.run.levers >= 2
     const needLever = !powerOn
-    ui.chip(left + 74, top + 8, needLever ? 90 : 76, 24, needLever ? `合闸 ${this.run.levers}/2` : `供电 ${this.run.levers}/2`, {
+    ui.chip(left + 72, top + 8, 118, 28, needLever ? `合闸 ${this.run.levers}/2` : `供电已通`, {
       fill: powerOn ? '#132820' : '#2a2410',
       stroke: powerOn ? COLORS.accent : COLORS.gold,
       color: powerOn ? COLORS.accent : COLORS.gold,
-      size: 12
+      size: 15
     })
     const late = (this.run.step || 0) >= 6
     const stepLabel = runMeta.stepText || present.stepChip(this.run)
-    ui.chip(left + width - 92, top + 8, 80, 24, stepLabel, {
-      fill: late ? '#2c171b' : '#102018',
-      stroke: late ? COLORS.danger : COLORS.ice,
-      color: late ? '#ffd0d0' : '#d7f4ff',
+    ui.chip(left + width - 88, top + 10, 74, 24, stepLabel, {
+      fill: late ? '#2c171b' : '#0c1820',
+      stroke: late ? COLORS.danger : '#3d5c74',
+      color: late ? '#ffd0d0' : COLORS.body,
       size: 12
     })
     const meterW = (width - 40) / 2
-    ui.meter(left + 14, top + 38, meterW, '生命', this.run.hp, this.run.hp / 100,
+    ui.meter(left + 16, top + 42, meterW, '生命', this.run.hp, this.run.hp / 100,
       this.run.hp < 60 ? COLORS.danger : COLORS.accent)
-    ui.meter(left + 26 + meterW, top + 38, meterW, '风险', this.run.risk, this.run.risk / 100,
+    ui.meter(left + 24 + meterW, top + 42, meterW, '风险', this.run.risk, this.run.risk / 100,
       this.run.risk >= 70 ? COLORS.danger : COLORS.gold)
-    const chipW = (width - 52) / 4
-    const chipY = top + 76
-    const chips = [
+    const stripY = top + 78
+    ui.panel(left + 12, stripY, width - 24, 22, {
+      fill: '#061018',
+      stroke: false,
+      radius: 8,
+      sheen: false
+    })
+    const bits = [
       { glyph: 'ammo', label: `${runMeta.ammoRounds}`, color: runMeta.ammoClass === 'ammo-out' ? COLORS.danger : COLORS.text },
       { glyph: 'med', label: `${this.run.meds}`, color: this.run.meds ? COLORS.accent : COLORS.danger },
       { glyph: 'grid', label: `${runMeta.loadGrids}/${this.run.capacity}`, color: COLORS.text },
       { glyph: 'card', label: `${this.run.cards || 0}`, color: this.run.cards ? COLORS.gold : COLORS.muted }
     ]
-    chips.forEach((chip, i) => {
-      const x = left + 12 + i * (chipW + 8)
-      ui.panel(x, chipY, chipW, 24, {
-        fill: '#0a141c',
-        stroke: '#2a4156',
-        radius: 8,
-        sheen: false
-      })
-      stage.drawHudGlyph(ui.ctx, chip.glyph, x + 6, chipY + 5, 14)
-      ui.text(chip.label, x + 24, chipY + 5, 12, chip.color, '700', chipW - 28)
+    const bitW = (width - 40) / 4
+    bits.forEach((bit, i) => {
+      const x = left + 18 + i * bitW
+      stage.drawHudGlyph(ui.ctx, bit.glyph, x, stripY + 4, 14)
+      ui.text(bit.label, x + 18, stripY + 4, 12, bit.color, '700', bitW - 22)
     })
     if (toast || pace) {
       const line = toast || pace
       const hurt = /^-|倒|失手|挨打/.test(line)
       const leverToast = /合闸|供电|索道|通电/.test(line)
-      ui.panel(left + 10, top + 104, width - 20, 24, {
-        fill: leverToast ? '#2a2410' : hurt ? '#2c171b' : '#102018',
-        stroke: leverToast ? COLORS.gold : hurt ? COLORS.danger : '#2a4156',
-        radius: 8,
-        sheen: false
-      })
       ui.ctx.fillStyle = hurt ? COLORS.danger : (leverToast ? COLORS.gold : COLORS.accent)
-      ui.ctx.fillRect(left + 18, top + 112, 6, 8)
-      ui.text(line, left + 32, top + 108, 13, hurt ? '#ffd0d0' : COLORS.gold, '700', width - 52)
+      ui.ctx.fillRect(left + 16, top + 108, 5, 8)
+      ui.text(line, left + 28, top + 104, 13, hurt ? '#ffd0d0' : COLORS.gold, '700', width - 48)
     }
     let next = top + hudH + 10
     const guide = present.leverGuide(this.run)
@@ -906,35 +900,14 @@ module.exports = manager => ({
     const showMap = travel.length > 0 || present.useMap(node)
     const showSite = local.length > 0 || (!showMap && present.useRoom(node))
     if (showMap && showSite) {
-      const mapH = Math.max(124, Math.min(150, Math.round(rect.h * 0.30)))
-      const mapRect = { x: rect.x, y: rect.y, w: rect.w, h: mapH }
-      const mapPins = present.layoutPins(Object.assign({}, node, { options: travel }), mapRect, true)
-      const skipLabels = {}
-      const busy = []
-      mapPins.forEach(pin => {
-        const look = this.optionLook(pin.opt)
-        if (this.pinNeedsPlate(pin.opt, look, node)) {
-          skipLabels[present.pinZone(pin.opt, node)] = true
-          busy.push(present.pinPlateBox(pin, mapRect))
-        }
-      })
-      stage.drawCity(ui.ctx, mapRect, {
-        current: this.run.zone,
-        tick: this.tick,
-        hot: this.run.risk >= 70,
-        marker: 'pulse',
-        compact: true,
-        reachable: this.reachMap(node, travel),
-        target: present.leverNudge(this.run) ? 'core' : '',
-        skipLabels,
-        busy
-      })
-      this.renderMapHits(ui, mapRect, travel, node, mapPins)
+      const stripH = present.travelStripH(travel.length)
+      const stripRect = { x: rect.x, y: rect.y, w: rect.w, h: stripH }
+      this.renderTravelStrip(ui, stripRect, travel, node)
       const siteRect = {
         x: rect.x,
-        y: rect.y + mapH + 6,
+        y: rect.y + stripH + 8,
         w: rect.w,
-        h: Math.max(88, rect.h - mapH - 6)
+        h: Math.max(88, rect.h - stripH - 8)
       }
       this.renderSite(ui, siteRect, Object.assign({}, node, { options: local }))
       return
@@ -956,6 +929,65 @@ module.exports = manager => ({
     reachable[this.run.zone] = true
     if (present.leverNudge(this.run)) reachable.core = true
     return reachable
+  },
+
+  renderTravelStrip(ui, rect, travel, node) {
+    ui.panel(rect.x, rect.y, rect.w, rect.h, {
+      fill: '#0a141c',
+      stroke: '#3d5c74',
+      radius: 12,
+      sheen: false
+    })
+    ui.text('去哪', rect.x + 10, rect.y + 6, 11, COLORS.gold, '700')
+    const row = travel.length <= 3
+    if (row) {
+      const gap = 8
+      const chipW = (rect.w - 20 - gap * (travel.length - 1)) / travel.length
+      travel.forEach((option, i) => {
+        const look = this.optionLook(option)
+        const x = rect.x + 10 + i * (chipW + gap)
+        const y = rect.y + 22
+        ui.panel(x, y, chipW, 42, {
+          fill: option.disabled ? '#101820' : look.fill,
+          stroke: option.disabled ? COLORS.line : look.color,
+          radius: 10,
+          glow: look.highlight ? 'rgba(255,198,92,0.22)' : null
+        })
+        ui.text(present.travelLabel(option, node), x + 8, y + 5, 14, option.disabled ? '#6a7a88' : COLORS.text, '700', chipW - 16)
+        ui.text(look.highlight ? '合闸开索道' : (look.label || present.verb(option)), x + 8, y + 22, 11,
+          option.disabled ? '#6a7a88' : look.color, '700', chipW - 16)
+        ui.addHit(x, y, chipW, 42, () => {
+          if (option.disabled) {
+            this.messages.unshift(this.pip(option) || '现在不行')
+            manager.requestRender()
+            return
+          }
+          this.pick(option.idx)
+        })
+      })
+      return
+    }
+    travel.forEach((option, i) => {
+      const look = this.optionLook(option)
+      const y = rect.y + 22 + i * 48
+      ui.panel(rect.x + 8, y, rect.w - 16, 42, {
+        fill: option.disabled ? '#101820' : look.fill,
+        stroke: option.disabled ? COLORS.line : look.color,
+        radius: 10,
+        glow: look.highlight ? 'rgba(255,198,92,0.22)' : null
+      })
+      ui.text(present.travelLabel(option, node), rect.x + 16, y + 5, 14, option.disabled ? '#6a7a88' : COLORS.text, '700', rect.w - 36)
+      ui.text(present.clip(present.listTitle(option), 16), rect.x + 16, y + 22, 11,
+        option.disabled ? '#6a7a88' : look.color, '700', rect.w - 36)
+      ui.addHit(rect.x + 8, y, rect.w - 16, 42, () => {
+        if (option.disabled) {
+          this.messages.unshift(this.pip(option) || '现在不行')
+          manager.requestRender()
+          return
+        }
+        this.pick(option.idx)
+      })
+    })
   },
 
   pinNeedsPlate(option, look, node) {
@@ -1054,7 +1086,7 @@ module.exports = manager => ({
   render(ui, v) {
     this.listRect = null
     const contentTop = this.renderHud(ui, v)
-    const toolbarH = 64
+    const toolbarH = 70
     const bottom = v.safe.bottom - toolbarH
     this.contentRect = {
       x: v.safe.left + 8,
@@ -1069,7 +1101,7 @@ module.exports = manager => ({
 
     const left = v.safe.left + 12
     const width = v.safe.right - v.safe.left - 24
-    const y = v.safe.bottom - 56
+    const y = v.safe.bottom - 60
     const gap = 8
     const bw = (width - gap * 2) / 3
     const medEnabled = this.run.meds > 0 && this.run.hp < 100 && !this.run.ended
@@ -1077,26 +1109,26 @@ module.exports = manager => ({
     const medHot = medEnabled && this.run.hp < 60
     const extractOn = engine.canExtractNow(this.run) && !this.run.ended
     const extractHot = extractOn && (this.run.hp < 60 || this.run.risk >= 70 || this.run.levers >= 2)
-    ui.button(left, y, bw, 48, this.bagOpen ? '关闭' : `背包 ${this.run.loot.length}`,
+    ui.button(left, y, bw, 52, this.bagOpen ? '关闭' : `背包 ${this.run.loot.length}`,
       () => this.toggleBag(), {
-        size: 14,
-        fill: this.bagOpen ? '#1e4f43' : (bagHot ? '#3a2e16' : '#162433'),
-        stroke: bagHot ? COLORS.gold : COLORS.rim,
+        size: 15,
+        fill: this.bagOpen ? '#1e4f43' : (bagHot ? '#3a2e16' : '#121c28'),
+        stroke: bagHot ? COLORS.gold : '#4a7190',
         color: bagHot ? COLORS.gold : COLORS.text
       })
-    ui.button(left + bw + gap, y, bw, 48,
+    ui.button(left + bw + gap, y, bw, 52,
       `打药 ${this.run.meds}`, () => this.useMed(), {
-        size: 14,
+        size: 15,
         enabled: medEnabled,
-        fill: medHot ? '#3a2a16' : '#1a2c22',
-        stroke: medHot ? COLORS.gold : COLORS.rim,
+        fill: medHot ? '#3a2a16' : '#12241c',
+        stroke: medHot ? COLORS.gold : '#4a7190',
         color: medHot ? COLORS.gold : COLORS.accent
       })
-    ui.button(left + (bw + gap) * 2, y, bw, 48, '撤离', () => this.goExtract(), {
-      size: 14,
+    ui.button(left + (bw + gap) * 2, y, bw, 52, '撤离', () => this.goExtract(), {
+      size: 15,
       enabled: extractOn,
-      fill: extractHot ? '#2a2410' : '#162433',
-      stroke: extractHot ? COLORS.gold : COLORS.rim,
+      fill: extractHot ? '#2a2410' : '#121c28',
+      stroke: extractHot ? COLORS.gold : '#4a7190',
       color: extractHot ? COLORS.gold : COLORS.text
     })
 
@@ -1133,19 +1165,21 @@ module.exports = manager => ({
     const t = 1 - left / 860
     const scale = 1.18 - t * 0.26
     const look = this.juiceLook(this.juice.kind || this.juice.mark)
-    const w = Math.min(228, v.safe.right - v.safe.left - 56)
+    const fail = look.ok === false
+    const w = Math.min(fail ? 260 : 236, v.safe.right - v.safe.left - 40)
     const x = (v.width - w) / 2
-    const y = v.height * 0.26
-    ui.panel(x, y, w, this.juice.sub ? 82 : 70, {
+    const y = v.height * 0.24
+    const h = this.juice.sub ? 96 : 80
+    ui.panel(x, y, w, h, {
       fill: look.fill,
       stroke: look.stroke,
-      radius: 14,
+      radius: 16,
       glow: look.glow,
       rim: look.stroke
     })
-    stage.drawStamp(ui.ctx, this.juice.kind || this.juice.mark, x + 36, y + 36, 15 * scale)
-    ui.text(this.juice.label, x + 64, y + (this.juice.sub ? 16 : 24), 22, look.color, '700', w - 80)
-    if (this.juice.sub) ui.text(this.juice.sub, x + 64, y + 46, 13, COLORS.body, '700', w - 80)
+    stage.drawStamp(ui.ctx, this.juice.kind || this.juice.mark, x + 40, y + h / 2, (fail ? 18 : 16) * scale)
+    ui.text(this.juice.label, x + 70, y + (this.juice.sub ? 16 : 24), fail ? 28 : 22, look.color, '700', w - 88)
+    if (this.juice.sub) ui.text(this.juice.sub, x + 70, y + 52, 15, fail ? '#ffd0d0' : COLORS.body, '700', w - 88)
   },
 
   renderLesson(ui, v) {

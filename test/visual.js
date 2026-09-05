@@ -32,6 +32,19 @@ assert.ok(present.clip('这是一段超过十六个字的转移选项标题', 16
 assert.ok(present.clip('短标', 16) === '短标')
 assert.ok(present.useOptionList({ options: [1, 2, 3, 4] }))
 assert.ok(!present.useOptionList({ options: [1, 2, 3] }))
+assert.ok(present.useTravelList({
+  options: [
+    { moveTo: 'thermal', verb: '管廊' },
+    { moveTo: 'core', verb: '刷门' },
+    { verb: '搜', safe: true }
+  ]
+}), '现场+转移应走列表而不是挤地图')
+assert.ok(!present.useTravelList({
+  options: [{ moveTo: 'thermal' }, { moveTo: 'core' }]
+}))
+assert.strictEqual(present.travelStripH(2), 72)
+assert.ok(present.travelStripH(5) > present.travelStripH(2))
+assert.strictEqual(present.travelLabel({ moveTo: 'core' }), '内环')
 assert.ok(present.OPTION_ROW_H >= 76, '四选项行高仍偏矮')
 assert.ok(present.plateText({ verb: '砸柜', text: '冲过去砸开柜子' }, { tone: 'loot', label: '搜刮' }).length <= 4)
 assert.ok(!String(present.plateText({ verb: '砸柜', full: '冲过去砸开冻港西堤的密封柜' })).includes('冻港西堤'))
@@ -167,6 +180,7 @@ const feel = require('../miniprogram/runtime/feel')
     ['收入背包']
   )
   assert.strictEqual(loot.stamp, '入手', '拾取没有即时对错标')
+  assert.strictEqual(loot.label, '入手')
   assert.strictEqual(loot.mark, 'ok')
   const miss = feel.classify(
     { hp: 80, lootCount: 0, fight: true },

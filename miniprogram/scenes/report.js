@@ -90,26 +90,21 @@ module.exports = manager => ({
       const profit = r.netProfit || 0
       const failLine = !win && r.causeChain[0] ? r.causeChain[0] : ''
       const lootStrip = win ? (r.lootItems || []).slice(0, 8) : []
-      const headH = win ? (lootStrip.length ? 244 : 204) : (failLine ? 286 : 204)
+      const headH = win ? (lootStrip.length ? 256 : 216) : (failLine ? 298 : 216)
       ui.panel(x, y, w, headH, {
-        fill: win ? '#10241c' : '#2a1418',
+        fill: win ? '#0e221a' : '#281216',
         stroke: win ? COLORS.accent : COLORS.danger,
-        glow: win ? 'rgba(101,214,180,0.18)' : 'rgba(255,107,107,0.16)',
+        glow: win ? 'rgba(101,214,180,0.16)' : 'rgba(255,107,107,0.14)',
         rim: win ? COLORS.accent : COLORS.danger
       })
-      ui.chip(x + 16, y + 16, 102, 28, win ? '撤收成功' : '未能归署', {
+      ui.chip(x + 16, y + 16, 108, 28, win ? '撤收成功' : '未能归署', {
         fill: win ? '#1e4f43' : '#4a2024',
         stroke: win ? COLORS.accent : COLORS.danger,
         color: win ? '#b8ffe8' : '#ffd0d0',
         size: 14
       })
-      ui.chip(x + 126, y + 16, 72, 28, `评级 ${r.rating}`, {
-        fill: '#0c1418',
-        stroke: ratingColor,
-        color: ratingColor,
-        size: 14
-      })
-      let bodyY = y + 58
+      ui.text(r.rating || 'C', x + w - 58, y + 10, 36, ratingColor, '700')
+      let bodyY = y + 56
       if (failLine) {
         ui.panel(x + 14, bodyY, w - 28, 68, {
           fill: '#4a2024',

@@ -35,13 +35,13 @@ function beep(kind) {
   const table = {
     hit: [[170, 0.08, 'sawtooth'], [110, 0.12, 'sawtooth']],
     dead: [[78, 0.28, 'sawtooth']],
-    loot: [[698, 0.06, 'square'], [880, 0.07, 'square'], [1046, 0.08, 'square']],
+    loot: [[784, 0.05, 'square'], [988, 0.06, 'square'], [1174, 0.08, 'square'], [1568, 0.05, 'triangle']],
     win: [[392, 0.1, 'triangle'], [523, 0.1, 'triangle'], [659, 0.12, 'triangle']],
     heal: [[330, 0.12, 'sine']],
     ok: [[247, 0.06, 'square'], [370, 0.1, 'square']],
-    bad: [[150, 0.08, 'sawtooth'], [88, 0.16, 'sawtooth']],
-    lever: [[392, 0.07, 'triangle'], [523, 0.11, 'triangle']],
-    extract: [[220, 0.07, 'sine'], [330, 0.08, 'sine'], [440, 0.12, 'triangle']]
+    bad: [[196, 0.06, 'sawtooth'], [131, 0.09, 'sawtooth'], [73, 0.18, 'sawtooth']],
+    lever: [[330, 0.06, 'triangle'], [392, 0.07, 'triangle'], [523, 0.12, 'triangle']],
+    extract: [[196, 0.06, 'sine'], [262, 0.07, 'sine'], [330, 0.08, 'sine'], [440, 0.14, 'triangle']]
   }
   const notes = table[kind] || table.ok
   notes.forEach((spec, i) => {
@@ -85,15 +85,15 @@ function classify(prev, next, messages) {
   const fail = /✗ |失败|失利/.test(all)
   if (hpDelta < 0) {
     if (fight || fail) {
-      return { kind: 'bad', label: `${hpDelta} 生命`, sub: `${hpDelta} 生命`, hpDelta, mark: 'bad', stamp: '失手' }
+      return { kind: 'bad', label: '失手', sub: `${hpDelta} 生命`, hpDelta, mark: 'bad', stamp: '失手' }
     }
-    return { kind: 'hit', label: `${hpDelta} 生命`, sub: `${hpDelta} 生命`, hpDelta, mark: 'bad', stamp: '挨打' }
+    return { kind: 'hit', label: '挨打', sub: `${hpDelta} 生命`, hpDelta, mark: 'bad', stamp: '挨打' }
   }
   if (lootGain > 0 || /收入背包|顺手拿走|拿到 /.test(text)) {
     const item = next.loot && next.loot[next.loot.length - 1]
     return {
       kind: 'loot',
-      label: item ? item.name : '物资入手',
+      label: '入手',
       sub: item ? item.name : '物资入手',
       item: item || null,
       lootGain,
@@ -119,11 +119,11 @@ function classify(prev, next, messages) {
 }
 
 function burst(kind, width, height) {
-  const n = kind === 'loot' || kind === 'win' ? 26
-    : kind === 'extract' ? 20
-    : kind === 'lever' ? 18
-    : kind === 'hit' || kind === 'dead' || kind === 'bad' ? 20
-    : 10
+  const n = kind === 'loot' || kind === 'win' ? 32
+    : kind === 'extract' ? 24
+    : kind === 'lever' ? 20
+    : kind === 'hit' || kind === 'dead' || kind === 'bad' ? 28
+    : 12
   const color = kind === 'hit' || kind === 'dead' || kind === 'bad'
     ? '#ff6b6b'
     : kind === 'loot' || kind === 'win' ? '#ffc65c'
@@ -131,17 +131,25 @@ function burst(kind, width, height) {
     : kind === 'extract' ? '#65a9ff' : '#65d6b4'
   const bits = []
   const cx = width / 2
-  const cy = height * 0.36
+  const cy = height * 0.34
   for (let i = 0; i < n; i++) {
-    const a = (Math.PI * 2 * i) / n + Math.random() * 0.35
-    const sp = 2.4 + Math.random() * 4.8
-    bits.push({
-      x: cx, y: cy,
-      vx: Math.cos(a) * sp,
-      vy: Math.sin(a) * sp - 1.4,
-      life: 1,
-      color
-    })
+    let a = (Math.PI * 2 * i) / n + Math.random() * 0.28
+    let sp = 2.8 + Math.random() * 5.2
+    let vx = Math.cos(a) * sp
+    let vy = Math.sin(a) * sp - 1.6
+    if (kind === 'loot' || kind === 'win') {
+      a = -Math.PI / 2 + (Math.random() - 0.5) * 1.4
+      vx = Math.cos(a) * (2 + Math.random() * 3.2)
+      vy = Math.sin(a) * (4 + Math.random() * 4) - 2.2
+    } else if (kind === 'extract') {
+      vx = 3.2 + Math.random() * 4.4
+      vy = (Math.random() - 0.5) * 2.4
+    } else if (kind === 'bad' || kind === 'hit' || kind === 'dead') {
+      sp = 3.6 + Math.random() * 5.8
+      vx = Math.cos(a) * sp
+      vy = Math.sin(a) * sp
+    }
+    bits.push({ x: cx, y: cy, vx, vy, life: 1, color })
   }
   return bits
 }
