@@ -35,6 +35,8 @@ function pickOption(state) {
     const fits = state.weight + it.weight <= state.capacity
     return (fits || it.tier === 'red' || it.tier === 'gold') ? take.idx : skip.idx
   }
+  const pull = opts.find(o => !o.disabled && o.verb === '合闸')
+  if (pull && state.levers < 2) return pull.idx
   if (state.node.type === 'escape') {
     if (state.weight > state.capacity + 5) engine.dropHeaviest(state)
     const wait = opts.find(o => o.idx >= ESCAPE_CHOICE.options.length)
@@ -42,7 +44,8 @@ function pickOption(state) {
     const heli = escapeOption(state, 'heli')
     const rocket = escapeOption(state, 'rocket')
     if (state.levers >= 2 && heli) return heli.idx
-    if (state.hp > 65 && rocket) return rocket.idx
+    const heavy = state.weight > state.safebox
+    if (rocket && (state.hp > 65 || (heavy && state.hp > 52))) return rocket.idx
     return opts[opts.length - 1].idx
   }
   return state.hp >= 70 ? opts[0].idx : opts[opts.length - 1].idx

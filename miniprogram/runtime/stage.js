@@ -355,10 +355,12 @@ function drawCityDots(ctx, box, options = {}) {
     if (here || reach) {
       gfx.applyFont(ctx, here ? 11 : 10, '700')
       const label = ZONE_SHORT[key] || key
+      const above = p.y >= 0.60
+      const ly = above ? py - 18 : py + 8
       fill(ctx, 'rgba(6,12,18,0.82)')
-      rect(ctx, px - 22, py + 8, 44, 13)
+      rect(ctx, px - 22, ly, 44, 13)
       fill(ctx, here ? '#7ee8c8' : '#ffe08a')
-      ctx.fillText(label, px, py + 9)
+      ctx.fillText(label, px, ly + 1)
     }
   })
   ctx.textAlign = align || 'left'

@@ -6,6 +6,14 @@ const storage = {}
 const events = {}
 let modalConfirm = true
 let exited = false
+let pageScroll = 240
+global.window = {
+  scrollY: 240,
+  scrollTo(x, y) {
+    pageScroll = typeof x === 'object' ? (x.top || 0) : (y || 0)
+    global.window.scrollY = pageScroll
+  }
+}
 
 const ctx = new Proxy({
   fillStyle: '', strokeStyle: '', lineWidth: 1, font: '', textBaseline: '', textAlign: '',
@@ -18,7 +26,8 @@ const canvas = {
   width: 0,
   height: 0,
   getContext() { return ctx },
-  requestAnimationFrame(fn) { fn() }
+  requestAnimationFrame(fn) { fn() },
+  scrollIntoView() { pageScroll = 0; global.window.scrollY = 0 }
 }
 
 global.wx = {
@@ -67,7 +76,10 @@ assert.strictEqual(manager.sceneName, 'index', '读完并同意后没有进入�
 assert.strictEqual(storage.legal_consent_v1.version, 6, '协议确认没有写入当前条款版本')
 
 // 一局完整链路：选择能买得起的装备，之后始终选第一个可用项，必须进入本地战报
+pageScroll = 240
+global.window.scrollY = 240
 manager.go('run')
+assert.strictEqual(pageScroll, 0, '进入局内后页面滚动没有回到顶部，HUD会被顶出视野')
 assert.ok(manager.scene.run.loadout, '出发后仍停在战备选择')
 assert.strictEqual(manager.scene.run.node.id, 'opener_fog', '首局没有进入雾中短戏')
 assert.ok(present.useRoom(manager.scene.run.node), '首局现场没有走进房间')

@@ -401,7 +401,7 @@ function withRoomActions(state, node) {
       verb: '合闸',
       safe: true,
       need: { maxLevers: 2, leverRoom: node.room },
-      success: { levers: 1, leverRoom: node.room, risk: 8, log: `${here.name}配电柄已合上` }
+      success: { levers: 1, leverRoom: node.room, risk: 4, log: `${here.name}配电柄已合上` }
     })
   }
 
@@ -416,12 +416,12 @@ function withRoomActions(state, node) {
         extra.push({
           text: `穿过风暴庭院直奔${LEVER_ROOMS[want].name}，接通第二路电源`,
           verb: '穿庭合闸',
-          base: 70,
+          base: 78,
           success: {
-            levers: 1, leverRoom: want, goEvent: go, risk: 10,
+            levers: 1, leverRoom: want, goEvent: go, risk: 8,
             log: `借避风墙穿过庭院，${LEVER_ROOMS[want].name}供电接通`
           },
-          fail: { hp: -18, risk: 18, log: '穿庭院时被履带哨机锁定，只能退回' }
+          fail: { hp: -14, risk: 14, log: '穿庭院时被履带哨机锁定，只能退回' }
         })
       }
     }
@@ -478,6 +478,9 @@ function decorateNode(state, node) {
       if (node.type === 'move' && state.risk >= 50) {
         const hint = state.risk >= 75 ? '途中很可能交火' : '途中可能遭遇'
         ct = ct ? `${ct} · ${hint}` : hint
+      }
+      if (state.levers < 2 && (o.moveTo === 'core' || /coolant|compressor/.test(o.goEvent || ''))) {
+        ct = ct ? `${ct} · 可合闸` : '可合闸'
       }
       const moveTo = o.moveTo || (o.success && o.success.moveTo) || null
       const goEvent = o.goEvent || (o.success && o.success.goEvent) || null
@@ -719,7 +722,7 @@ function choose(state, optIdx) {
   // 时间流逝：每步风险自然上涨（停留越久越危险）
   state.step += 1
   if (opt.success && opt.success.skipStep) { state.step += 1; state.skipped = true }
-  changeRisk(state, 4)
+  changeRisk(state, 2)
   if (overload(state) > 0) state.sig.overloadSteps += 1
   if (state.loadout !== 'knife' && ammoRounds(state) < 30) state.sig.dryAmmoSteps += 1
 
@@ -739,7 +742,7 @@ function choose(state, optIdx) {
       if (Math.random() * 100 < h.chance * heat) { encounterText = h.text; break }
     }
   }
-  const baseChance = (2 + Math.max(0, state.risk - 50) * 0.8) * heat
+  const baseChance = (2 + Math.max(0, state.risk - 55) * 0.65) * heat
   if (!encounterText && Math.random() * 100 < baseChance) {
     encounterText = brick ? '演算主机的定位脉冲暴露了路线——追踪队正在接近' : '遭遇灰潮武装搜索组'
   }
@@ -747,7 +750,7 @@ function choose(state, optIdx) {
     // 基础伤害经护板档位修正。
     const dmg = armored(state, 22 + Math.floor(Math.random() * 18))
     state.hp = clamp(state.hp - dmg, 0, 100)
-    changeRisk(state, 6)
+    changeRisk(state, 4)
     state.sig.encounters += 1
     state.sig.encounterDmg += dmg
     pushLog(state, `${encounterText}，交火损失${dmg}生命${knife ? '（轻装防护不足）' : ''}`, 'crit')
@@ -872,7 +875,9 @@ function resolveEvent(state, opt, messages) {
   //   auto   = 油点/地上/顺手捡——看见就秒拿直接进包，没有搜索过程
   if (eff.loot) {
     const items = []
-    for (let i = 0; i < (eff.lootCount || 1); i++) {
+    let rolls = eff.lootCount || 1
+    if (pass && opt.safe && rolls === 1 && Math.random() < 0.5) rolls += 1
+    for (let i = 0; i < rolls; i++) {
       const avoid = state.loot.map(it => it.name).concat(items.map(it => it.name))
       const item = rollLoot(eff.loot, state.redBoost, avoid)
       if (item) items.push(item)
@@ -1504,6 +1509,11 @@ function pickZoneEvent(state) {
     const roomPool = pool.filter(e => !e.room || e.room === state.lastRoom || near.includes(e.room))
     if (roomPool.length) pool = roomPool
     else pushLog(state, '相邻房间已完成回收，穿过风暴庭院转往内环另一侧', 'move')
+    if (state.levers === 1) {
+      const want = state.leverRooms.coolant ? 'compressor' : 'coolant'
+      const biased = pool.filter(e => e.room === want)
+      if (biased.length && Math.random() < 0.42) pool = biased
+    }
   }
   // 一个都挑不出来（例如配电柄已启动、本区只剩守柄事件）：不能崩，改成一次真实的转移抉择
   if (!pool.length) {
@@ -1562,11 +1572,11 @@ function forceExtract(state) {
     const left = pl.items.length - pl.idx
     for (let i = pl.idx; i < pl.items.length; i++) state.sig.skippedValue += pl.items[i].value
     state.pendingLoot = null
-    messages.push(left > 0 ? `剩下 ${left} 件不翻了，转向撤收线` : '转向撤收线')
+    messages.push(left > 0 ? `剩下 ${left} 件不翻了，转向撤离线` : '转向撤离线')
   } else {
-    messages.push('带着已经到手的货，转向撤收线')
+    messages.push('带着已经到手的货，转向撤离线')
   }
-  pushLog(state, '主动收工，前往撤收线', 'move')
+  pushLog(state, '主动收工，前往撤离线', 'move')
   state.step = Math.max(state.step, ESCAPE_STEP)
   state.node = decorateNode(state, escapeNodeFor(state))
   return { state, messages }
@@ -1582,7 +1592,7 @@ function refreshNode(state) {
   return state.node
 }
 
-// 使用医疗模块：恢复35生命，不占步数，但操作声使风险+10。
+// 使用医疗模块：恢复35生命，不占步数，但操作声使风险+6。
 function useMed(state) {
   if (!state.alive || state.ended) return null
   if (state.meds <= 0 || state.hp >= 100) return null
@@ -1590,9 +1600,9 @@ function useMed(state) {
   state.medsUsed += 1
   const before = state.hp
   state.hp = clamp(state.hp + 35, 0, 100)
-  changeRisk(state, 10)
+  changeRisk(state, 6)
   const healed = state.hp - before
-  pushLog(state, `停下打药：生命+${healed}，药音传了出去（风险+10）`, 'ok')
+  pushLog(state, `停下打药：生命+${healed}，药音传了出去（风险+6）`, 'ok')
   return { healed }
 }
 

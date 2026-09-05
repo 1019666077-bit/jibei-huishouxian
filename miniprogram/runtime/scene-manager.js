@@ -75,6 +75,10 @@ class SceneManager {
     this.sceneName = name
     this.scene = factory(this)
     if (this.scene.enter) this.scene.enter(params || {})
+    if (name === 'run') {
+      const Scroll = require('./scroll')
+      Scroll.resetView(this.canvas)
+    }
     this.requestRender()
   }
 

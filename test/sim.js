@@ -106,7 +106,10 @@ function pickOption(state, strategy) {
       return state.hp >= 70 ? opts[0].idx : opts[opts.length - 1].idx
     }
     default: {
-      // mixed：70血以上偏激进；双电源走索道，血厚走列车，否则走雪橇
+      // mixed：看见合闸就拉（引导更清楚后的普通打法）；双电源走索道；
+      // 货超过回收匣且还能打时优先列车，避免雪橇把整包留在台上。
+      const pull = opts.find(o => !o.disabled && o.verb === '合闸')
+      if (pull && state.levers < 2) return pull.idx
       if (state.node.type === 'escape') {
         if (state.weight > state.capacity + 5) dropHeaviest(state)
         const wait = opts.find(o => o.idx >= ESCAPE_CHOICE.options.length)
@@ -114,7 +117,8 @@ function pickOption(state, strategy) {
         const heli = escapeOption(state, 'heli')
         const rocket = escapeOption(state, 'rocket')
         if (state.levers >= 2 && heli) return heli.idx
-        if (state.hp > 65 && rocket) return rocket.idx
+        const heavy = state.weight > state.safebox
+        if (rocket && (state.hp > 65 || (heavy && state.hp > 52))) return rocket.idx
         return opts[opts.length - 1].idx
       }
       return state.hp >= 70 ? opts[0].idx : opts[opts.length - 1].idx
