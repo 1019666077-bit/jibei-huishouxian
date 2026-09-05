@@ -2,7 +2,7 @@
 // 用法：node test/content.js
 const assert = require('assert')
 const engine = require('../miniprogram/core/engine')
-const { EVENTS, ESCAPE_CHOICE, MOVE_ROUTES, MOVE_CHOICE_CORE } = require('../miniprogram/data/events')
+const { EVENTS, ESCAPE_CHOICE, MOVE_ROUTES, MOVE_CHOICE_CORE, OPENER_EVENT } = require('../miniprogram/data/events')
 const { makeItem, rollLoot, ITEM_POOL } = require('../miniprogram/data/items')
 
 const byId = id => EVENTS.find(e => e.id === id)
@@ -431,6 +431,20 @@ const injectedOption = node => {
 {
   const s = engine.newRun({ autoLoadout: 'half', opener: true })
   assert.strictEqual(s.cost, 0, '首局教程不应扣押金')
+  assert.strictEqual(s.tutorial, true)
+  const smash = OPENER_EVENT.options.find(o => o.verb === '砸柜')
+  const shot = OPENER_EVENT.options.find(o => o.verb === '开枪')
+  const retreat = s.node.options.find(o => o.verb === '撤')
+  assert.ok(smash && smash.fail && smash.fail.hp >= -10, '首局砸柜失败伤害过重')
+  assert.ok(shot && shot.fail && shot.fail.hp >= -12, '首局开枪失败伤害过重')
+  assert.ok(OPENER_EVENT.options.some(o => o.success && o.success.goEvent === 'core_coolant'), '首局稳妥项没有指向冷却舱')
+  engine.choose(s, retreat.idx)
+  assert.ok(s.lastRoom === 'coolant' || s.zone === 'core', '首局稳妥项没有送进内环')
+  assert.ok((s.node.options || []).some(o => o.verb === '合闸'), '转入冷却舱后没有合闸')
+}
+
+{
+  const s = engine.newRun({ autoLoadout: 'half', opener: true })
   assert.strictEqual(s.tutorial, true)
   s.step = 2
   engine.refreshNode(s)

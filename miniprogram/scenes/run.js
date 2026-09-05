@@ -67,7 +67,7 @@ module.exports = manager => ({
     this.run = engine.newRun(options)
     if (medical) this.messages.push('药+1')
     if (preset && preset.goal) this.messages.unshift(present.clip(preset.goal, 12))
-    if (opener) this.messages.unshift('雾里有人。柜还亮。')
+    if (opener) this.messages.unshift('内环合闸开索道')
     this.pickup = null
     this.pickupUntil = 0
     this.endTimer = null
@@ -91,6 +91,7 @@ module.exports = manager => ({
     this.fight = null
     this.seenNode = ''
     this.tick = 0
+    this.teach()
     Scroll.resetView(manager.canvas)
     if (this.breath) clearInterval(this.breath)
     this.breath = setInterval(() => {
@@ -323,7 +324,7 @@ module.exports = manager => ({
       this.hintedLever = true
       this.hintedCore = true
       this.messages.unshift('先合闸，再走索道')
-    } else if (!this.hintedCore && this.run.levers < 2 && (this.run.zone === 'core' || hasHint)) {
+    } else if (!this.hintedCore && this.run.levers < 2 && (this.run.tutorial || this.run.zone === 'core' || hasHint)) {
       this.hintedCore = true
       this.messages.unshift('内环可合闸开索道')
     }
@@ -520,40 +521,41 @@ module.exports = manager => ({
     const width = v.safe.right - v.safe.left - 20
     const top = v.safe.top + 6
     const runMeta = engine.getRunMeta(this.run)
-    const zone = runMeta.zoneName || present.ZONE_SHORT[this.run.zone] || '冻港'
+    const zone = present.ZONE_SHORT[this.run.zone] || '冻港'
     const toast = present.toast(this.messages)
     const paceRaw = present.paceHint(this.run)
     const pace = toast ? '' : (/残局|选一条撤/.test(paceRaw) ? paceRaw : '')
-    const hudH = toast || pace ? 126 : 108
+    const hudH = toast || pace ? 134 : 116
     ui.panel(left, top, width, hudH, {
-      fill: '#0d1a24',
-      stroke: '#3d5c74',
-      radius: 12,
+      fill: '#0a1620',
+      stroke: '#4a7190',
+      radius: 14,
       rim: COLORS.ice
     })
-    ui.text(zone, left + 12, top + 8, 17, COLORS.text, '700', width * 0.42)
+    ui.text(zone, left + 14, top + 10, 18, COLORS.text, '700', 56)
     const powerOn = this.run.levers >= 2
-    ui.chip(left + 12 + Math.min(132, 18 + String(zone).length * 15), top + 7, 70, 20, `供电 ${this.run.levers}/2`, {
+    const needLever = !powerOn
+    ui.chip(left + 74, top + 8, needLever ? 90 : 76, 24, needLever ? `合闸 ${this.run.levers}/2` : `供电 ${this.run.levers}/2`, {
       fill: powerOn ? '#132820' : '#2a2410',
       stroke: powerOn ? COLORS.accent : COLORS.gold,
       color: powerOn ? COLORS.accent : COLORS.gold,
-      size: 11
+      size: 12
     })
     const late = (this.run.step || 0) >= 6
     const stepLabel = runMeta.stepText || present.stepChip(this.run)
-    ui.chip(left + width - 88, top + 6, 76, 22, stepLabel, {
-      fill: late ? '#2c171b' : '#132820',
-      stroke: late ? COLORS.danger : COLORS.accent,
-      color: late ? '#ffd0d0' : '#b8ffe8',
+    ui.chip(left + width - 92, top + 8, 80, 24, stepLabel, {
+      fill: late ? '#2c171b' : '#102018',
+      stroke: late ? COLORS.danger : COLORS.ice,
+      color: late ? '#ffd0d0' : '#d7f4ff',
       size: 12
     })
-    const meterW = (width - 36) / 2
-    ui.meter(left + 12, top + 32, meterW, '生命', this.run.hp, this.run.hp / 100,
+    const meterW = (width - 40) / 2
+    ui.meter(left + 14, top + 38, meterW, '生命', this.run.hp, this.run.hp / 100,
       this.run.hp < 60 ? COLORS.danger : COLORS.accent)
-    ui.meter(left + 24 + meterW, top + 32, meterW, '风险', this.run.risk, this.run.risk / 100,
+    ui.meter(left + 26 + meterW, top + 38, meterW, '风险', this.run.risk, this.run.risk / 100,
       this.run.risk >= 70 ? COLORS.danger : COLORS.gold)
-    const chipW = (width - 48) / 4
-    const chipY = top + 68
+    const chipW = (width - 52) / 4
+    const chipY = top + 76
     const chips = [
       { glyph: 'ammo', label: `${runMeta.ammoRounds}`, color: runMeta.ammoClass === 'ammo-out' ? COLORS.danger : COLORS.text },
       { glyph: 'med', label: `${this.run.meds}`, color: this.run.meds ? COLORS.accent : COLORS.danger },
@@ -562,43 +564,43 @@ module.exports = manager => ({
     ]
     chips.forEach((chip, i) => {
       const x = left + 12 + i * (chipW + 8)
-      ui.panel(x, chipY, chipW, 22, {
+      ui.panel(x, chipY, chipW, 24, {
         fill: '#0a141c',
         stroke: '#2a4156',
         radius: 8,
         sheen: false
       })
-      stage.drawHudGlyph(ui.ctx, chip.glyph, x + 6, chipY + 4, 14)
-      ui.text(chip.label, x + 24, chipY + 4, 12, chip.color, '700', chipW - 28)
+      stage.drawHudGlyph(ui.ctx, chip.glyph, x + 6, chipY + 5, 14)
+      ui.text(chip.label, x + 24, chipY + 5, 12, chip.color, '700', chipW - 28)
     })
     if (toast || pace) {
       const line = toast || pace
       const hurt = /^-|倒|失手|挨打/.test(line)
       const leverToast = /合闸|供电|索道|通电/.test(line)
-      ui.panel(left + 8, top + 96, width - 16, 24, {
+      ui.panel(left + 10, top + 104, width - 20, 24, {
         fill: leverToast ? '#2a2410' : hurt ? '#2c171b' : '#102018',
         stroke: leverToast ? COLORS.gold : hurt ? COLORS.danger : '#2a4156',
         radius: 8,
         sheen: false
       })
       ui.ctx.fillStyle = hurt ? COLORS.danger : (leverToast ? COLORS.gold : COLORS.accent)
-      ui.ctx.fillRect(left + 16, top + 104, 6, 8)
-      ui.text(line, left + 30, top + 100, 13, hurt ? '#ffd0d0' : COLORS.gold, '700', width - 48)
+      ui.ctx.fillRect(left + 18, top + 112, 6, 8)
+      ui.text(line, left + 32, top + 108, 13, hurt ? '#ffd0d0' : COLORS.gold, '700', width - 52)
     }
-    let next = top + hudH + 8
+    let next = top + hudH + 10
     const guide = present.leverGuide(this.run)
     if (guide) {
       const card = present.lesson(this.run)
-      ui.panel(left, next, width, 52, {
-        fill: '#2a2410',
+      ui.panel(left, next, width, 56, {
+        fill: '#241c0c',
         stroke: COLORS.gold,
-        radius: 10,
+        radius: 12,
         rim: COLORS.gold,
         sheen: false
       })
-      stage.drawLessonRail(ui.ctx, { x: left + 8, y: next + 6, w: width - 16, h: 22 }, card.steps, this.tick)
-      ui.text(guide, left + 10, next + 32, 12, '#ffe08a', '700', width - 20)
-      next += 60
+      stage.drawLessonRail(ui.ctx, { x: left + 10, y: next + 8, w: width - 20, h: 22 }, card.steps, this.tick)
+      ui.text(guide, left + 12, next + 34, 13, '#ffe08a', '700', width - 24)
+      next += 66
     }
     return next
   },
@@ -686,7 +688,7 @@ module.exports = manager => ({
           glow: look.highlight ? 'rgba(255,198,92,0.22)' : null
         })
         ui.ctx.textAlign = 'center'
-        ui.text(look.highlight ? '索道' : present.caption(option), pin.x, pin.y + 9, 11, option.disabled ? '#6a7a88' : COLORS.text, '700', 80)
+        ui.text(look.highlight ? '索道' : present.plateText(option, look), pin.x, pin.y + 9, 11, option.disabled ? '#6a7a88' : COLORS.text, '700', 80)
         const pip = this.pip(option)
         const cost = option.costText ? present.clip(option.costText, 8) : ''
         ui.text(look.highlight ? '点这里撤' : ([pip, cost].filter(Boolean).join(' ') || look.label), pin.x, pin.y + 24, 10,
@@ -786,24 +788,25 @@ module.exports = manager => ({
       const option = prop.opt
       const hot = hotIdx === option.idx
       stage.drawProp(ui.ctx, prop.kind, prop.x, prop.y, !option.disabled, this.tick, hot)
+      stage.drawPropTag(ui.ctx, prop.kind, prop.x, prop.y + 8)
       if (listMode) {
         ui.addHit(prop.x - 28, prop.y - 36, 56, 64, () => activate(option, prop))
         return
       }
       const look = this.optionLook(option)
-      const plateY = prop.y + 6
-      ui.panel(prop.x - 50, plateY, 100, 46, {
+      const plateY = prop.y + 24
+      ui.panel(prop.x - 50, plateY, 100, 40, {
         fill: hot || look.highlight ? look.fill : '#101820',
         stroke: option.disabled ? COLORS.line : look.color,
         radius: 8,
         glow: look.highlight ? `rgba(255,198,92,${0.16 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.28))})` : null
       })
-      stage.drawToneMark(ui.ctx, look.tone, prop.x - 46, plateY + 10, 18)
+      stage.drawToneMark(ui.ctx, look.tone, prop.x - 46, plateY + 8, 18)
       ui.ctx.textAlign = 'center'
-      ui.text(look.highlight ? look.label : present.caption(option), prop.x + 8, plateY + 5, 12, option.disabled ? '#6a7a88' : COLORS.text, '700', 76)
+      ui.text(present.plateText(option, look), prop.x + 8, plateY + 4, 13, option.disabled ? '#6a7a88' : COLORS.text, '700', 76)
       const pip = this.pip(option)
       const cost = option.costText ? present.clip(option.costText, 8) : ''
-      ui.text(look.highlight ? '开索道' : ([pip, cost].filter(Boolean).join(' · ') || look.label), prop.x + 8, plateY + 26, 11,
+      ui.text(look.highlight ? '开索道' : ([pip, cost].filter(Boolean).join(' · ') || look.label), prop.x + 8, plateY + 22, 11,
         option.disabled ? '#6a7a88' : look.color, '700')
       ui.ctx.textAlign = 'left'
       ui.addHit(prop.x - 52, prop.y - 58, 104, 116, () => activate(option, prop))
@@ -859,7 +862,7 @@ module.exports = manager => ({
         const textW = listRect.w - 56 - railW
         ui.wrapped(present.listTitle(option), listRect.x + 46, y + 8, textW, {
           size: 15,
-          lineHeight: 20,
+          lineHeight: 21,
           maxLines: 2,
           weight: '700',
           color: option.disabled ? '#6a7a88' : COLORS.text
@@ -962,10 +965,10 @@ module.exports = manager => ({
       }
       if (extra) {
         const above = pin.ny > 0.52
-        const plateW = look.highlight ? 56 : 52
+        const plateW = 64
         const plateH = 16
-        let plateX = pin.x - plateW / 2
-        let plateY = above ? pin.y - plateH - 8 : pin.y + 12
+        let plateX = pin.x - plateW / 2 + (pin.nx < 0.28 ? 18 : pin.nx > 0.72 ? -18 : 0)
+        let plateY = above ? pin.y - plateH - 10 : pin.y + 14
         plateX = Math.min(rect.x + rect.w - plateW - 2, Math.max(rect.x + 2, plateX))
         plateY = Math.min(rect.y + rect.h - plateH - 2, Math.max(rect.y + 2, plateY))
         ui.panel(plateX, plateY, plateW, plateH, {
@@ -976,8 +979,8 @@ module.exports = manager => ({
           glow: look.highlight ? 'rgba(255,198,92,0.22)' : null
         })
         ui.ctx.textAlign = 'center'
-        ui.text(look.highlight ? look.label : (look.tone === 'fight' || look.tone === 'safe' ? look.label : (option.verb || present.caption(option))),
-          plateX + plateW / 2, plateY + 2, 10,
+        ui.text(present.plateText(option, look),
+          plateX + plateW / 2, plateY + 2, 11,
           option.disabled ? '#6a7a88' : look.color, '700', plateW - 8)
         ui.ctx.textAlign = 'left'
       }
@@ -1130,7 +1133,7 @@ module.exports = manager => ({
       glow: look.glow,
       rim: look.stroke
     })
-    stage.drawJudge(ui.ctx, look.ok, x + 36, y + 36, 15 * scale)
+    stage.drawStamp(ui.ctx, this.juice.kind || this.juice.mark, x + 36, y + 36, 15 * scale)
     ui.text(this.juice.label, x + 64, y + (this.juice.sub ? 16 : 24), 22, look.color, '700', w - 80)
     if (this.juice.sub) ui.text(this.juice.sub, x + 64, y + 46, 13, COLORS.body, '700', w - 80)
   },

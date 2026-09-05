@@ -32,7 +32,9 @@ assert.ok(present.clip('这是一段超过十六个字的转移选项标题', 16
 assert.ok(present.clip('短标', 16) === '短标')
 assert.ok(present.useOptionList({ options: [1, 2, 3, 4] }))
 assert.ok(!present.useOptionList({ options: [1, 2, 3] }))
-assert.ok(present.OPTION_ROW_H >= 70, '四选项行高仍偏矮')
+assert.ok(present.OPTION_ROW_H >= 76, '四选项行高仍偏矮')
+assert.ok(present.plateText({ verb: '砸柜', text: '冲过去砸开柜子' }, { tone: 'loot', label: '搜刮' }).length <= 4)
+assert.ok(!String(present.plateText({ verb: '砸柜', full: '冲过去砸开冻港西堤的密封柜' })).includes('冻港西堤'))
 assert.ok(present.dangerPip({ rounds: 20, chance: 48 }))
 assert.ok(!present.dangerPip({ safe: true, chance: 48, rounds: 20 }))
 assert.ok(!present.dangerPip({ chance: 80, rounds: 20 }))
@@ -60,8 +62,11 @@ assert.ok(present.leverPath({ levers: 2 }).includes('索道'))
 assert.ok(present.leverNudge({ levers: 0, step: 3 }))
 assert.ok(!present.leverNudge({ levers: 0, step: 1 }))
 assert.ok(!present.leverNudge({ levers: 1, step: 5 }))
+assert.ok(present.leverNudge({ levers: 0, step: 0, tutorial: true }), '首局应从第0步催合闸')
+assert.ok(present.leverNudge({ levers: 0, step: 0, openerId: 'opener_fog' }))
 assert.ok(present.leverGuide({ zone: 'harbor', levers: 0, step: 4, node: { options: [] } }).includes('冷却舱'))
 assert.ok(!present.leverGuide({ zone: 'harbor', levers: 0, step: 1, node: { options: [] } }))
+assert.ok(present.leverGuide({ zone: 'harbor', levers: 0, step: 0, tutorial: true, node: { options: [] } }).includes('冷却舱'))
 assert.ok(present.isLeverTarget({ moveTo: 'core' }))
 assert.ok(present.isLeverTarget({ goEvent: 'core_coolant' }))
 assert.ok(!present.isLeverTarget({ moveTo: 'thermal' }))
@@ -91,6 +96,19 @@ assert.ok(present.toast(['电源已通，点索道']).includes('索道'))
     Math.abs(a.x - b.x) < 70 && Math.abs(a.y - b.y) < 36
   ))
   assert.ok(!overlap, '四选项房间铭牌仍严重重叠')
+  const tighter = packed.some((a, i) => packed.slice(i + 1).some(b =>
+    Math.abs(a.x - b.x) < 90 && Math.abs(a.y - b.y) < 44
+  ))
+  assert.ok(!tighter, '房间道具槽位仍挤在一起')
+}
+
+{
+  ;[{ w: 360, h: 220 }, { w: 360, h: 100 }].forEach(box => {
+    const labels = present.cityLabelLayout({ x: 0, y: 0, w: box.w, h: box.h })
+    assert.ok(labels.length >= 7, '城市标签数量不足')
+    const clash = labels.some((a, i) => labels.slice(i + 1).some(b => present.boxesOverlap(a, b, 2)))
+    assert.ok(!clash, `城市标签在 ${box.w}x${box.h} 仍重叠`)
+  })
 }
 
 const box = { x: 0, y: 0, w: 320, h: 180 }
@@ -118,6 +136,12 @@ stage.drawHudGlyph(ctx, 'ammo', 10, 240, 14)
 stage.drawHudGlyph(ctx, 'med', 30, 240, 14)
 stage.drawHudGlyph(ctx, 'grid', 50, 240, 14)
 stage.drawHudGlyph(ctx, 'card', 70, 240, 14)
+stage.drawStamp(ctx, 'loot', 240, 210, 16)
+stage.drawStamp(ctx, 'extract', 280, 210, 16)
+stage.drawStamp(ctx, 'lever', 320, 210, 16)
+stage.drawPropTag(ctx, 'crate', 80, 150)
+stage.drawPropTag(ctx, 'threat', 140, 150)
+stage.drawPropTag(ctx, 'door', 200, 150)
 stage.drawLessonRail(ctx, { x: 10, y: 260, w: 300, h: 22 }, [
   { label: '合闸', done: true },
   { label: '再合闸', done: false },

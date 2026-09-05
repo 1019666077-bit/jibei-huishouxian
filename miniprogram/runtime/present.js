@@ -19,6 +19,17 @@ const ZONE_POS = {
   extract: { x: 0.84, y: 0.80 }
 }
 
+// 地图标签锚点：中轴四房错开，避免「塔群/指挥塔/内环/管廊」叠成一团。
+const ZONE_LABEL = {
+  weather: { ox: -34, oy: 14 },
+  aurora: { ox: 34, oy: 12 },
+  harbor: { ox: 0, oy: 14 },
+  core: { ox: -36, oy: 12 },
+  thermal: { ox: 30, oy: 14 },
+  lift: { ox: 0, oy: 14 },
+  extract: { ox: -4, oy: 14 }
+}
+
 const ROOM_POS = {
   maglev: { x: 0.38, y: 0.38 },
   coolant: { x: 0.62, y: 0.38 },
@@ -131,7 +142,15 @@ function caption(opt) {
   return verb(opt)
 }
 
-const OPTION_ROW_H = 72
+const OPTION_ROW_H = 76
+
+function plateText(opt, look) {
+  if (look && look.highlight) return look.label
+  if (look && (look.tone === 'fight' || look.tone === 'safe' || look.tone === 'lever' || look.tone === 'extract')) {
+    return look.label
+  }
+  return verb(opt)
+}
 
 function isLever(opt) {
   if (!opt) return false
@@ -252,7 +271,9 @@ function shouldForceLesson(run, flags = {}) {
 
 function leverNudge(run) {
   if (!run || run.ended) return false
-  return (run.levers || 0) < 1 && (run.step || 0) >= 3
+  if ((run.levers || 0) >= 1) return false
+  const early = !!(run.tutorial || run.openerId)
+  return (run.step || 0) >= (early ? 0 : 3)
 }
 
 function isLeverTarget(opt) {
@@ -372,11 +393,11 @@ function useOptionList(node) {
 function layoutRoom(node, rect) {
   const options = (node && node.options) || []
   const slots = [
-    { nx: 0.20, ny: 0.50 },
-    { nx: 0.50, ny: 0.34 },
-    { nx: 0.80, ny: 0.50 },
-    { nx: 0.30, ny: 0.76 },
-    { nx: 0.70, ny: 0.76 }
+    { nx: 0.18, ny: 0.44 },
+    { nx: 0.50, ny: 0.26 },
+    { nx: 0.82, ny: 0.44 },
+    { nx: 0.28, ny: 0.80 },
+    { nx: 0.72, ny: 0.80 }
   ]
   const used = {}
   const take = prefers => {
@@ -413,9 +434,9 @@ function layoutRoom(node, rect) {
   placed.forEach((item, index) => {
     for (let prev = 0; prev < index; prev++) {
       const other = placed[prev]
-      if (Math.abs(item.x - other.x) < 96 && Math.abs(item.y - other.y) < 50) {
-        item.x += item.x >= other.x ? 22 : -22
-        item.y += item.y >= other.y ? 18 : -18
+      if (Math.abs(item.x - other.x) < 118 && Math.abs(item.y - other.y) < 58) {
+        item.x += item.x >= other.x ? 28 : -28
+        item.y += item.y >= other.y ? 22 : -22
         item.x = Math.min(rect.x + rect.w - 40, Math.max(rect.x + 40, item.x))
         item.y = Math.min(rect.y + rect.h - 28, Math.max(rect.y + 24, item.y))
         item.nx = rect.w ? (item.x - rect.x) / rect.w : item.nx
@@ -457,7 +478,8 @@ function layoutPins(node, rect, forceMap) {
     const bump = used[key] || 0
     used[key] = bump + 1
     if (bump) {
-      pos = { x: pos.x + bump * 0.05, y: pos.y + bump * 0.04 }
+      const dir = bump % 2 ? 1 : -1
+      pos = { x: pos.x + dir * (0.09 + bump * 0.04), y: pos.y + bump * 0.08 }
     }
     const x = Math.min(rect.x + rect.w - 26, Math.max(rect.x + 26, rect.x + pos.x * rect.w))
     const y = Math.min(rect.y + rect.h - 26, Math.max(rect.y + 22, rect.y + pos.y * rect.h))
@@ -472,9 +494,52 @@ function layoutPins(node, rect, forceMap) {
   })
 }
 
+function boxesOverlap(a, b, pad) {
+  const g = pad || 0
+  return a.x < b.x + b.w + g && a.x + a.w + g > b.x && a.y < b.y + b.h + g && a.y + a.h + g > b.y
+}
+
+function cityLabelLayout(box) {
+  const { x, y, w, h } = box
+  const labels = Object.keys(ZONE_POS).map(key => {
+    const p = ZONE_POS[key]
+    const d = ZONE_LABEL[key] || { ox: 0, oy: 12 }
+    const px = x + p.x * w
+    const py = y + p.y * h
+    const tw = (ZONE_SHORT[key] || key).length >= 3 ? 52 : 44
+    return {
+      key,
+      x: px + d.ox - tw / 2,
+      y: py + d.oy,
+      w: tw,
+      h: 16
+    }
+  })
+  const fit = item => {
+    item.x = Math.min(x + w - item.w - 2, Math.max(x + 2, item.x))
+    item.y = Math.min(y + h - item.h - 2, Math.max(y + 2, item.y))
+  }
+  for (let pass = 0; pass < 2; pass++) {
+    labels.forEach((item, index) => {
+      for (let prev = 0; prev < labels.length; prev++) {
+        if (prev === index) continue
+        const other = labels[prev]
+        if (boxesOverlap(item, other, 3)) {
+          item.y += item.y >= other.y ? 15 : -15
+          item.x += item.x >= other.x ? 8 : -8
+          fit(item)
+        }
+      }
+    })
+  }
+  labels.forEach(fit)
+  return labels
+}
+
 module.exports = {
   ZONE_SHORT,
   ZONE_POS,
+  ZONE_LABEL,
   ROOM_POS,
   OPTION_ROW_H,
   TONE,
@@ -482,6 +547,7 @@ module.exports = {
   spot,
   verb,
   caption,
+  plateText,
   listTitle,
   toast,
   isTravel,
@@ -509,5 +575,7 @@ module.exports = {
   propKind,
   propName,
   layoutRoom,
-  useOptionList
+  useOptionList,
+  boxesOverlap,
+  cityLabelLayout
 }

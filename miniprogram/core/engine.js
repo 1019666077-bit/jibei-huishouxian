@@ -23,6 +23,13 @@ function resupplyCost(state) {
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
 
+// 首局前两步只擦伤：不改事件经济表，只在教程态把过量掉血压住。
+function tutorialWound(state, hp) {
+  if (!state || !state.tutorial || hp >= 0) return hp
+  if ((state.step || 0) > 1) return hp
+  return Math.max(hp, -12)
+}
+
 // 护板减伤：重装、标准、轻装承伤不同。
 const ARMOR_MULT = { full: 0.65, half: 0.8, knife: 1.3 }
 function armored(state, dmg) {
@@ -757,7 +764,8 @@ function choose(state, optIdx) {
   }
   if (encounterText) {
     // 基础伤害经护板档位修正。
-    const dmg = armored(state, 22 + Math.floor(Math.random() * 18))
+    let dmg = armored(state, 22 + Math.floor(Math.random() * 18))
+    if (state.tutorial && (state.step || 0) <= 2) dmg = Math.min(dmg, 10)
     state.hp = clamp(state.hp - dmg, 0, 100)
     changeRisk(state, 4)
     state.sig.encounters += 1
@@ -833,7 +841,10 @@ function resolveEvent(state, opt, messages) {
   // 环境伤害不受护板修正：跌落、灼伤等后果由事件单独标定
   // 护甲差距体现在遭遇交火里（armored 只作用于突袭伤害）
   // 跳弹后仍然交火失败：对面护板和火力占优，反击伤害再加三成
-  if (eff.hp) state.hp = clamp(state.hp + (!pass && iron ? Math.round(eff.hp * 1.3) : eff.hp), 0, 100)
+  if (eff.hp) {
+    const raw = !pass && iron ? Math.round(eff.hp * 1.3) : eff.hp
+    state.hp = clamp(state.hp + tutorialWound(state, raw), 0, 100)
+  }
   if (eff.risk) changeRisk(state, eff.risk)
   if (eff.rounds) {
     // 补给箱/弹药堆：给的是同口径弹，捡到就能直接压进弹匣

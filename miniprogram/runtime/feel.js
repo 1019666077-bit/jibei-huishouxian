@@ -33,15 +33,15 @@ function beep(kind) {
   const ctx = audioCtx()
   if (!ctx || typeof ctx.createOscillator !== 'function') return
   const table = {
-    hit: [[160, 0.1, 'sawtooth']],
+    hit: [[170, 0.08, 'sawtooth'], [110, 0.12, 'sawtooth']],
     dead: [[78, 0.28, 'sawtooth']],
-    loot: [[540, 0.08, 'square'], [720, 0.09, 'square']],
-    win: [[392, 0.12, 'triangle'], [523, 0.14, 'triangle']],
+    loot: [[698, 0.06, 'square'], [880, 0.07, 'square'], [1046, 0.08, 'square']],
+    win: [[392, 0.1, 'triangle'], [523, 0.1, 'triangle'], [659, 0.12, 'triangle']],
     heal: [[330, 0.12, 'sine']],
-    ok: [[260, 0.06, 'square'], [392, 0.08, 'square']],
-    bad: [[160, 0.08, 'sawtooth'], [96, 0.14, 'sawtooth']],
-    lever: [[330, 0.08, 'triangle'], [494, 0.1, 'triangle']],
-    extract: [[300, 0.08, 'sine'], [440, 0.1, 'sine']]
+    ok: [[247, 0.06, 'square'], [370, 0.1, 'square']],
+    bad: [[150, 0.08, 'sawtooth'], [88, 0.16, 'sawtooth']],
+    lever: [[392, 0.07, 'triangle'], [523, 0.11, 'triangle']],
+    extract: [[220, 0.07, 'sine'], [330, 0.08, 'sine'], [440, 0.12, 'triangle']]
   }
   const notes = table[kind] || table.ok
   notes.forEach((spec, i) => {
@@ -119,12 +119,15 @@ function classify(prev, next, messages) {
 }
 
 function burst(kind, width, height) {
-  const n = kind === 'loot' || kind === 'win' || kind === 'lever' ? 24
-    : kind === 'hit' || kind === 'dead' || kind === 'bad' ? 18
+  const n = kind === 'loot' || kind === 'win' ? 26
+    : kind === 'extract' ? 20
+    : kind === 'lever' ? 18
+    : kind === 'hit' || kind === 'dead' || kind === 'bad' ? 20
     : 10
   const color = kind === 'hit' || kind === 'dead' || kind === 'bad'
     ? '#ff6b6b'
-    : kind === 'loot' || kind === 'win' || kind === 'lever' ? '#ffc65c'
+    : kind === 'loot' || kind === 'win' ? '#ffc65c'
+    : kind === 'lever' ? '#ffe08a'
     : kind === 'extract' ? '#65a9ff' : '#65d6b4'
   const bits = []
   const cx = width / 2

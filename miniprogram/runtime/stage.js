@@ -1,5 +1,5 @@
 // 局内场景：矩形+路径拼楼。缺高级接口时退回色块，模拟器也能画。
-const { ZONE_POS, ZONE_SHORT } = require('./present')
+const { ZONE_POS, ZONE_SHORT, cityLabelLayout } = require('./present')
 const gfx = require('./gfx')
 
 const ROOM_WALL = 0.34
@@ -363,17 +363,18 @@ function drawCityDots(ctx, box, options = {}) {
     const sz = here ? 10 : reach ? 7 : 4
     fill(ctx, here ? (options.hot ? '#ff6b6b' : '#7ee8c8') : (reach ? (TINT[key] || '#ffc65c') : '#243040'))
     rect(ctx, px - sz / 2, py - sz / 2, sz, sz)
-    if (here || reach) {
-      gfx.applyFont(ctx, here ? 11 : 10, '700')
-      const label = ZONE_SHORT[key] || key
-      const above = p.y >= 0.60
-      const ly = above ? py - 18 : py + 8
-      gfx.roundRect(ctx, px - 22, ly, 44, 13, 5)
-      fill(ctx, 'rgba(6,12,18,0.88)')
-      ctx.fill()
-      fill(ctx, here ? '#7ee8c8' : '#ffe08a')
-      ctx.fillText(label, px, ly + 1)
-    }
+  })
+  cityLabelLayout(box).forEach(lab => {
+    const here = options.current === lab.key
+    const reach = !options.reachable || options.reachable[lab.key]
+    const goal = options.target === lab.key && !here
+    if (!here && !reach && !goal) return
+    gfx.roundRect(ctx, lab.x, lab.y, lab.w, lab.h, 5)
+    fill(ctx, 'rgba(6,12,18,0.9)')
+    ctx.fill()
+    gfx.applyFont(ctx, here ? 11 : 10, '700')
+    fill(ctx, here ? '#7ee8c8' : '#ffe08a')
+    ctx.fillText(ZONE_SHORT[lab.key] || lab.key, lab.x + lab.w / 2, lab.y + 1)
   })
   ctx.textAlign = align || 'left'
   ctx.font = font || gfx.font(14)
@@ -429,12 +430,17 @@ function drawCity(ctx, box, options = {}) {
       dim: !current && !reach && !goal,
       tick
     })
-    gfx.roundRect(ctx, px - 26, py + 6, 52, 16, 6)
-    fill(ctx, 'rgba(8,12,18,0.88)')
+  })
+  cityLabelLayout(box).forEach(lab => {
+    const current = options.current === lab.key
+    const reach = !options.reachable || options.reachable[lab.key]
+    const goal = options.target === lab.key && !current
+    gfx.roundRect(ctx, lab.x, lab.y, lab.w, lab.h, 6)
+    fill(ctx, 'rgba(8,12,18,0.9)')
     ctx.fill()
-    gfx.applyFont(ctx, current || reach ? 12 : 10, '700')
-    fill(ctx, current ? '#7ee8c8' : reach ? '#ffe08a' : '#6a7a88')
-    ctx.fillText(ZONE_SHORT[key] || key, px, py + 8)
+    gfx.applyFont(ctx, current || reach || goal ? 12 : 10, '700')
+    fill(ctx, current ? '#7ee8c8' : (reach || goal) ? '#ffe08a' : '#6a7a88')
+    ctx.fillText(ZONE_SHORT[lab.key] || lab.key, lab.x + lab.w / 2, lab.y + 1)
   })
   fill(ctx, '#8fa3b8')
   gfx.applyFont(ctx, 10, '700')
@@ -561,52 +567,71 @@ function drawActor(ctx, x, y, tick, options) {
 }
 
 function drawCrate(ctx, x, y, lit, hot) {
-  fill(ctx, 'rgba(0,0,0,0.3)')
-  rect(ctx, x - 26, y - 4, 52, 8)
-  const wood = hot ? '#d4b06a' : lit ? '#8f6a36' : '#3a424c'
+  fill(ctx, 'rgba(0,0,0,0.38)')
+  rect(ctx, x - 28, y - 2, 56, 8)
+  const wood = hot ? '#e0bc74' : lit ? '#a0783c' : '#4a524c'
   fill(ctx, wood)
-  rect(ctx, x - 24, y - 34, 48, 34)
-  fill(ctx, lit ? '#6a4e28' : '#2a3038')
-  for (let i = 0; i < 5; i++) rect(ctx, x - 24, y - 34 + i * 7, 48, 2)
-  fill(ctx, hot ? '#eee0b0' : '#6a6e74')
-  rect(ctx, x - 4, y - 34, 8, 34)
-  rect(ctx, x - 24, y - 18, 48, 3)
-  fill(ctx, 'rgba(220,235,255,0.18)')
-  rect(ctx, x - 24, y - 34, 14, 8)
-  fill(ctx, hot ? '#ffc65c' : '#c4a056')
-  rect(ctx, x - 5, y - 22, 10, 10)
+  rect(ctx, x - 26, y - 38, 52, 38)
+  fill(ctx, lit ? '#7a582c' : '#2c3438')
+  rect(ctx, x - 26, y - 38, 52, 8)
+  for (let i = 1; i < 5; i++) rect(ctx, x - 26, y - 38 + i * 8, 52, 2)
+  fill(ctx, hot ? '#eee0b0' : '#8a8e84')
+  rect(ctx, x - 5, y - 38, 10, 38)
+  rect(ctx, x - 26, y - 20, 52, 4)
+  fill(ctx, 'rgba(255,236,190,0.28)')
+  rect(ctx, x - 26, y - 38, 16, 10)
+  fill(ctx, hot ? '#ffc65c' : '#d4a84a')
+  gfx.roundRect(ctx, x - 7, y - 24, 14, 14, 3)
+  ctx.fill()
   fill(ctx, '#1a1c20')
-  rect(ctx, x - 1, y - 18, 3, 5)
+  rect(ctx, x - 1, y - 20, 3, 6)
+  fill(ctx, '#65d6b4')
+  rect(ctx, x + 14, y - 34, 6, 4)
 }
 
 function drawDoor(ctx, x, y, lit, hot) {
-  fill(ctx, lit ? '#1a2e28' : '#121820')
-  rect(ctx, x - 24, y - 56, 48, 56)
-  fill(ctx, hot ? '#0a1814' : '#070b10')
-  rect(ctx, x - 18, y - 50, 36, 46)
+  fill(ctx, lit ? '#1a322c' : '#141820')
+  rect(ctx, x - 26, y - 62, 52, 62)
+  fill(ctx, hot ? '#0c1c16' : '#080c10')
+  rect(ctx, x - 18, y - 54, 36, 50)
   fill(ctx, lit ? '#65d6b4' : '#3d5a52')
-  rect(ctx, x - 24, y - 56, 48, 5)
-  rect(ctx, x - 24, y - 56, 5, 56)
-  rect(ctx, x + 19, y - 56, 5, 56)
+  rect(ctx, x - 26, y - 62, 52, 6)
+  rect(ctx, x - 26, y - 62, 6, 62)
+  rect(ctx, x + 20, y - 62, 6, 62)
   fill(ctx, hot ? '#ffc65c' : '#65d6b4')
-  rect(ctx, x + 8, y - 30, 6, 6)
-  fill(ctx, 'rgba(101,214,180,0.16)')
-  rect(ctx, x - 16, y - 4, 32, 10)
+  gfx.circle(ctx, x + 10, y - 30, 5, hot ? '#ffc65c' : '#65d6b4')
+  fill(ctx, '#1a2430')
+  rect(ctx, x + 8, y - 32, 5, 5)
+  fill(ctx, 'rgba(101,214,180,0.2)')
+  rect(ctx, x - 16, y - 6, 32, 10)
+  fill(ctx, lit ? '#8ef0d0' : '#3d5a52')
+  rect(ctx, x - 8, y - 58, 16, 3)
 }
 
 function drawLoot(ctx, x, y, lit, hot) {
-  fill(ctx, 'rgba(0,0,0,0.28)')
-  rect(ctx, x - 16, y - 4, 32, 6)
-  fill(ctx, '#243040')
-  rect(ctx, x - 14, y - 12, 28, 10)
+  fill(ctx, 'rgba(0,0,0,0.32)')
+  rect(ctx, x - 18, y - 2, 36, 7)
+  fill(ctx, '#2a3848')
+  rect(ctx, x - 16, y - 14, 32, 12)
   fill(ctx, '#1a2430')
-  rect(ctx, x - 12, y - 10, 24, 3)
-  gem(ctx, x - 11, y - 38, 22, hot || lit ? '#ffc65c' : '#65d6b4')
+  rect(ctx, x - 14, y - 12, 28, 4)
+  gem(ctx, x - 12, y - 42, 24, hot || lit ? '#ffc65c' : '#65d6b4')
+  fill(ctx, '#ffe08a')
+  rect(ctx, x - 2, y - 36, 4, 4)
+}
+
+function drawThreat(ctx, x, y, tick, hot) {
+  drawPerson(ctx, x, y, tick, { hostile: true, facing: -1, walking: !!hot })
+  fill(ctx, 'rgba(255,107,107,0.22)')
+  rect(ctx, x - 22, y - 56, 44, 8)
+  fill(ctx, '#ff6b6b')
+  rect(ctx, x - 10, y - 62, 20, 4)
+  gfx.strokeCircle(ctx, x, y - 28, hot ? 22 : 18, 'rgba(255,107,107,0.55)', 2)
 }
 
 function drawProp(ctx, kind, x, y, lit, tick, hot) {
   if (kind === 'threat') {
-    drawPerson(ctx, x, y, tick, { hostile: true, facing: -1, walking: !!hot })
+    drawThreat(ctx, x, y, tick, hot)
     return
   }
   if (kind === 'door') {
@@ -620,23 +645,35 @@ function drawProp(ctx, kind, x, y, lit, tick, hot) {
   drawCrate(ctx, x, y, lit, hot)
 }
 
+function drawPropTag(ctx, kind, x, y) {
+  const label = kind === 'threat' ? '交火' : kind === 'door' ? '门口' : kind === 'take' ? '物资' : '货柜'
+  const color = kind === 'threat' ? '#ff6b6b' : kind === 'door' ? '#65d6b4' : '#ffc65c'
+  const align = ctx.textAlign
+  ctx.textAlign = 'center'
+  gfx.roundRect(ctx, x - 20, y, 40, 14, 5)
+  fill(ctx, 'rgba(8,12,18,0.88)')
+  ctx.fill()
+  gfx.applyFont(ctx, 10, '700')
+  fill(ctx, color)
+  ctx.fillText(label, x, y + 1)
+  ctx.textAlign = align || 'left'
+}
+
 function drawFloor(ctx, x, y, w, h) {
   fill(ctx, gfx.vgrad(ctx, x, y, h, [
-    [0, '#141c26'],
-    [1, '#0c1218']
+    [0, '#1a222c'],
+    [1, '#10161c']
   ]))
   rect(ctx, x, y, w, h)
-  fill(ctx, '#0c1218')
-  for (let i = 1; i < 8; i++) rect(ctx, x, y + (h * i) / 8, w, 2)
-  for (let i = 1; i < 7; i++) {
-    const inset = (i - 3) * 10
-    rect(ctx, x + (w * i) / 7 + inset, y, 2, h)
-  }
-  fill(ctx, '#1a2430')
-  rect(ctx, x, y, w, 6)
-  fill(ctx, 'rgba(200,220,240,0.08)')
-  rect(ctx, x + w * 0.12, y + h * 0.7, w * 0.28, 8)
-  rect(ctx, x + w * 0.62, y + h * 0.82, w * 0.22, 6)
+  fill(ctx, '#243040')
+  rect(ctx, x, y, w, 5)
+  fill(ctx, 'rgba(12,16,20,0.45)')
+  rect(ctx, x, y + h * 0.42, w, 10)
+  rect(ctx, x + w * 0.46, y, 8, h)
+  fill(ctx, 'rgba(90,140,160,0.1)')
+  rect(ctx, x + w * 0.08, y + h * 0.62, w * 0.34, 14)
+  fill(ctx, 'rgba(255,198,92,0.06)')
+  rect(ctx, x + w * 0.58, y + h * 0.78, w * 0.28, 10)
 }
 
 function drawClutter(ctx, zone, x, y, w, h, tick) {
@@ -814,6 +851,43 @@ function drawToneMark(ctx, tone, x, y, size) {
   rect(ctx, x + 6, y + 4, s - 12, 4)
 }
 
+function drawStamp(ctx, kind, cx, cy, size) {
+  const s = Math.max(14, size || 20)
+  if (kind === 'loot') {
+    gfx.roundRect(ctx, cx - s, cy - s, s * 2, s * 2, 8)
+    fill(ctx, 'rgba(42,36,16,0.94)')
+    ctx.fill()
+    fill(ctx, '#ffc65c')
+    rect(ctx, cx - s * 0.48, cy - s * 0.28, s * 0.96, s * 0.7)
+    fill(ctx, '#2a2410')
+    rect(ctx, cx - 3, cy - s * 0.28, 6, s * 0.7)
+    fill(ctx, '#65d6b4')
+    rect(ctx, cx - s * 0.16, cy + 2, s * 0.22, 4)
+    rect(ctx, cx, cy - s * 0.18, 4, s * 0.32)
+    return
+  }
+  if (kind === 'extract') {
+    gfx.roundRect(ctx, cx - s, cy - s, s * 2, s * 2, 8)
+    fill(ctx, 'rgba(18,36,56,0.94)')
+    ctx.fill()
+    fill(ctx, '#65a9ff')
+    rect(ctx, cx - s * 0.5, cy - 3, s, 6)
+    rect(ctx, cx + s * 0.18, cy - s * 0.32, 6, s * 0.64)
+    return
+  }
+  if (kind === 'lever') {
+    gfx.roundRect(ctx, cx - s, cy - s, s * 2, s * 2, 8)
+    fill(ctx, 'rgba(42,36,16,0.94)')
+    ctx.fill()
+    fill(ctx, '#ffc65c')
+    rect(ctx, cx - s * 0.42, cy - s * 0.45, 5, s * 0.9)
+    rect(ctx, cx + s * 0.22, cy - s * 0.45, 5, s * 0.9)
+    rect(ctx, cx - s * 0.42, cy - s * 0.28, s * 0.84, 5)
+    return
+  }
+  drawJudge(ctx, kind !== 'bad' && kind !== 'hit' && kind !== 'dead', cx, cy, s)
+}
+
 function drawJudge(ctx, ok, cx, cy, size) {
   const s = Math.max(16, size || 36)
   gfx.roundRect(ctx, cx - s, cy - s, s * 2, s * 2, Math.min(10, s * 0.35))
@@ -948,6 +1022,8 @@ module.exports = {
   drawPad,
   drawToneMark,
   drawJudge,
+  drawStamp,
+  drawPropTag,
   drawHudGlyph,
   drawLessonRail
 }

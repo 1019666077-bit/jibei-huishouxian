@@ -87,6 +87,9 @@ assert.ok(present.layoutRoom(manager.scene.run.node, { x: 0, y: 0, w: 100, h: 10
 assert.ok(manager.scene.run.node.text.length <= 16, '首局场景仍是长段说明')
 assert.ok(manager.scene.run.node.options.every(item => (item.verb || item.text).length <= 8), '首局选项没有收成短动词')
 assert.strictEqual(manager.scene.run.cost, 0, '首局进场不该扣押金')
+assert.ok(manager.scene.messages.some(line => /合闸/.test(line)), '首局进场没有合闸目标')
+assert.ok(present.leverGuide(manager.scene.run).includes('冷却舱'), '首局现场没有合闸条')
+assert.ok(present.leverNudge(manager.scene.run), '首局没有提前催合闸')
 const meta = require('../miniprogram/core/meta')
 assert.ok(!storage.meta_v1 || storage.meta_v1.balance === meta.START_BALANCE, '首局尚未结算却已扣仓库')
 let guard = 0
