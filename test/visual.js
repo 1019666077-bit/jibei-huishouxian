@@ -231,6 +231,12 @@ const feel = require('../miniprogram/runtime/feel')
   )
   assert.strictEqual(scratch.stamp, '擦伤', '首局轻伤仍按失手报')
   assert.strictEqual(scratch.kind, 'scratch')
+  const pass = feel.classify(
+    { hp: 80, lootCount: 0, tutorial: true, step: 1 },
+    { hp: 80, loot: [], ended: false },
+    ['没碰封条，转入冷却舱合闸']
+  )
+  assert.strictEqual(pass.stamp, '得手', '首局前几步成功没有印章')
 }
 
 const ui = new UI(ctx)

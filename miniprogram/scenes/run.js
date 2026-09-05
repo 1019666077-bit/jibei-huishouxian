@@ -188,7 +188,7 @@ module.exports = manager => ({
       manager.pulse(fx.kind, fx.stamp || fx.label)
       if (fx.item) {
         this.pickup = fx.item
-        this.pickupUntil = Date.now() + (tutorial ? 900 : 1400)
+        this.pickupUntil = Date.now() + (tutorial && stepBefore <= 2 ? 700 : (tutorial ? 900 : 1400))
       }
       if (fx.stamp) {
         this.flashJuice(fx.mark || 'ok', fx.stamp, {
@@ -217,7 +217,7 @@ module.exports = manager => ({
       this.messages.unshift('这一步没能执行，请再点一次。')
     }
     manager.requestRender()
-    setTimeout(() => { this.busy = false }, tutorial && stepBefore <= 3 ? 140 : 280)
+    setTimeout(() => { this.busy = false }, tutorial && stepBefore <= 2 ? 90 : (tutorial && stepBefore <= 3 ? 140 : 280))
   },
 
   useMed() {
@@ -260,7 +260,7 @@ module.exports = manager => ({
       mark: kind,
       label,
       sub: opts.sub || '',
-      until: Date.now() + (this.run && this.run.tutorial ? 2000 : 1500)
+      until: Date.now() + (this.run && this.run.tutorial && (this.run.step || 0) <= 2 ? 2200 : (this.run && this.run.tutorial ? 1800 : 1500))
     }
     if (opts.silent) return
     if (typeof manager.pulse === 'function') manager.pulse(opts.kind || kind, label)
@@ -468,7 +468,7 @@ module.exports = manager => ({
       toX: nx,
       toY: ny,
       start: Date.now(),
-      ms: Math.max(100, Math.min(this.run && this.run.tutorial ? 160 : 280, 110 + dist * 180)),
+      ms: Math.max(90, Math.min(this.run && this.run.tutorial && (this.run.step || 0) <= 2 ? 130 : (this.run && this.run.tutorial ? 160 : 280), 100 + dist * 160)),
       idx: option ? option.idx : null,
       extract: !!(extra && extra.extract),
       fight: !!(option && option.rounds)
@@ -500,7 +500,7 @@ module.exports = manager => ({
       return
     }
     if (walk.fight) {
-      this.fight = { start: Date.now(), ms: this.run && this.run.tutorial ? 160 : 240, idx: walk.idx }
+      this.fight = { start: Date.now(), ms: this.run && this.run.tutorial && (this.run.step || 0) <= 2 ? 110 : (this.run && this.run.tutorial ? 160 : 240), idx: walk.idx }
       feel.beep('hit')
       return
     }
@@ -633,9 +633,9 @@ module.exports = manager => ({
     })
     stage.drawToneMark(ui.ctx, look.tone, x + 12, y + 12, 26)
     const title = present.listTitle(option)
-    ui.wrapped(title, x + 46, y + 8, w - 60, {
-      size: 15,
-      lineHeight: 20,
+    ui.wrapped(title, x + 46, y + 10, w - 72, {
+      size: 14,
+      lineHeight: 18,
       maxLines: 3,
       weight: '700',
       color: option.disabled ? '#59697a' : COLORS.text
@@ -763,23 +763,23 @@ module.exports = manager => ({
       x: rect.x + 10,
       y: rect.y + 8,
       w: rect.w - 20,
-      h: 52
-    }, rect, 8)
+      h: 56
+    }, rect, 10)
     ui.panel(bubble.x, bubble.y, bubble.w, bubble.h, {
       fill: 'rgba(8,14,20,0.92)',
       stroke: '#3d5c74',
       radius: 8,
       sheen: false
     })
-    ui.chip(bubble.x + 8, bubble.y + 12, 40, 24, '现场', {
+    ui.chip(bubble.x + 10, bubble.y + 14, 40, 24, '现场', {
       fill: '#2a2410',
       stroke: COLORS.gold,
       color: COLORS.gold,
       size: 11
     })
-    ui.wrapped(present.sceneLine(node), bubble.x + 56, bubble.y + 10, bubble.w - 70, {
-      size: 14,
-      lineHeight: 18,
+    ui.wrapped(present.sceneLine(node), bubble.x + 58, bubble.y + 12, bubble.w - 80, {
+      size: 13,
+      lineHeight: 17,
       maxLines: 2,
       weight: '700',
       color: COLORS.text
@@ -833,27 +833,27 @@ module.exports = manager => ({
       const look = this.optionLook(option)
       const plate = present.fitBox({
         x: prop.x - 74,
-        y: prop.y + 24,
+        y: prop.y + 22,
         w: 148,
-        h: 62
-      }, floor, 10)
+        h: 68
+      }, floor, 12)
       ui.panel(plate.x, plate.y, plate.w, plate.h, {
         fill: hot || look.highlight ? look.fill : '#101820',
         stroke: option.disabled ? COLORS.line : look.color,
         radius: 8,
         glow: look.highlight ? `rgba(255,198,92,${0.16 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.28))})` : null
       })
-      stage.drawToneMark(ui.ctx, look.tone, plate.x + 10, plate.y + 12, 18)
-      ui.wrapped(present.listTitle(option), plate.x + 34, plate.y + 8, plate.w - 48, {
-        size: 12,
-        lineHeight: 16,
-        maxLines: 2,
+      stage.drawToneMark(ui.ctx, look.tone, plate.x + 10, plate.y + 12, 16)
+      ui.wrapped(present.listTitle(option), plate.x + 32, plate.y + 8, plate.w - 46, {
+        size: 11,
+        lineHeight: 15,
+        maxLines: 3,
         weight: '700',
         color: option.disabled ? '#6a7a88' : COLORS.text
       })
       const pip = this.pip(option)
-      ui.text(look.highlight ? '开索道' : (pip || look.label), plate.x + 34, plate.y + 42, 11,
-        option.disabled ? '#6a7a88' : look.color, '700', plate.w - 48)
+      ui.text(look.highlight ? '开索道' : (pip || look.label), plate.x + 32, plate.y + 52, 11,
+        option.disabled ? '#6a7a88' : look.color, '700', plate.w - 46)
       ui.addHit(plate.x - 4, prop.y - 58, plate.w + 8, 132, () => activate(option, prop))
     })
     if (listMode) {
@@ -889,7 +889,7 @@ module.exports = manager => ({
       radius: 12,
       sheen: false
     })
-    const inner = { x: listRect.x + 8, y: listRect.y + 8, w: listRect.w - 16, h: listRect.h - 16 }
+    const inner = { x: listRect.x + 10, y: listRect.y + 10, w: listRect.w - 20, h: listRect.h - 20 }
     ui.withClip(inner, () => {
       let y = inner.y - this.mainScroll.offset
       rows.forEach(prop => {
@@ -905,10 +905,10 @@ module.exports = manager => ({
         stage.drawToneMark(ui.ctx, look.tone, inner.x + 16, y + 22, 26)
         const risky = present.dangerPip(option)
         const railW = risky ? 64 : 58
-        const textW = inner.w - 112 - railW
+        const textW = inner.w - 124 - railW
         ui.wrapped(present.listTitle(option), inner.x + 50, y + 12, textW, {
-          size: 15,
-          lineHeight: 20,
+          size: 14,
+          lineHeight: 18,
           maxLines: 3,
           weight: '700',
           color: option.disabled ? '#6a7a88' : COLORS.text
@@ -1006,7 +1006,7 @@ module.exports = manager => ({
           glow: look.highlight ? 'rgba(255,198,92,0.22)' : null
         })
         ui.text(present.travelLabel(option, node), x + 10, y + 6, 14, option.disabled ? '#6a7a88' : COLORS.text, '700', chipW - 20)
-        ui.wrapped(look.highlight ? '合闸开索道' : present.listTitle(option), x + 10, y + 24, chipW - 20, {
+        ui.wrapped(look.highlight ? '合闸开索道' : present.listTitle(option), x + 10, y + 24, chipW - 24, {
           size: 11,
           lineHeight: 15,
           maxLines: 2,

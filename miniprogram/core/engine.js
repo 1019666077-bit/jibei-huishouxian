@@ -27,22 +27,23 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
 function tutorialWound(state, hp) {
   if (!state || !state.tutorial || hp >= 0) return hp
   if ((state.step || 0) > 4) return hp
-  if ((state.step || 0) <= 1) return Math.max(hp, -6)
-  return Math.max(hp, -8)
+  if ((state.step || 0) <= 2) return Math.max(hp, -4)
+  return Math.max(hp, -6)
 }
 
 function tutorialHit(state, dmg) {
   if (!state || !state.tutorial) return dmg
   const step = state.step || 0
-  if (step <= 1) return Math.min(dmg, 5)
-  if (step <= 3) return Math.min(dmg, 8)
-  if (step <= 5) return Math.min(dmg, 14)
+  if (step <= 2) return Math.min(dmg, 4)
+  if (step <= 3) return Math.min(dmg, 6)
+  if (step <= 5) return Math.min(dmg, 12)
   return dmg
 }
 
 function tutorialGuard(state, nextHp) {
   if (!state || !state.tutorial) return nextHp
-  if ((state.step || 0) <= 1 && nextHp < 32) return 32
+  if ((state.step || 0) <= 2 && nextHp < 38) return 38
+  if ((state.step || 0) <= 3 && nextHp < 28) return 28
   if ((state.step || 0) <= 4 && nextHp < 22) return 22
   return nextHp
 }

@@ -83,7 +83,7 @@ function classify(prev, next, messages) {
   const all = (messages || []).join(' ')
   const fight = !!(prev && prev.fight)
   const fail = /✗ |失败|失利/.test(all)
-  if (hpDelta < 0 && prev.tutorial && (prev.step || 0) <= 2 && hpDelta >= -8) {
+  if (hpDelta < 0 && prev.tutorial && (prev.step || 0) <= 3 && hpDelta >= -8) {
     return { kind: 'scratch', label: '擦伤', sub: `${hpDelta} 生命`, hpDelta, mark: 'ok', stamp: '擦伤' }
   }
   if (hpDelta < 0) {
@@ -118,6 +118,9 @@ function classify(prev, next, messages) {
     return { kind: 'extract', label: '撤离', mark: 'ok', stamp: '撤离', sub: '选一条撤出' }
   }
   if (/撤离成功|到手|制服|奏效/.test(text)) return { kind: 'ok', label: '得手', mark: 'ok', stamp: '得手' }
+  if (prev.tutorial && (prev.step || 0) <= 2) {
+    return { kind: 'ok', label: '得手', mark: 'ok', stamp: '得手', sub: '继续合闸' }
+  }
   return { kind: 'ok', label: '' }
 }
 

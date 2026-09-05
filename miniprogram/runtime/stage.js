@@ -723,13 +723,13 @@ function drawCrate(ctx, x, y, lit, hot) {
   isoFace(ctx, [
     [fx, fy - h], [fx + 10, fy - h - 8], [fx + w + d, fy - h - 8], [fx + w, fy - h]
   ], top)
-  frost(ctx, fx - 2, fy - h - 12, w + 14, 8)
-  iceBloom(ctx, fx + 4, fy - h - 8, 22, 7)
-  fill(ctx, 'rgba(255,245,210,0.5)')
-  rect(ctx, fx + 2, fy - h + 2, 20, 6)
+  frost(ctx, fx - 2, fy - h - 12, w + 14, 9)
+  iceBloom(ctx, fx + 4, fy - h - 8, 24, 8)
+  fill(ctx, 'rgba(255,252,240,0.62)')
+  rect(ctx, fx + 2, fy - h + 2, 22, 6)
   metalEdge(ctx, fx + 1, fy - h + 1, w - 2)
-  fill(ctx, 'rgba(230,240,255,0.28)')
-  rect(ctx, fx + 1, fy - h + 2, 5, h - 4)
+  fill(ctx, 'rgba(240,248,255,0.4)')
+  rect(ctx, fx + 1, fy - h + 2, 6, h - 4)
   fill(ctx, hot ? '#eee4b8' : '#a8aea4')
   rect(ctx, fx + 18, fy - h, 7, h)
   seam(ctx, fx, fy - 16, w)
@@ -879,60 +879,56 @@ function drawPropTag(ctx, kind, x, y) {
 
 function drawFloor(ctx, x, y, w, h) {
   fill(ctx, gfx.vgrad(ctx, x, y, h, [
-    [0, '#1c2632'],
-    [0.55, '#121820'],
-    [1, '#0a1016']
+    [0, '#141c26'],
+    [0.45, '#0c1218'],
+    [1, '#05080c']
   ]))
   rect(ctx, x, y, w, h)
   fill(ctx, '#2a3644')
   rect(ctx, x, y, w, 6)
   metalEdge(ctx, x, y, w)
-  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + 8, Math.max(w, h) * 0.66, [
-    [0, 'rgba(255,220,160,0.22)'],
-    [0.4, 'rgba(255,198,92,0.08)'],
+  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + 10, Math.max(w, h) * 0.58, [
+    [0, 'rgba(255,228,176,0.34)'],
+    [0.32, 'rgba(255,198,92,0.12)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x, y, w, h)
+  rect(ctx, x + w * 0.16, y, w * 0.68, h)
   const tilesX = 5
   for (let i = 1; i < tilesX; i++) {
-    fill(ctx, 'rgba(8,10,12,0.38)')
+    fill(ctx, 'rgba(4,6,8,0.55)')
     rect(ctx, x + (w / tilesX) * i, y + 6, 2, h - 10)
-    fill(ctx, 'rgba(200,220,235,0.1)')
+    fill(ctx, 'rgba(220,236,250,0.14)')
     rect(ctx, x + (w / tilesX) * i + 2, y + 6, 1, h - 10)
   }
   ;[0.18, 0.4, 0.62, 0.82].forEach(ny => seam(ctx, x + 8, y + h * ny, w - 16))
   const stains = [
-    [0.1, 0.42, 0.2, 0.1, 'rgba(8,12,16,0.28)'],
-    [0.58, 0.18, 0.18, 0.09, 'rgba(20,28,36,0.32)'],
-    [0.36, 0.68, 0.26, 0.08, 'rgba(90,140,160,0.1)'],
-    [0.7, 0.72, 0.16, 0.07, 'rgba(255,198,92,0.08)']
+    [0.1, 0.42, 0.2, 0.1, 'rgba(4,6,8,0.42)'],
+    [0.58, 0.18, 0.18, 0.09, 'rgba(12,18,24,0.4)'],
+    [0.36, 0.68, 0.26, 0.08, 'rgba(90,140,160,0.14)'],
+    [0.7, 0.72, 0.16, 0.07, 'rgba(255,198,92,0.1)']
   ]
   stains.forEach(s => {
     fill(ctx, s[4])
     rect(ctx, x + w * s[0], y + h * s[1], w * s[2], h * s[3])
   })
-  iceBloom(ctx, x + w * 0.14, y + h * 0.1, w * 0.24, 10)
-  iceBloom(ctx, x + w * 0.6, y + h * 0.48, w * 0.18, 8)
-  frost(ctx, x + w * 0.72, y + h * 0.28, w * 0.16, 5)
-  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + h * 0.7, w * 0.2, [
-    [0, 'rgba(255,220,160,0.16)'],
+  iceBloom(ctx, x + w * 0.12, y + h * 0.08, w * 0.28, 12)
+  iceBloom(ctx, x + w * 0.58, y + h * 0.46, w * 0.22, 10)
+  frost(ctx, x + w * 0.7, y + h * 0.26, w * 0.2, 7)
+  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + h * 0.68, w * 0.24, [
+    [0, 'rgba(255,228,176,0.22)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x + w * 0.34, y + h * 0.58, w * 0.32, h * 0.22)
-  fill(ctx, 'rgba(186,214,230,0.06)')
-  ;[0.28, 0.5, 0.72].forEach(nx => {
-    gfx.line(ctx, x + w * nx, y + 4, x + w * 0.5, y + h * 0.92, 'rgba(186,214,230,0.12)', 1)
-  })
-  fill(ctx, gfx.hgrad(ctx, x, y, w * 0.22, [
-    [0, 'rgba(0,0,0,0.46)'],
+  rect(ctx, x + w * 0.3, y + h * 0.54, w * 0.4, h * 0.26)
+  fill(ctx, gfx.hgrad(ctx, x, y, w * 0.3, [
+    [0, 'rgba(0,0,0,0.62)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x, y, w * 0.22, h)
-  fill(ctx, gfx.hgrad(ctx, x + w * 0.78, y, w * 0.22, [
+  rect(ctx, x, y, w * 0.3, h)
+  fill(ctx, gfx.hgrad(ctx, x + w * 0.7, y, w * 0.3, [
     [0, 'rgba(0,0,0,0)'],
-    [1, 'rgba(0,0,0,0.5)']
+    [1, 'rgba(0,0,0,0.66)']
   ]))
-  rect(ctx, x + w * 0.78, y, w * 0.22, h)
+  rect(ctx, x + w * 0.7, y, w * 0.3, h)
 }
 
 function drawClutter(ctx, zone, x, y, w, h, tick) {
@@ -998,13 +994,19 @@ function drawRoom(ctx, zone, box, tick) {
   metalEdge(ctx, x, y, w)
   const win = { x: x + w * 0.12, y: y + 10, w: w * 0.76, h: wall - 20 }
   drawZone(ctx, zone, win, tick)
-  fill(ctx, 'rgba(159,212,255,0.08)')
+  fill(ctx, 'rgba(6,12,20,0.28)')
   rect(ctx, win.x, win.y, win.w, win.h)
-  iceBloom(ctx, win.x, win.y, win.w * 0.3, 10)
-  iceBloom(ctx, win.x + win.w * 0.58, win.y + win.h - 12, win.w * 0.32, 10)
-  fill(ctx, 'rgba(200,230,255,0.16)')
-  ;[0.2, 0.46, 0.72].forEach(nx => {
-    rect(ctx, win.x + win.w * nx, win.y + 4, 3, win.h * 0.58)
+  fill(ctx, gfx.vgrad(ctx, win.x, win.y, win.h, [
+    [0, 'rgba(159,212,255,0.06)'],
+    [1, 'rgba(4,8,12,0.34)']
+  ]))
+  rect(ctx, win.x, win.y, win.w, win.h)
+  iceBloom(ctx, win.x, win.y, win.w * 0.36, 14)
+  iceBloom(ctx, win.x + win.w * 0.54, win.y + win.h - 16, win.w * 0.38, 14)
+  frost(ctx, win.x + 4, win.y + 2, win.w - 8, 7)
+  fill(ctx, 'rgba(230,246,255,0.28)')
+  ;[0.18, 0.42, 0.68].forEach(nx => {
+    rect(ctx, win.x + win.w * nx, win.y + 3, 4, win.h * 0.62)
   })
   fill(ctx, '#1a2430')
   rect(ctx, win.x - 6, win.y - 6, win.w + 12, 6)
@@ -1031,27 +1033,39 @@ function drawRoom(ctx, zone, box, tick) {
   rect(ctx, lx - 12, ly - 6, 24, 7)
   fill(ctx, 'rgba(255,236,190,0.72)')
   rect(ctx, lx - 6, ly - 16, 12, 10)
-  fill(ctx, gfx.rgrad(ctx, lx, ly + 6, w * 0.5, [
-    [0, 'rgba(255,220,160,0.38)'],
-    [0.38, 'rgba(255,198,92,0.14)'],
+  fill(ctx, gfx.rgrad(ctx, lx, ly + 8, w * 0.52, [
+    [0, 'rgba(255,236,190,0.5)'],
+    [0.34, 'rgba(255,198,92,0.16)'],
     [1, 'rgba(0,0,0,0)']
   ]))
   rect(ctx, x + w * 0.14, ly, w * 0.72, (h - wall) * 0.86)
-  gfx.circle(ctx, lx, ly + 16, 34, 'rgba(255,220,160,0.24)')
-  fill(ctx, gfx.hgrad(ctx, x, y, 22, [
-    [0, 'rgba(0,0,0,0.36)'],
+  gfx.circle(ctx, lx, ly + 14, 40, 'rgba(255,228,176,0.3)')
+  fill(ctx, gfx.hgrad(ctx, x, y, 34, [
+    [0, 'rgba(0,0,0,0.58)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x, y, 22, h)
-  fill(ctx, gfx.hgrad(ctx, x + w - 22, y, 22, [
+  rect(ctx, x, y, 34, h)
+  fill(ctx, gfx.hgrad(ctx, x + w - 34, y, 34, [
     [0, 'rgba(0,0,0,0)'],
-    [1, 'rgba(0,0,0,0.4)']
+    [1, 'rgba(0,0,0,0.62)']
   ]))
-  rect(ctx, x + w - 22, y, 22, h)
+  rect(ctx, x + w - 34, y, 34, h)
   fill(ctx, '#2a3644')
   rect(ctx, x, ly - 3, w, 5)
-  frost(ctx, x + 10, ly - 3, w - 20, 3)
+  frost(ctx, x + 10, ly - 3, w - 20, 4)
   drawClutter(ctx, zone, x, y + wall, w, h - wall, tick)
+  fill(ctx, gfx.vgrad(ctx, x, y + h - 28, 28, [
+    [0, 'rgba(0,0,0,0)'],
+    [1, 'rgba(0,0,0,0.62)']
+  ]))
+  rect(ctx, x, y + h - 28, w, 28)
+  fill(ctx, '#121820')
+  rect(ctx, x, y + h - 10, w, 10)
+  metalEdge(ctx, x, y + h - 10, w)
+  frost(ctx, x + 16, y + h - 10, w * 0.28, 5)
+  fill(ctx, '#0a1016')
+  rect(ctx, x, y, 8, h)
+  rect(ctx, x + w - 8, y, 8, h)
 }
 
 function drawWalk(ctx, ax, ay, bx, by, tick) {

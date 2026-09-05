@@ -162,17 +162,13 @@ class UI {
     const ctx = this.ctx
     const size = options.size || 14
     const lineHeight = options.lineHeight || Math.round(size * 1.55)
-    const wrapW = Math.max(8, (maxWidth || 0) - 8)
+    const wrapW = Math.max(8, (maxWidth || 0) - 12)
     gfx.applyFont(ctx, size, options.weight || 'normal')
     ctx.fillStyle = options.color || COLORS.text
     const lines = wrapLines(ctx, text, wrapW)
     const limit = options.maxLines || lines.length
     lines.slice(0, limit).forEach((line, index) => {
-      let shown = line
-      if (index === limit - 1 && lines.length > limit) {
-        shown = ellipsize(ctx, line, wrapW)
-      }
-      ctx.fillText(shown, x, y + index * lineHeight)
+      ctx.fillText(ellipsize(ctx, line, wrapW), x, y + index * lineHeight)
     })
     return Math.min(lines.length, limit) * lineHeight
   }
