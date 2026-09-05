@@ -55,7 +55,13 @@ module.exports = manager => ({
     ctx.font = gfx.font(12)
     const goalLines = wrapLines(ctx, plan.goal || '', w - 24)
     const h = 46 + titleLines.length * 20 + goalLines.length * 17
-    ui.panel(x, y, w, h, { fill: '#15273a', stroke: COLORS.blue, accent: COLORS.blue })
+    ui.panel(x, y, w, h, {
+      fill: '#15273a',
+      stroke: COLORS.blue,
+      accent: COLORS.blue,
+      depth: true,
+      hairline: 'rgba(101,169,255,0.2)'
+    })
     ui.wrapped(plan.title, x + 14, y + 10, w - 24, {
       size: 14, lineHeight: 20, weight: '700', color: COLORS.text
     })
@@ -90,21 +96,36 @@ module.exports = manager => ({
       const profit = r.netProfit || 0
       const failLine = !win && r.causeChain[0] ? r.causeChain[0] : ''
       const lootStrip = win ? (r.lootItems || []).slice(0, 8) : []
-      const headH = win ? (lootStrip.length ? 256 : 216) : (failLine ? 298 : 216)
+      const headH = win ? (lootStrip.length ? 272 : 232) : (failLine ? 314 : 232)
       ui.panel(x, y, w, headH, {
         fill: win ? '#0e221a' : '#281216',
         stroke: win ? COLORS.accent : COLORS.danger,
         glow: win ? 'rgba(101,214,180,0.16)' : 'rgba(255,107,107,0.14)',
-        rim: win ? COLORS.accent : COLORS.danger
+        rim: win ? COLORS.accent : COLORS.danger,
+        depth: true,
+        hairline: win ? 'rgba(101,214,180,0.22)' : 'rgba(255,160,160,0.2)'
       })
       ui.chip(x + 16, y + 16, 108, 28, win ? '撤收成功' : '未能归署', {
         fill: win ? '#1e4f43' : '#4a2024',
         stroke: win ? COLORS.accent : COLORS.danger,
         color: win ? '#b8ffe8' : '#ffd0d0',
-        size: 14
+        size: 14,
+        depth: true,
+        hairline: win ? 'rgba(184,255,232,0.28)' : 'rgba(255,208,208,0.24)'
       })
-      ui.text(r.rating || 'C', x + w - 58, y + 10, 36, ratingColor, '700')
-      let bodyY = y + 56
+      ui.panel(x + w - 62, y + 12, 46, 44, {
+        fill: win ? '#163028' : '#3a181c',
+        stroke: ratingColor,
+        radius: 10,
+        sheen: false,
+        depth: true,
+        hairline: 'rgba(255,220,140,0.22)'
+      })
+      ui.ctx.textAlign = 'center'
+      ui.text(r.rating || 'C', x + w - 39, y + 16, 28, ratingColor, '700')
+      ui.ctx.textAlign = 'left'
+      ui.divider(x + 16, y + 64, w - 32)
+      let bodyY = y + 72
       if (failLine) {
         ui.panel(x + 14, bodyY, w - 28, 68, {
           fill: '#4a2024',
@@ -124,7 +145,7 @@ module.exports = manager => ({
       })
       ui.text(win ? '带出变现' : '本趟亏损', x + 82, bodyY + 2, 12, COLORS.body, '700')
       ui.text(`${win ? engine.fmtVal(r.totalValue || 0) : engine.fmtVal(Math.abs(profit))} 配给点`,
-        x + 82, bodyY + 20, 26, win ? COLORS.gold : '#ffd0d0', '700', w - 104)
+        x + 82, bodyY + 18, 30, win ? COLORS.gold : '#ffd0d0', '700', w - 104)
       ui.text(`${profit >= 0 ? '净入账 +' : '净损失 -'}${engine.fmtVal(Math.abs(profit))}`,
         x + 82, bodyY + 54, 15, profit >= 0 ? COLORS.accent : COLORS.danger, '700', w - 104)
       ui.text(`${r.methodText || '未能撤离'} · ${r.loadoutName || ''}`, x + 18, bodyY + 88, 13, COLORS.body, '600', w - 36)
@@ -164,7 +185,9 @@ module.exports = manager => ({
           ui.panel(x, y, w, 64, {
             fill: '#1a2418',
             stroke: tierColor(medal.tier),
-            accent: tierColor(medal.tier)
+            accent: tierColor(medal.tier),
+            depth: true,
+            hairline: 'rgba(255,220,140,0.16)'
           })
           stage.drawMedal(ui.ctx, x + 12, y + 10, 40, medal)
           ui.text(medal.name, x + 62, y + 12, 15, COLORS.gold, '700', w - 76)
@@ -181,7 +204,9 @@ module.exports = manager => ({
             fill: '#111925',
             stroke: tierColor(item.tier),
             accent: tierColor(item.tier),
-            radius: 10
+            radius: 10,
+            depth: true,
+            hairline: 'rgba(255,220,140,0.12)'
           })
           stage.drawItemIcon(ui.ctx, x + 12, y + 10, 22, item)
           ui.text(`[${item.tierLabel || ''}] ${item.name}`, x + 44, y + 13, 13, COLORS.text, '600', w * 0.58)

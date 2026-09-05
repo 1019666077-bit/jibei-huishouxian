@@ -243,6 +243,10 @@ const feel = require('../miniprogram/runtime/feel')
   const engine = require('../miniprogram/core/engine')
   assert.strictEqual(engine.tutorialWound({ tutorial: true, step: 1 }, -8), -4, '演示伤感应与教程封顶一致')
   assert.strictEqual(present.bagLoadText({ capacity: 25 }, { loadGrids: 2 }), '2/25格')
+  assert.ok(present.extractCue({ levers: 0 }).includes('2/2'), '未合闸撤离应说清索道门槛')
+  assert.ok(present.extractCue({ levers: 2 }).includes('索道'), '双电源撤离应指向索道')
+  assert.ok(present.extractLockReason({ step: 0, hp: 80, risk: 10 }).includes('第3步'), '开局锁撤离要说清步数')
+  assert.ok(present.extractLockReason({ node: { type: 'escape' }, step: 7 }).includes('撤离线'))
 }
 
 const ui = new UI(ctx)

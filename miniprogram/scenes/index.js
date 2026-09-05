@@ -167,7 +167,11 @@ module.exports = manager => ({
       size: 11
     })
     ui.text('极夜回收线', left, top + 52, 34, COLORS.text, '700')
-    ui.text('带东西活着出来', left, top + 94, 18, COLORS.gold, '700')
+    ui.ctx.fillStyle = 'rgba(255,198,92,0.85)'
+    ui.ctx.fillRect(left, top + 90, 72, 2)
+    ui.ctx.fillStyle = 'rgba(186,220,255,0.16)'
+    ui.ctx.fillRect(left + 72, top + 90, 48, 1)
+    ui.text('带东西活着出来', left, top + 98, 18, COLORS.gold, '700')
     const mapH = Math.max(108, Math.min(156, v.safe.bottom - top - 310))
     const mapY = top + (this.meta.runs === 0 ? 172 : 216)
     const firstTrip = this.meta.runs === 0
@@ -179,7 +183,9 @@ module.exports = manager => ({
       stroke: COLORS.rim,
       radius: 12,
       rim: COLORS.ice,
-      sheen: false
+      sheen: false,
+      depth: true,
+      hairline: 'rgba(186,220,255,0.12)'
     })
     stage.drawJobPlan(ui.ctx, { x: left, y: mapY, w: width, h: mapH }, {
       current: 'harbor',

@@ -94,6 +94,12 @@ assert.ok(!manager.scene.juice, '进场印章不得伪装合闸成功')
 {
   const runMeta = require('../miniprogram/core/engine').getRunMeta(manager.scene.run)
   assert.strictEqual(present.bagLoadText(manager.scene.run, runMeta), `${runMeta.loadGrids}/${manager.scene.run.capacity}格`)
+  assert.ok(present.extractCue(manager.scene.run).includes('2/2'))
+  manager.scene.goExtract()
+  assert.ok(manager.scene.juice, '锁撤离应给顶栏说明，不能静默')
+  assert.ok(/第3步|还早/.test(manager.scene.juice.label + manager.scene.juice.sub), '开局点撤离应说明第3步')
+  assert.ok(manager.scene.juice.kind === 'extract', '锁撤离说明不得伪装合闸成功')
+  manager.scene.juice = null
 }
 const meta = require('../miniprogram/core/meta')
 assert.ok(!storage.meta_v1 || storage.meta_v1.balance === meta.START_BALANCE, '首局尚未结算却已扣仓库')

@@ -543,6 +543,21 @@ function layoutPins(node, rect, forceMap) {
   })
 }
 
+function extractCue(run) {
+  const n = (run && run.levers) || 0
+  if (n >= 2) return '点索道撤出'
+  return '索道要2/2，可走列车'
+}
+
+function extractLockReason(run) {
+  if (!run || run.ended) return '这局已经结束'
+  if (run.node && run.node.type === 'escape') return '已在撤离线，点一条撤法'
+  if ((run.step || 0) < 2 && (run.hp == null || run.hp >= 60) && (run.risk || 0) < 70) {
+    return '开局先搜，第3步才能撤'
+  }
+  return '现在还不能撤'
+}
+
 function bagLoadText(run, meta) {
   const grids = meta && meta.loadGrids != null ? meta.loadGrids : 0
   const cap = (run && run.capacity) || 0
@@ -676,6 +691,8 @@ module.exports = {
   useOptionList,
   listFitH,
   bagLoadText,
+  extractCue,
+  extractLockReason,
   fitBox,
   boxesOverlap,
   cityLabelLayout,

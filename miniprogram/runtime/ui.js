@@ -35,6 +35,28 @@ function roundedRect(ctx, x, y, w, h, r) {
   gfx.roundRect(ctx, x, y, w, h, r)
 }
 
+function lift(ctx, x, y, w, h, r) {
+  ctx.fillStyle = 'rgba(0,0,0,0.46)'
+  roundedRect(ctx, x + 1, y + 3, w, h, r)
+  ctx.fill()
+}
+
+function carve(ctx, x, y, w, h, r, options = {}) {
+  if (w < 10 || h < 16) return
+  const inset = Math.min(8, Math.max(3, (r || 0) + 2))
+  const span = Math.max(0, w - inset * 2)
+  ctx.fillStyle = options.hi || 'rgba(226,238,252,0.2)'
+  ctx.fillRect(x + inset, y + 1, span, 1)
+  ctx.fillStyle = options.lo || 'rgba(0,0,0,0.36)'
+  ctx.fillRect(x + inset, y + h - 2, span, 1)
+  if (options.hairline) {
+    ctx.strokeStyle = options.hairline
+    ctx.lineWidth = 1
+    roundedRect(ctx, x + 2, y + 2, w - 4, h - 4, Math.max(0, (r || 0) - 2))
+    if (typeof ctx.stroke === 'function') ctx.stroke()
+  }
+}
+
 function tidyCut(text) {
   const trimmed = String(text || '').replace(/[的了在与和及到向于·，、（(\s]+$/g, '')
   return trimmed.length >= 2 ? trimmed : String(text || '')
@@ -103,6 +125,26 @@ class UI {
       [1, '#05090f']
     ])
     ctx.fillRect(0, 0, viewport.width, viewport.height)
+    ctx.fillStyle = gfx.vgrad(ctx, 0, 0, 90, [
+      [0, 'rgba(159,212,255,0.07)'],
+      [1, 'rgba(159,212,255,0)']
+    ])
+    ctx.fillRect(0, 0, viewport.width, 90)
+    ctx.fillStyle = gfx.vgrad(ctx, 0, viewport.height - 140, 140, [
+      [0, 'rgba(0,0,0,0)'],
+      [1, 'rgba(0,0,0,0.42)']
+    ])
+    ctx.fillRect(0, viewport.height - 140, viewport.width, 140)
+    ctx.fillStyle = gfx.hgrad(ctx, 0, 0, 28, [
+      [0, 'rgba(0,0,0,0.34)'],
+      [1, 'rgba(0,0,0,0)']
+    ])
+    ctx.fillRect(0, 0, 28, viewport.height)
+    ctx.fillStyle = gfx.hgrad(ctx, viewport.width - 28, 0, 28, [
+      [0, 'rgba(0,0,0,0)'],
+      [1, 'rgba(0,0,0,0.36)']
+    ])
+    ctx.fillRect(viewport.width - 28, 0, 28, viewport.height)
     ctx.textBaseline = 'top'
     ctx.textAlign = 'left'
     gfx.noGlow(ctx)
@@ -176,6 +218,7 @@ class UI {
   panel(x, y, w, h, options = {}) {
     const ctx = this.ctx
     const radius = options.radius == null ? 12 : options.radius
+    if (options.depth && w > 8 && h > 16) lift(ctx, x, y, w, h, radius)
     roundedRect(ctx, x, y, w, h, radius)
     ctx.fillStyle = options.fill || COLORS.panel
     ctx.fill()
@@ -194,9 +237,16 @@ class UI {
       ctx.fillStyle = options.accent
       ctx.fillRect(x, y + 8, 4, Math.max(8, h - 16))
     }
+    if (options.inset !== false && h >= 26) {
+      carve(ctx, x, y, w, h, radius, {
+        hi: options.hi,
+        lo: options.lo,
+        hairline: options.hairline
+      })
+    }
     if (options.sheen !== false && h > 20) {
-      ctx.fillStyle = 'rgba(186,220,255,0.06)'
-      ctx.fillRect(x + 2, y + 2, w - 4, Math.min(14, h * 0.22))
+      ctx.fillStyle = 'rgba(186,220,255,0.08)'
+      ctx.fillRect(x + 3, y + 2, w - 6, Math.min(12, h * 0.18))
     }
     if (options.rim) {
       ctx.fillStyle = options.rim
@@ -211,7 +261,9 @@ class UI {
       stroke: enabled ? (options.stroke || COLORS.line) : '#1b2633',
       radius: options.radius == null ? 10 : options.radius,
       glow: options.glow || null,
-      sheen: true
+      sheen: true,
+      depth: options.depth != null ? options.depth : (enabled && h >= 40),
+      hairline: options.hairline || (enabled ? 'rgba(186,220,255,0.1)' : null)
     })
     const size = options.size || 14
     const ctx = this.ctx
@@ -250,6 +302,9 @@ class UI {
     const nw = this.ctx.measureText(num).width
     this.text(num, x + w - nw, y - 2, 16, fill || COLORS.text, '700')
     this.bar(x, y + 17, w, 10, ratio, fill || COLORS.accent, '#071018')
+    const filled = Math.max(3, Math.round(w * Math.max(0, Math.min(1, Number(ratio) || 0))))
+    this.ctx.fillStyle = 'rgba(255,255,255,0.22)'
+    this.ctx.fillRect(x + 1, y + 18, Math.max(0, filled - 2), 1)
   }
 
   scrollbar(rect, scroll) {
@@ -270,7 +325,10 @@ class UI {
       stroke: options.stroke || COLORS.line,
       radius: options.radius == null ? 8 : options.radius,
       glow: options.glow || null,
-      sheen: false
+      sheen: false,
+      depth: options.depth || false,
+      hairline: options.hairline || null,
+      inset: h >= 26
     })
     const size = options.size || 11
     gfx.applyFont(this.ctx, size, options.weight || '700')
@@ -299,10 +357,12 @@ class UI {
   }
 
   divider(x, y, w) {
-    this.ctx.fillStyle = COLORS.line
+    this.ctx.fillStyle = 'rgba(0,0,0,0.45)'
     this.ctx.fillRect(x, y, w, 1)
-    this.ctx.fillStyle = 'rgba(101,214,180,0.12)'
-    this.ctx.fillRect(x, y, Math.min(48, w), 1)
+    this.ctx.fillStyle = 'rgba(186,220,255,0.16)'
+    this.ctx.fillRect(x, y, Math.min(56, w), 1)
+    this.ctx.fillStyle = 'rgba(101,214,180,0.18)'
+    this.ctx.fillRect(x, y + 1, Math.min(28, w), 1)
   }
 }
 

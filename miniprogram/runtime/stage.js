@@ -888,8 +888,8 @@ function drawFloor(ctx, x, y, w, h) {
   rect(ctx, x, y, w, 6)
   metalEdge(ctx, x, y, w)
   fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + 10, Math.max(w, h) * 0.58, [
-    [0, 'rgba(255,228,176,0.34)'],
-    [0.32, 'rgba(255,198,92,0.12)'],
+    [0, 'rgba(255,228,176,0.42)'],
+    [0.3, 'rgba(255,198,92,0.16)'],
     [1, 'rgba(0,0,0,0)']
   ]))
   rect(ctx, x + w * 0.16, y, w * 0.68, h)
@@ -994,11 +994,11 @@ function drawRoom(ctx, zone, box, tick) {
   metalEdge(ctx, x, y, w)
   const win = { x: x + w * 0.12, y: y + 10, w: w * 0.76, h: wall - 20 }
   drawZone(ctx, zone, win, tick)
-  fill(ctx, 'rgba(6,12,20,0.28)')
+  fill(ctx, 'rgba(4,8,12,0.4)')
   rect(ctx, win.x, win.y, win.w, win.h)
   fill(ctx, gfx.vgrad(ctx, win.x, win.y, win.h, [
-    [0, 'rgba(159,212,255,0.06)'],
-    [1, 'rgba(4,8,12,0.34)']
+    [0, 'rgba(159,212,255,0.05)'],
+    [1, 'rgba(2,6,10,0.48)']
   ]))
   rect(ctx, win.x, win.y, win.w, win.h)
   iceBloom(ctx, win.x, win.y, win.w * 0.36, 14)
@@ -1034,12 +1034,12 @@ function drawRoom(ctx, zone, box, tick) {
   fill(ctx, 'rgba(255,236,190,0.72)')
   rect(ctx, lx - 6, ly - 16, 12, 10)
   fill(ctx, gfx.rgrad(ctx, lx, ly + 8, w * 0.52, [
-    [0, 'rgba(255,236,190,0.5)'],
-    [0.34, 'rgba(255,198,92,0.16)'],
+    [0, 'rgba(255,236,190,0.62)'],
+    [0.3, 'rgba(255,198,92,0.2)'],
     [1, 'rgba(0,0,0,0)']
   ]))
   rect(ctx, x + w * 0.14, ly, w * 0.72, (h - wall) * 0.86)
-  gfx.circle(ctx, lx, ly + 14, 40, 'rgba(255,228,176,0.3)')
+  gfx.circle(ctx, lx, ly + 14, 40, 'rgba(255,228,176,0.38)')
   fill(ctx, gfx.hgrad(ctx, x, y, 34, [
     [0, 'rgba(0,0,0,0.58)'],
     [1, 'rgba(0,0,0,0)']

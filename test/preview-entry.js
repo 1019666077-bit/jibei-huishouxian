@@ -4,6 +4,7 @@ const { makeItem } = require('../miniprogram/data/items')
 const metaStore = require('../miniprogram/core/meta')
 const engine = require('../miniprogram/core/engine')
 const feel = require('../miniprogram/runtime/feel')
+const present = require('../miniprogram/runtime/present')
 
 const storage = {}
 
@@ -263,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
   shot('run-extract', '撤离印章', manager => {
     enterLobby(manager)
     manager.go('run')
-    manager.scene.juice = { kind: 'extract', label: '撤离', sub: '选一条撤出', mark: 'ok', until: Date.now() + 60000 }
+    manager.scene.juice = { kind: 'extract', label: '撤离', sub: present.extractCue(manager.scene.run), mark: 'ok', until: Date.now() + 60000 }
   })
 
   shot('run-lever-stamp', '合闸印章', manager => {
