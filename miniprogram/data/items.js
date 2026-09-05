@@ -21,22 +21,22 @@ const ITEM_POOL = {
   ],
   green: [
     { name: '抗冻接线盒', value: [6200, 10800], weight: 2 },
-    { name: '微型焊接笔', value: [7100, 12600], weight: 1 },
-    { name: '雪雾信标灯', value: [7600, 13900], weight: 1 },
-    { name: '密封菌种包', value: [5400, 9800], weight: 1 },
-    { name: '低温密封阀', value: [6800, 11800], weight: 1 },
-    { name: '雾灯驱动芯', value: [7300, 13200], weight: 1 }
+    { name: '微型焊接笔', value: [7100, 12600], weight: 2 },
+    { name: '雪雾信标灯', value: [7600, 13900], weight: 2 },
+    { name: '密封菌种包', value: [5400, 9800], weight: 2 },
+    { name: '低温密封阀', value: [6800, 11800], weight: 2 },
+    { name: '雾灯驱动芯', value: [7300, 13200], weight: 2 }
   ],
   blue: [
-    { name: '冰芯测厚规', value: [12200, 18600], weight: 1 },
-    { name: '高热口粮罐', value: [13600, 19400], weight: 1 },
-    { name: '气压逻辑板', value: [17500, 28700], weight: 1 },
+    { name: '冰芯测厚规', value: [12200, 18600], weight: 2 },
+    { name: '高热口粮罐', value: [13600, 19400], weight: 2 },
+    { name: '气压逻辑板', value: [17500, 28700], weight: 2 },
     { name: '耐寒记录盘', value: [22800, 36400], weight: 2 },
-    { name: '潮位校准片', value: [15800, 24600], weight: 1 }
+    { name: '潮位校准片', value: [15800, 24600], weight: 2 }
   ],
   purple: [
-    { name: '白障透视镜', value: [46800, 57600], weight: 1 },
-    { name: '风暴固存片', value: [38400, 52200], weight: 1 },
+    { name: '白障透视镜', value: [46800, 57600], weight: 2 },
+    { name: '风暴固存片', value: [38400, 52200], weight: 2 },
     { name: '长距云层仪', value: [51200, 69400], weight: 2 }
   ],
   gold: [

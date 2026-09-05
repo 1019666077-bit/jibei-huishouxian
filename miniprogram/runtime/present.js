@@ -16,7 +16,7 @@ const ZONE_POS = {
   core: { x: 0.50, y: 0.46 },
   thermal: { x: 0.50, y: 0.64 },
   lift: { x: 0.84, y: 0.42 },
-  extract: { x: 0.84, y: 0.70 }
+  extract: { x: 0.84, y: 0.80 }
 }
 
 const ROOM_POS = {

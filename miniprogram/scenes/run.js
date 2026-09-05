@@ -721,26 +721,31 @@ module.exports = manager => ({
     })
     pins.forEach(pin => {
       const option = pin.opt
-      const above = pin.ny > 0.58
-      const plateW = 58
-      const plateH = 18
-      let plateX = pin.x - plateW / 2
-      let plateY = above ? pin.y - plateH - 6 : pin.y + 10
-      plateX = Math.min(rect.x + rect.w - plateW - 2, Math.max(rect.x + 2, plateX))
-      plateY = Math.min(rect.y + rect.h - plateH - 2, Math.max(rect.y + 2, plateY))
+      const zone = present.pinZone(option, node)
+      const zoneLabel = present.ZONE_SHORT[zone]
+      const extra = !!(option.method || option.wait || (option.verb && option.verb !== zoneLabel))
       if (option.method || option.wait) {
         stage.drawPad(ui.ctx, option.method || 'wait', pin.x, pin.y, !option.disabled, false)
       }
-      ui.panel(plateX, plateY, plateW, plateH, {
-        fill: option.disabled ? '#101820' : '#142131',
-        stroke: option.disabled ? COLORS.line : (option.rounds ? COLORS.danger : COLORS.gold),
-        radius: 6,
-        sheen: false
-      })
-      ui.ctx.textAlign = 'center'
-      ui.text(option.verb || present.caption(option), plateX + plateW / 2, plateY + 3, 10,
-        option.disabled ? '#6a7a88' : COLORS.text, '700', plateW - 8)
-      ui.ctx.textAlign = 'left'
+      if (extra) {
+        const above = pin.ny > 0.52
+        const plateW = 52
+        const plateH = 16
+        let plateX = pin.x - plateW / 2
+        let plateY = above ? pin.y - plateH - 8 : pin.y + 12
+        plateX = Math.min(rect.x + rect.w - plateW - 2, Math.max(rect.x + 2, plateX))
+        plateY = Math.min(rect.y + rect.h - plateH - 2, Math.max(rect.y + 2, plateY))
+        ui.panel(plateX, plateY, plateW, plateH, {
+          fill: option.disabled ? '#101820' : '#142131',
+          stroke: option.disabled ? COLORS.line : (option.rounds ? COLORS.danger : COLORS.gold),
+          radius: 6,
+          sheen: false
+        })
+        ui.ctx.textAlign = 'center'
+        ui.text(option.verb || present.caption(option), plateX + plateW / 2, plateY + 2, 10,
+          option.disabled ? '#6a7a88' : COLORS.text, '700', plateW - 8)
+        ui.ctx.textAlign = 'left'
+      }
       ui.addHit(pin.x - 36, pin.y - 28, 72, 56, () => {
         if (option.disabled) {
           this.messages.unshift(this.pip(option) || '现在不行')

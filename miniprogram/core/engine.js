@@ -876,7 +876,8 @@ function resolveEvent(state, opt, messages) {
   if (eff.loot) {
     const items = []
     let rolls = eff.lootCount || 1
-    if (pass && opt.safe && rolls === 1 && Math.random() < 0.5) rolls += 1
+    if (pass && opt.safe) rolls += 1
+    else if (pass && rolls === 1 && Math.random() < 0.35) rolls += 1
     for (let i = 0; i < rolls; i++) {
       const avoid = state.loot.map(it => it.name).concat(items.map(it => it.name))
       const item = rollLoot(eff.loot, state.redBoost, avoid)
