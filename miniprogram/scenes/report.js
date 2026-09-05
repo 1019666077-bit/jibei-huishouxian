@@ -72,7 +72,7 @@ module.exports = manager => ({
   render(ui, v) {
     if (!this.report) return
     const headerBottom = ui.header('行动结算', '本地战报 · 不上传、不生成编号', () => manager.go('index'))
-    const toolbarH = 55
+    const toolbarH = 68
     this.rect = {
       x: v.safe.left + 10,
       y: headerBottom,
@@ -85,30 +85,40 @@ module.exports = manager => ({
       const w = this.rect.w - 8
       let y = this.rect.y + 4 - this.scroll.offset
       const start = y
+      const win = !!r.escaped
       const ratingColor = r.rating === 'S' ? COLORS.danger : r.rating === 'A' ? COLORS.gold : COLORS.text
-      ui.panel(x, y, w, 148, {
-        fill: r.escaped ? '#132820' : '#2c171b',
-        stroke: r.escaped ? '#2b6653' : '#703840',
-        glow: r.escaped ? 'rgba(101,214,180,0.16)' : 'rgba(255,107,107,0.12)'
-      })
-      stage.drawMedal(ui.ctx, x + 16, y + 36, 52, {
-        tier: r.rating === 'S' || r.rating === 'A' ? 'gold' : r.escaped ? 'green' : 'red'
-      })
-      ui.text(r.rating, x + 30, y + 50, 28, ratingColor, '700')
-      ui.text(r.escaped ? '活着出来了' : '没能回来', x + 80, y + 28, 20,
-        r.escaped ? COLORS.accent : COLORS.danger, '700')
-      ui.text(`评级 ${r.rating}`, x + 80, y + 60, 16, ratingColor, '700')
-      ui.text(`${r.methodText || '未能撤离'} · ${r.loadoutName || ''}`, x + 80, y + 90, 13, COLORS.muted, '600', w - 96)
-      ui.text(r.escaped ? '配给点已入账，装备押金退回' : '本趟装备投入未返还', x + 16, y + 118, 12, COLORS.muted, '600', w - 32)
-      y += 164
-
-      ui.panel(x, y, w, 108, { accent: COLORS.gold })
-      ui.text('本局物资', x + 16, y + 14, 12, COLORS.muted)
-      ui.text(`${engine.fmtVal(r.totalValue || 0)} 配给点`, x + 16, y + 36, 26, COLORS.gold, '700')
       const profit = r.netProfit || 0
-      ui.text(`${profit >= 0 ? '净收益 +' : '净损失 -'}${engine.fmtVal(Math.abs(profit))} 配给点`,
-        x + 16, y + 76, 13, profit >= 0 ? COLORS.accent : COLORS.danger, '600')
-      y += 124
+      ui.panel(x, y, w, 176, {
+        fill: win ? '#132820' : '#2c171b',
+        stroke: win ? '#2b6653' : '#703840',
+        glow: win ? 'rgba(101,214,180,0.2)' : 'rgba(255,107,107,0.16)'
+      })
+      ui.chip(x + 14, y + 12, 88, 24, win ? '撤收成功' : '未能归署', {
+        fill: win ? '#1e4f43' : '#4a2024',
+        stroke: win ? COLORS.accent : COLORS.danger,
+        color: win ? COLORS.accent : COLORS.danger,
+        size: 13
+      })
+      ui.chip(x + 110, y + 12, 56, 24, `评级 ${r.rating}`, {
+        fill: '#1a2418',
+        stroke: ratingColor,
+        color: ratingColor,
+        size: 13
+      })
+      stage.drawMedal(ui.ctx, x + 16, y + 48, 44, {
+        tier: r.rating === 'S' || r.rating === 'A' ? 'gold' : win ? 'green' : 'red'
+      })
+      ui.text(win ? '带出变现' : '本趟亏损', x + 72, y + 46, 13, COLORS.muted, '600')
+      ui.text(`${win ? engine.fmtVal(r.totalValue || 0) : engine.fmtVal(Math.abs(profit))} 配给点`,
+        x + 72, y + 66, 26, win ? COLORS.gold : COLORS.danger, '700', w - 90)
+      ui.text(`${profit >= 0 ? '净入账 +' : '净损失 -'}${engine.fmtVal(Math.abs(profit))}`,
+        x + 72, y + 100, 14, profit >= 0 ? COLORS.accent : COLORS.danger, '700', w - 90)
+      ui.text(`${r.methodText || '未能撤离'} · ${r.loadoutName || ''}`, x + 16, y + 128, 13, COLORS.muted, '600', w - 32)
+      const wallet = r.wallet && r.wallet.balanceAfter != null
+        ? `仓库 ${engine.fmtVal(r.wallet.balanceAfter)}`
+        : (win ? '配给点已入账，装备押金退回' : '本趟装备投入未返还')
+      ui.text(wallet, x + 16, y + 150, 12, COLORS.muted, '600', w - 32)
+      y += 190
 
       if (r.causeChain.length) {
         y = ui.section(x, y, w, '复盘')
@@ -181,9 +191,16 @@ module.exports = manager => ({
 
     const left = v.safe.left + 12
     const width = v.safe.right - v.safe.left - 24
-    const y = v.safe.bottom - 48
-    ui.button(left, y, width, 44,
-      r.loadoutName ? `再出发 · ${r.loadoutName}` : '再出发',
-      () => this.again(), { fill: '#1e4f43', stroke: COLORS.accent, size: 16 })
+    const y = v.safe.bottom - 60
+    ui.button(left, y, width, 52,
+      r.escaped ? '再出发' : '换方案再出发',
+      () => this.again(), {
+        fill: r.escaped ? '#1e4f43' : '#3a2e10',
+        stroke: r.escaped ? COLORS.accent : COLORS.gold,
+        color: r.escaped ? COLORS.accent : COLORS.gold,
+        size: 18,
+        sub: r.loadoutName ? `${r.loadoutName} · 重开` : '用上一套战备重开',
+        glow: r.escaped ? 'rgba(101,214,180,0.16)' : 'rgba(255,198,92,0.14)'
+      })
   }
 })

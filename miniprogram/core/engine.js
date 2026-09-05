@@ -207,6 +207,8 @@ function getRunMeta(state) {
   const mm = Math.floor(remaining / 60)
   const ss = String(remaining % 60).padStart(2, '0')
   const rounds = ammoRounds(state)
+  const remainSteps = Math.max(0, ESCAPE_STEP - state.step)
+  const stepShown = Math.min((state.step || 0) + 1, TOTAL_STEPS)
   return {
     timeText: `${mm}:${ss}`,
     phase: PHASE_LABEL[phaseOf(state)],
@@ -218,7 +220,14 @@ function getRunMeta(state) {
     // 一匣30发：低于一匣就该考虑撤了，空仓只能靠刀和腿
     ammoClass: rounds <= 0 ? 'ammo-out' : rounds < 30 ? 'ammo-low' : 'ammo-ok',
     ammoGrids: ammoGrids(rounds),
-    loadGrids: loadGrids(state)
+    loadGrids: loadGrids(state),
+    step: state.step,
+    stepShown,
+    totalSteps: TOTAL_STEPS,
+    remainSteps,
+    stepText: state.step >= ESCAPE_STEP
+      ? '撤离步'
+      : (remainSteps <= 2 ? `还剩${remainSteps}步` : `第${stepShown}/${TOTAL_STEPS}步`)
   }
 }
 

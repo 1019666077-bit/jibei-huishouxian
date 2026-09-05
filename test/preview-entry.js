@@ -136,7 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { idx: 3, text: '合上冷却舱配电柄（极地索道条件之一）', verb: '合闸', safe: true, chance: 100, full: '合上冷却舱配电柄（极地索道条件之一）' }
       ]
     }
-    scene.messages = ['点合闸开索道']
+    run.step = 2
+    scene.messages = ['先合闸，再走索道']
     scene.hintedLever = true
     scene.hintedCore = true
     scene.placeActor(run.node)
@@ -164,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loadoutName: '标准勤务组',
       totalValue: 5120000,
       netProfit: 4800000,
+      wallet: { balanceAfter: 5600000 },
       causeChain: ['沿冻港西堤推进', '带出零号资产柜'],
       retryPlans: [{ id: 'p1', title: '再走冻港补给线', goal: '先装箱再上塔', loadout: 'half' }],
       lootItems: [makeItem('北辰零号晶核')],
@@ -172,6 +174,24 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: '归航标·A', desc: '活着回到回收署', tier: 'gold' },
         { name: '零号见证', desc: '带出北辰零号晶核', tier: 'red' }
       ]
+    }
+    manager.go('report')
+  })
+
+  shot('report-fail', '失败结算', manager => {
+    storage.last_report = {
+      escaped: false,
+      rating: 'C',
+      methodText: '未能撤离',
+      loadoutName: '标准勤务组',
+      totalValue: 0,
+      netProfit: -150000,
+      causeChain: ['冷却舱交火失血'],
+      retryPlans: [{ id: 'p2', title: '轻装再探冻港', goal: '少带少亏', loadout: 'knife' }],
+      lootItems: [],
+      lostItems: [],
+      medals: [],
+      wallet: { balanceAfter: 350000 }
     }
     manager.go('report')
   })

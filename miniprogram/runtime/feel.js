@@ -18,7 +18,8 @@ function beep(kind) {
     loot: [540, 0.11, 'square'],
     win: [392, 0.18, 'triangle'],
     heal: [330, 0.12, 'sine'],
-    ok: [260, 0.07, 'square']
+    ok: [260, 0.07, 'square'],
+    bad: [118, 0.14, 'sawtooth']
   }
   const spec = table[kind] || table.ok
   try {
@@ -47,7 +48,9 @@ function vibrate(kind) {
       return
     }
     if (typeof wx.vibrateShort === 'function') {
-      wx.vibrateShort({ type: kind === 'hit' ? 'heavy' : kind === 'loot' ? 'medium' : 'light' })
+      wx.vibrateShort({
+        type: kind === 'hit' || kind === 'bad' ? 'heavy' : kind === 'loot' ? 'medium' : 'light'
+      })
     }
   } catch (e) { /* 部分真机没有震动权限 */ }
 }
@@ -78,8 +81,10 @@ function classify(prev, next, messages) {
 }
 
 function burst(kind, width, height) {
-  const n = kind === 'loot' || kind === 'win' ? 22 : kind === 'hit' || kind === 'dead' ? 16 : 8
-  const color = kind === 'hit' || kind === 'dead' ? '#ff6b6b' : kind === 'loot' || kind === 'win' ? '#ffc65c' : '#65d6b4'
+  const n = kind === 'loot' || kind === 'win' ? 22 : kind === 'hit' || kind === 'dead' || kind === 'bad' ? 16 : 8
+  const color = kind === 'hit' || kind === 'dead' || kind === 'bad'
+    ? '#ff6b6b'
+    : kind === 'loot' || kind === 'win' ? '#ffc65c' : '#65d6b4'
   const bits = []
   const cx = width / 2
   const cy = height * 0.4

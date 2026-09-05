@@ -759,6 +759,57 @@ function drawPad(ctx, method, x, y, lit, hot) {
   rect(ctx, x - 4, y - 16, 8, 8)
 }
 
+function drawToneMark(ctx, tone, x, y, size) {
+  const s = Math.max(16, size || 22)
+  const color = tone === 'fight' ? '#ff6b6b'
+    : tone === 'safe' ? '#65d6b4'
+    : tone === 'extract' ? '#65a9ff'
+    : tone === 'lever' ? '#ffc65c'
+    : '#ffc65c'
+  fill(ctx, 'rgba(8,14,20,0.55)')
+  rect(ctx, x, y, s, s)
+  fill(ctx, color)
+  if (tone === 'fight') {
+    rect(ctx, x + s * 0.42, y + 3, 4, s - 6)
+    rect(ctx, x + 4, y + s * 0.4, s - 8, 4)
+    return
+  }
+  if (tone === 'safe') {
+    rect(ctx, x + 5, y + s * 0.55, s * 0.32, 4)
+    rect(ctx, x + s * 0.28, y + s * 0.22, 4, s * 0.48)
+    return
+  }
+  if (tone === 'extract') {
+    rect(ctx, x + 4, y + s * 0.42, s - 8, 5)
+    rect(ctx, x + s - 10, y + s * 0.28, 5, s * 0.44)
+    return
+  }
+  if (tone === 'lever') {
+    rect(ctx, x + 5, y + 4, 4, s - 8)
+    rect(ctx, x + s - 9, y + 4, 4, s - 8)
+    rect(ctx, x + 5, y + 6, s - 10, 4)
+    return
+  }
+  rect(ctx, x + 4, y + 7, s - 8, s - 11)
+  rect(ctx, x + 6, y + 4, s - 12, 4)
+}
+
+function drawJudge(ctx, ok, cx, cy, size) {
+  const s = Math.max(18, size || 36)
+  fill(ctx, ok ? 'rgba(18,52,40,0.9)' : 'rgba(72,18,24,0.9)')
+  rect(ctx, cx - s, cy - s, s * 2, s * 2)
+  fill(ctx, ok ? '#65d6b4' : '#ff6b6b')
+  if (ok) {
+    rect(ctx, cx - s * 0.48, cy + 2, s * 0.38, 6)
+    rect(ctx, cx - s * 0.16, cy - s * 0.38, 6, s * 0.58)
+    return
+  }
+  for (let i = -3; i <= 3; i++) {
+    rect(ctx, cx + i * (s * 0.12) - 2, cy + i * (s * 0.12) - 2, 5, 5)
+    rect(ctx, cx + i * (s * 0.12) - 2, cy - i * (s * 0.12) - 2, 5, 5)
+  }
+}
+
 function drawKit(ctx, x, y, size, id) {
   if (id === 'full') {
     fill(ctx, '#2a4a40')
@@ -795,5 +846,7 @@ module.exports = {
   drawRoom,
   drawWalk,
   drawFight,
-  drawPad
+  drawPad,
+  drawToneMark,
+  drawJudge
 }
