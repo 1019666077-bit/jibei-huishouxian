@@ -166,6 +166,9 @@ if (!storage.last_report.escaped) {
   assert.ok(scene.messages.some(line => /冷却舱|压缩机/.test(line)), '长时间0合闸没有补提示')
   assert.ok(present.leverGuide(scene.run).includes('冷却舱'), '外围残局没有合闸目标条')
   assert.ok(present.leverNudge(scene.run), '外围残局没有合闸催促')
+  const look = scene.optionLook({ idx: 1, text: '刷门进内环', verb: '刷门', moveTo: 'core' })
+  assert.strictEqual(look.label, '内环', '迟到催促没有把进内环标成目标')
+  assert.ok(look.highlight, '迟到催促没有高亮内环选项')
 }
 
 // 设置页清档必须连协议确认和广告记录一起清除

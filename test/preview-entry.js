@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const scene = manager.scene
     scene.pickup = makeItem('气压逻辑板')
     scene.pickupUntil = Date.now() + 60000
-    scene.juice = { kind: 'bad', label: '失手', until: Date.now() + 60000 }
+    scene.juice = { kind: 'ok', label: '入手', until: Date.now() + 60000 }
   })
 
   shot('bag', '背包', manager => {

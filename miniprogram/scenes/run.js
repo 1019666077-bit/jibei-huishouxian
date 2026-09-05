@@ -268,14 +268,15 @@ module.exports = manager => ({
   optionLook(option) {
     const tone = present.optionTone(option)
     const nudge = present.leverNudge(this.run)
+    const target = nudge && present.isLeverTarget(option)
     const highlight = present.isLever(option) || present.isLeverHint(option)
       || (present.isCable(option) && this.run && this.run.levers >= 2)
-      || (nudge && present.isLeverTarget(option))
+      || target
     return {
-      tone,
-      color: present.toneColor(tone),
-      fill: present.toneFill(tone),
-      label: present.toneLabel(tone),
+      tone: target ? 'lever' : tone,
+      color: present.toneColor(target ? 'lever' : tone),
+      fill: present.toneFill(target ? 'lever' : tone),
+      label: target && !present.isLever(option) && !present.isLeverHint(option) ? '内环' : present.toneLabel(tone),
       highlight
     }
   },
@@ -836,14 +837,14 @@ module.exports = manager => ({
           size: 12
         })
         if (risky) {
-          ui.chip(railX, y + 34, 28, 22, '险', {
+          ui.chip(railX, y + 34, 32, 24, '险', {
             fill: '#4a2024',
             stroke: COLORS.danger,
             color: COLORS.danger,
-            size: 13
+            size: 14
           })
           ui.ctx.textAlign = 'right'
-          ui.text(pip, railX + railW, y + 38, 13, COLORS.danger, '700', railW - 32)
+          ui.text(pip, railX + railW, y + 38, 13, COLORS.danger, '700', railW - 36)
           ui.ctx.textAlign = 'left'
         } else {
           ui.ctx.textAlign = 'right'
