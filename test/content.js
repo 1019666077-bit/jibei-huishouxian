@@ -234,6 +234,8 @@ const LATE_STEP = 6
     const meta = engine.getRunMeta(s)
     assert.strictEqual(meta.phase, expect[step], `第${step}步的阶段文案不对`)
     assert.ok(meta.zoneName, 'HUD 区位名不能空')
+    assert.ok(meta.stepText, 'HUD 步数文案不能空')
+    assert.ok(meta.remainSteps != null, 'HUD 剩余步数不能空')
     const p = engine.phaseOf(s)
     assert.ok(['early', 'mid', 'late'].includes(p))
   }

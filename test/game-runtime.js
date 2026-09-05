@@ -120,6 +120,29 @@ if (!storage.last_report.escaped) {
   scene.teach()
   assert.ok(scene.messages.some(line => /合闸/.test(line)), '进冷却舱没有合闸教学')
   assert.ok(present.leverGuide(scene.run).includes('合闸'), '冷却舱现场没有合闸教学条')
+  assert.ok(present.leverPath(scene.run).includes('索道'), '合闸条没有指向索道')
+}
+
+{
+  manager.go('run')
+  const scene = manager.scene
+  scene.run.zone = 'core'
+  scene.run.levers = 2
+  scene.run.node = {
+    id: 'teach_cable',
+    type: 'escape',
+    options: [{ idx: 0, method: 'heli', verb: '索道', text: '启动极地索道' }]
+  }
+  scene.hintedLever = true
+  scene.hintedCore = true
+  scene.hintedCable = false
+  scene.teach()
+  assert.ok(scene.messages.some(line => /索道/.test(line)), '双电源后没有索道教学')
+  assert.ok(present.leverGuide(scene.run).includes('索道'), '撤离页没有索道高亮提示')
+  scene.flashJuice('ok', '入匣')
+  assert.ok(scene.juice && scene.juice.kind === 'ok', '入匣没有即时对错标')
+  scene.flashJuice('bad', '装不下')
+  assert.ok(scene.juice && scene.juice.kind === 'bad', '装箱失败没有即时对错标')
 }
 
 // 设置页清档必须连协议确认和广告记录一起清除

@@ -146,6 +146,42 @@ function isLeverHint(opt) {
   return /可合闸/.test(String(opt.costText || ''))
 }
 
+function isCable(opt) {
+  if (!opt) return false
+  if (opt.method === 'heli') return true
+  const t = String(opt.verb || opt.text || opt.full || '')
+  return t === '索道' || /^索道/.test(t)
+}
+
+const TONE = {
+  fight: { color: '#ff6b6b', fill: '#2c171b', label: '交火' },
+  safe: { color: '#65d6b4', fill: '#132820', label: '稳妥' },
+  extract: { color: '#65a9ff', fill: '#15273a', label: '撤离' },
+  lever: { color: '#ffc65c', fill: '#2a2410', label: '合闸' },
+  loot: { color: '#ffc65c', fill: '#142131', label: '搜刮' }
+}
+
+function optionTone(opt) {
+  if (!opt) return 'loot'
+  if (isLever(opt) || isLeverHint(opt)) return 'lever'
+  if (opt.method || opt.wait || opt.lootAction === 'flee') return 'extract'
+  if (opt.rounds) return 'fight'
+  if (opt.safe || opt.lootAction === 'skip') return 'safe'
+  return 'loot'
+}
+
+function toneColor(tone) {
+  return (TONE[tone] || TONE.loot).color
+}
+
+function toneFill(tone) {
+  return (TONE[tone] || TONE.loot).fill
+}
+
+function toneLabel(tone) {
+  return (TONE[tone] || TONE.loot).label
+}
+
 // 底部列表用完整前半句，交给两行省略，不再先裁成 16 字。
 function listTitle(opt) {
   if (!opt) return '继续'
@@ -155,20 +191,54 @@ function listTitle(opt) {
   return beat || raw
 }
 
+function leverPath(run) {
+  if (!run || run.ended) return ''
+  const n = run.levers || 0
+  if (n >= 2) return '合闸完成 → 点索道'
+  if (n === 1) return '合闸 1/2 → 再合闸 → 索道'
+  return '合闸 0/2 → 索道'
+}
+
 function leverGuide(run) {
-  if (!run || run.ended || (run.levers || 0) >= 2) return ''
+  if (!run || run.ended) return ''
   const node = run.node || {}
   const options = node.options || []
   const hasLever = options.some(isLever)
   const hasHint = options.some(isLeverHint)
+  const hasCable = options.some(isCable)
   const room = node.room || run.lastRoom
   const nearLever = room === 'coolant' || room === 'compressor'
+  if ((run.levers || 0) >= 2) {
+    if (hasCable) return '点「索道」撤离'
+    if (node.type === 'escape') return '选索道撤出'
+    return '双电源已通，走索道撤离'
+  }
   if (hasLever) return run.levers === 1 ? '再合闸，开索道' : '点「合闸」接通电源，开索道'
   if (run.zone === 'core' || nearLever) {
     return run.levers === 1 ? '去另一处配电房合闸' : '冷却舱·压缩机房可合闸开索道'
   }
   if (hasHint) return '进内环可合闸开索道'
   return ''
+}
+
+function paceHint(run) {
+  if (!run || run.ended) return ''
+  const step = run.step || 0
+  const remain = Math.max(0, 7 - step)
+  const shown = Math.min(step + 1, 8)
+  if (step >= 7) return '第8/8步 · 选一条撤'
+  if (remain <= 2) return `还剩${remain}步 · 残局`
+  if (step <= 2) return `第${shown}/8步 · 开局`
+  return `第${shown}/8步 · 中盘`
+}
+
+function stepChip(run) {
+  if (!run) return '第1/8步'
+  const step = run.step || 0
+  const remain = Math.max(0, 7 - step)
+  if (step >= 7) return '撤离步'
+  if (remain <= 2) return `还剩${remain}步`
+  return `第${Math.min(step + 1, 8)}/8步`
 }
 
 function isTravel(opt) {
@@ -343,6 +413,7 @@ module.exports = {
   ZONE_POS,
   ROOM_POS,
   OPTION_ROW_H,
+  TONE,
   clip,
   spot,
   verb,
@@ -352,7 +423,15 @@ module.exports = {
   isTravel,
   isLever,
   isLeverHint,
+  isCable,
+  leverPath,
   leverGuide,
+  paceHint,
+  stepChip,
+  optionTone,
+  toneColor,
+  toneFill,
+  toneLabel,
   useMap,
   useRoom,
   pinZone,

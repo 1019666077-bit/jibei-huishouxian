@@ -20,7 +20,7 @@ class SceneManager {
     feel.vibrate(kind)
     this.fx.kind = kind
     this.fx.label = label || ''
-    this.fx.until = Date.now() + ((kind === 'dead' || kind === 'win' || kind === 'loot') ? 820 : 420)
+    this.fx.until = Date.now() + ((kind === 'dead' || kind === 'win' || kind === 'loot' || kind === 'ok' || kind === 'bad') ? 820 : 420)
     if (kind === 'hit' || kind === 'dead') {
       this.fx.shake = kind === 'dead' ? 1 : 0.85
       this.fx.flash = 1
@@ -29,10 +29,14 @@ class SceneManager {
       this.fx.shake = 0.2
       this.fx.flash = 0.9
       this.fx.color = 'rgba(255,198,92,0.28)'
-    } else if (kind === 'heal') {
-      this.fx.shake = 0
-      this.fx.flash = 0.7
+    } else if (kind === 'heal' || kind === 'ok') {
+      this.fx.shake = kind === 'ok' ? 0.16 : 0
+      this.fx.flash = 0.78
       this.fx.color = 'rgba(101,214,180,0.26)'
+    } else if (kind === 'bad') {
+      this.fx.shake = 0.4
+      this.fx.flash = 0.92
+      this.fx.color = 'rgba(255,80,80,0.3)'
     } else {
       this.fx.shake = 0.12
       this.fx.flash = 0.45
@@ -139,11 +143,19 @@ class SceneManager {
     }
     if (this.fx.label && this.fx.flash > 0.15) {
       const ctx = this.ctx
-      ctx.font = require('./gfx').font(28, '700')
-      ctx.fillStyle = this.fx.kind === 'hit' || this.fx.kind === 'dead' ? '#ff8a8a' : '#ffe08a'
+      const judge = this.fx.kind === 'ok' || this.fx.kind === 'bad' || this.fx.kind === 'loot'
+      if (judge) {
+        const stage = require('./stage')
+        const scale = 0.82 + this.fx.flash * 0.5
+        ctx.globalAlpha = Math.min(1, this.fx.flash + 0.25)
+        stage.drawJudge(ctx, this.fx.kind !== 'bad', this.viewport.width / 2, this.viewport.height * 0.34, 28 * scale)
+        ctx.globalAlpha = 1
+      }
+      ctx.font = require('./gfx').font(judge ? 22 : 28, '700')
+      ctx.fillStyle = this.fx.kind === 'hit' || this.fx.kind === 'dead' || this.fx.kind === 'bad' ? '#ff8a8a' : '#ffe08a'
       ctx.textAlign = 'center'
       ctx.globalAlpha = Math.min(1, this.fx.flash + 0.2)
-      ctx.fillText(this.fx.label, this.viewport.width / 2, this.viewport.height * 0.38)
+      ctx.fillText(this.fx.label, this.viewport.width / 2, this.viewport.height * (judge ? 0.42 : 0.38))
       ctx.globalAlpha = 1
       ctx.textAlign = 'left'
     }
