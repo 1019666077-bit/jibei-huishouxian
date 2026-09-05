@@ -486,8 +486,8 @@ function layoutRoom(node, rect) {
       if (Math.abs(item.x - other.x) < 118 && Math.abs(item.y - other.y) < 58) {
         item.x += item.x >= other.x ? 28 : -28
         item.y += item.y >= other.y ? 22 : -22
-        item.x = Math.min(rect.x + rect.w - 40, Math.max(rect.x + 40, item.x))
-        item.y = Math.min(rect.y + rect.h - 28, Math.max(rect.y + 24, item.y))
+        item.x = Math.min(rect.x + rect.w - 68, Math.max(rect.x + 68, item.x))
+        item.y = Math.min(rect.y + rect.h - 32, Math.max(rect.y + 28, item.y))
         item.nx = rect.w ? (item.x - rect.x) / rect.w : item.nx
         item.ny = rect.h ? (item.y - rect.y) / rect.h : item.ny
       }
@@ -541,6 +541,22 @@ function layoutPins(node, rect, forceMap) {
       ny: rect.h ? (y - rect.y) / rect.h : pos.y
     }
   })
+}
+
+function fitBox(box, bounds, pad) {
+  const g = pad == null ? 10 : pad
+  if (!box || !bounds) return box
+  const x = Math.min(bounds.x + bounds.w - box.w - g, Math.max(bounds.x + g, box.x))
+  const y = Math.min(bounds.y + bounds.h - box.h - g, Math.max(bounds.y + g, box.y))
+  return { x, y, w: box.w, h: box.h }
+}
+
+function listFitH(n, roomH) {
+  const count = Math.max(0, n || 0)
+  const need = count * (OPTION_ROW_H + 8) - (count ? 8 : 0) + 16
+  const limit = roomH ? Math.max(200, roomH - 64) : need
+  if (count <= 3) return Math.min(Math.max(0, need), limit)
+  return Math.min(need, Math.max(220, Math.round((roomH || 320) * 0.64)))
 }
 
 function boxesOverlap(a, b, pad) {
@@ -652,6 +668,8 @@ module.exports = {
   propName,
   layoutRoom,
   useOptionList,
+  listFitH,
+  fitBox,
   boxesOverlap,
   cityLabelLayout,
   pinPlateBox

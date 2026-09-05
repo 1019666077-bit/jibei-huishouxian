@@ -85,6 +85,15 @@ assert.ok(present.leverGuide({ zone: 'harbor', levers: 0, step: 0, tutorial: tru
 assert.ok(present.leverGuide({ zone: 'harbor', levers: 1, step: 5, node: { options: [] } }).includes('合闸'), '中盘 1/2 合闸仍应看见主线')
 assert.ok(present.sceneLine({ full: '雾把灯吃了。柜后有人换气。' }).includes('雾把灯吃了'))
 assert.ok(present.sceneLine({ full: '冲过去砸开冻港西堤的密封柜，把里面的低温匣带走' }).length > 16)
+{
+  const plate = present.fitBox({ x: -20, y: 10, w: 132, h: 56 }, { x: 0, y: 0, w: 320, h: 180 }, 8)
+  assert.ok(plate.x >= 8 && plate.x + plate.w <= 312, '铭牌仍会贴边被裁')
+  assert.ok(plate.y >= 8)
+  const inset = present.fitBox({ x: -4, y: -4, w: 100, h: 40 }, { x: 0, y: 0, w: 200, h: 120 })
+  assert.ok(inset.x >= 10 && inset.y >= 10, '默认安全内边距不够')
+  assert.strictEqual(present.listFitH(3, 400), 3 * (present.OPTION_ROW_H + 8) - 8 + 16)
+  assert.ok(present.listFitH(3, 200) <= 200, '三行列表仍可能溢出房间')
+}
 assert.ok(present.isLeverTarget({ moveTo: 'core' }))
 assert.ok(present.isLeverTarget({ goEvent: 'core_coolant' }))
 assert.ok(!present.isLeverTarget({ moveTo: 'thermal' }))
@@ -215,6 +224,13 @@ const feel = require('../miniprogram/runtime/feel')
     ['带着已经到手的货，转向撤离线']
   )
   assert.strictEqual(live.stamp, '撤离', '撤离没有即时标')
+  const scratch = feel.classify(
+    { hp: 80, lootCount: 0, tutorial: true, step: 1 },
+    { hp: 74, loot: [], ended: false },
+    ['柜开了。擦了一下']
+  )
+  assert.strictEqual(scratch.stamp, '擦伤', '首局轻伤仍按失手报')
+  assert.strictEqual(scratch.kind, 'scratch')
 }
 
 const ui = new UI(ctx)

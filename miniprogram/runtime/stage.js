@@ -638,6 +638,44 @@ function drawActor(ctx, x, y, tick, options) {
   drawPerson(ctx, x, y, tick, options || {})
 }
 
+function rivet(ctx, x, y) {
+  fill(ctx, '#0c0e12')
+  rect(ctx, x, y, 4, 4)
+  fill(ctx, 'rgba(230,242,255,0.55)')
+  rect(ctx, x, y, 3, 2)
+  fill(ctx, 'rgba(70,80,90,0.75)')
+  rect(ctx, x + 2, y + 2, 2, 2)
+}
+
+function frost(ctx, x, y, w, h) {
+  const hh = h || 4
+  fill(ctx, 'rgba(186,230,255,0.3)')
+  rect(ctx, x, y, w, hh)
+  fill(ctx, 'rgba(236,248,255,0.46)')
+  rect(ctx, x + 3, y, Math.max(8, w * 0.4), Math.max(2, hh - 1))
+}
+
+function seam(ctx, x, y, w) {
+  fill(ctx, 'rgba(6,8,10,0.64)')
+  rect(ctx, x, y, w, 2)
+  fill(ctx, 'rgba(210,228,242,0.24)')
+  rect(ctx, x, y, w, 1)
+}
+
+function iceBloom(ctx, x, y, w, h) {
+  fill(ctx, 'rgba(159,212,255,0.18)')
+  rect(ctx, x, y, w, h)
+  fill(ctx, 'rgba(236,248,255,0.28)')
+  rect(ctx, x + 2, y + 1, Math.max(6, w * 0.42), 2)
+}
+
+function metalEdge(ctx, x, y, w) {
+  fill(ctx, 'rgba(220,232,245,0.26)')
+  rect(ctx, x, y, w, 2)
+  fill(ctx, 'rgba(8,10,14,0.48)')
+  rect(ctx, x, y + 2, w, 2)
+}
+
 function isoFace(ctx, points, color) {
   if (ctx.beginPath && ctx.lineTo && ctx.closePath) {
     ctx.beginPath()
@@ -685,14 +723,22 @@ function drawCrate(ctx, x, y, lit, hot) {
   isoFace(ctx, [
     [fx, fy - h], [fx + 10, fy - h - 8], [fx + w + d, fy - h - 8], [fx + w, fy - h]
   ], top)
-  fill(ctx, 'rgba(255,245,210,0.28)')
-  rect(ctx, fx + 2, fy - h + 2, 16, 4)
-  fill(ctx, hot ? '#eee4b8' : '#8a8e84')
+  frost(ctx, fx, fy - h - 10, w + 10, 6)
+  iceBloom(ctx, fx + 6, fy - h - 6, 18, 5)
+  fill(ctx, 'rgba(255,245,210,0.42)')
+  rect(ctx, fx + 2, fy - h + 2, 18, 5)
+  metalEdge(ctx, fx + 1, fy - h + 1, w - 2)
+  fill(ctx, hot ? '#eee4b8' : '#9aa096')
   rect(ctx, fx + 18, fy - h, 6, h)
-  rect(ctx, fx, fy - 16, w, 4)
+  seam(ctx, fx, fy - 16, w)
+  seam(ctx, fx, fy - 26, w)
   fill(ctx, 'rgba(40,22,10,0.42)')
   rect(ctx, fx + 6, fy - 30, 7, 16)
   rect(ctx, fx + 32, fy - 30, 7, 16)
+  rivet(ctx, fx + 3, fy - h + 4)
+  rivet(ctx, fx + w - 8, fy - h + 4)
+  rivet(ctx, fx + 3, fy - 10)
+  rivet(ctx, fx + w - 8, fy - 10)
   fill(ctx, hot ? '#ffc65c' : '#d4a84a')
   gfx.roundRect(ctx, fx + 16, fy - 22, 18, 14, 3)
   ctx.fill()
@@ -700,6 +746,8 @@ function drawCrate(ctx, x, y, lit, hot) {
   rect(ctx, fx + 24, fy - 17, 5, 6)
   fill(ctx, hot ? '#8ef0d0' : '#65d6b4')
   rect(ctx, fx + 38, fy - 32, 8, 5)
+  fill(ctx, 'rgba(159,212,255,0.16)')
+  rect(ctx, fx + 2, fy - 8, 12, 3)
 }
 
 function drawDoor(ctx, x, y, lit, hot) {
@@ -727,8 +775,16 @@ function drawDoor(ctx, x, y, lit, hot) {
   rect(ctx, x + 17, y - 70, 7, 66)
   fill(ctx, '#243040')
   rect(ctx, x - 34, y - 2, 68, 6)
-  fill(ctx, lit ? 'rgba(142,240,208,0.38)' : 'rgba(80,100,110,0.18)')
+  metalEdge(ctx, x - 28, y - 70, 52)
+  frost(ctx, x - 30, y - 74, 56, 6)
+  rivet(ctx, x - 26, y - 66)
+  rivet(ctx, x + 18, y - 66)
+  rivet(ctx, x - 26, y - 12)
+  rivet(ctx, x + 18, y - 12)
+  fill(ctx, lit ? 'rgba(142,240,208,0.42)' : 'rgba(80,100,110,0.18)')
   rect(ctx, x - 12, y - 52, 16, 22)
+  frost(ctx, x - 12, y - 52, 16, 4)
+  iceBloom(ctx, x - 10, y - 50, 12, 6)
   fill(ctx, 'rgba(8,12,16,0.35)')
   rect(ctx, x - 5, y - 52, 3, 22)
   rect(ctx, x - 12, y - 42, 16, 3)
@@ -736,8 +792,9 @@ function drawDoor(ctx, x, y, lit, hot) {
   gfx.circle(ctx, x + 10, y - 30, 6, hot ? '#ffc65c' : '#65d6b4')
   fill(ctx, '#1a2430')
   rect(ctx, x + 8, y - 32, 5, 5)
-  fill(ctx, 'rgba(255,198,92,0.5)')
+  fill(ctx, 'rgba(255,198,92,0.55)')
   rect(ctx, x - 4, y - 78, 8, 5)
+  gfx.circle(ctx, x, y - 4, 16, lit ? 'rgba(142,240,208,0.12)' : 'rgba(159,212,255,0.08)')
 }
 
 function drawLoot(ctx, x, y, lit, hot) {
@@ -820,43 +877,60 @@ function drawPropTag(ctx, kind, x, y) {
 
 function drawFloor(ctx, x, y, w, h) {
   fill(ctx, gfx.vgrad(ctx, x, y, h, [
-    [0, '#1a222c'],
+    [0, '#1c2632'],
     [0.55, '#121820'],
     [1, '#0a1016']
   ]))
   rect(ctx, x, y, w, h)
   fill(ctx, '#2a3644')
-  rect(ctx, x, y, w, 5)
-  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + 6, Math.max(w, h) * 0.62, [
-    [0, 'rgba(255,220,160,0.16)'],
-    [0.42, 'rgba(255,198,92,0.05)'],
+  rect(ctx, x, y, w, 6)
+  metalEdge(ctx, x, y, w)
+  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + 8, Math.max(w, h) * 0.66, [
+    [0, 'rgba(255,220,160,0.22)'],
+    [0.4, 'rgba(255,198,92,0.08)'],
     [1, 'rgba(0,0,0,0)']
   ]))
   rect(ctx, x, y, w, h)
+  const tilesX = 5
+  for (let i = 1; i < tilesX; i++) {
+    fill(ctx, 'rgba(8,10,12,0.38)')
+    rect(ctx, x + (w / tilesX) * i, y + 6, 2, h - 10)
+    fill(ctx, 'rgba(200,220,235,0.1)')
+    rect(ctx, x + (w / tilesX) * i + 2, y + 6, 1, h - 10)
+  }
+  ;[0.18, 0.4, 0.62, 0.82].forEach(ny => seam(ctx, x + 8, y + h * ny, w - 16))
   const stains = [
     [0.1, 0.42, 0.2, 0.1, 'rgba(8,12,16,0.28)'],
     [0.58, 0.18, 0.18, 0.09, 'rgba(20,28,36,0.32)'],
-    [0.36, 0.68, 0.26, 0.08, 'rgba(90,140,160,0.08)'],
-    [0.7, 0.72, 0.16, 0.07, 'rgba(255,198,92,0.06)']
+    [0.36, 0.68, 0.26, 0.08, 'rgba(90,140,160,0.1)'],
+    [0.7, 0.72, 0.16, 0.07, 'rgba(255,198,92,0.08)']
   ]
   stains.forEach(s => {
     fill(ctx, s[4])
     rect(ctx, x + w * s[0], y + h * s[1], w * s[2], h * s[3])
   })
-  fill(ctx, 'rgba(186,214,230,0.06)')
-  ;[0.28, 0.5, 0.72].forEach(nx => {
-    gfx.line(ctx, x + w * nx, y + 4, x + w * 0.5, y + h * 0.92, 'rgba(186,214,230,0.08)', 1)
-  })
-  fill(ctx, gfx.hgrad(ctx, x, y, w * 0.2, [
-    [0, 'rgba(0,0,0,0.4)'],
+  iceBloom(ctx, x + w * 0.14, y + h * 0.1, w * 0.24, 10)
+  iceBloom(ctx, x + w * 0.6, y + h * 0.48, w * 0.18, 8)
+  frost(ctx, x + w * 0.72, y + h * 0.28, w * 0.16, 5)
+  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + h * 0.7, w * 0.2, [
+    [0, 'rgba(255,220,160,0.16)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x, y, w * 0.2, h)
-  fill(ctx, gfx.hgrad(ctx, x + w * 0.8, y, w * 0.2, [
-    [0, 'rgba(0,0,0,0)'],
-    [1, 'rgba(0,0,0,0.44)']
+  rect(ctx, x + w * 0.34, y + h * 0.58, w * 0.32, h * 0.22)
+  fill(ctx, 'rgba(186,214,230,0.06)')
+  ;[0.28, 0.5, 0.72].forEach(nx => {
+    gfx.line(ctx, x + w * nx, y + 4, x + w * 0.5, y + h * 0.92, 'rgba(186,214,230,0.12)', 1)
+  })
+  fill(ctx, gfx.hgrad(ctx, x, y, w * 0.22, [
+    [0, 'rgba(0,0,0,0.46)'],
+    [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x + w * 0.8, y, w * 0.2, h)
+  rect(ctx, x, y, w * 0.22, h)
+  fill(ctx, gfx.hgrad(ctx, x + w * 0.78, y, w * 0.22, [
+    [0, 'rgba(0,0,0,0)'],
+    [1, 'rgba(0,0,0,0.5)']
+  ]))
+  rect(ctx, x + w * 0.78, y, w * 0.22, h)
 }
 
 function drawClutter(ctx, zone, x, y, w, h, tick) {
@@ -870,7 +944,10 @@ function drawClutter(ctx, zone, x, y, w, h, tick) {
     rect(ctx, x + 14, y + h * 0.12, 26, 4)
     fill(ctx, '#6a6e74')
     rect(ctx, x + 24, y + h * 0.06, 6, 16)
-    fill(ctx, 'rgba(200,220,255,0.1)')
+    frost(ctx, x + 12, y + h * 0.02, 22, 4)
+    rivet(ctx, x + 14, y + h * 0.14)
+    rivet(ctx, x + 36, y + h * 0.14)
+    fill(ctx, 'rgba(200,220,255,0.12)')
     rect(ctx, x + w * 0.56, y + h * 0.74, 42, 5)
   }
   if (zone === 'thermal') {
@@ -901,45 +978,77 @@ function drawClutter(ctx, zone, x, y, w, h, tick) {
 function drawRoom(ctx, zone, box, tick) {
   const { x, y, w, h } = box
   const wall = h * ROOM_WALL
-  fill(ctx, '#101820')
+  fill(ctx, gfx.vgrad(ctx, x, y, wall, [
+    [0, '#182028'],
+    [0.55, '#121820'],
+    [1, '#0e141c']
+  ]))
   rect(ctx, x, y, w, wall)
+  for (let i = 1; i < 6; i++) {
+    const sx = x + (w / 6) * i
+    fill(ctx, 'rgba(8,10,12,0.42)')
+    rect(ctx, sx, y + 8, 2, wall - 10)
+    fill(ctx, 'rgba(210,228,242,0.1)')
+    rect(ctx, sx + 2, y + 8, 1, wall - 10)
+  }
   fill(ctx, '#0c1218')
   rect(ctx, x, y, w, 8)
+  metalEdge(ctx, x, y, w)
   const win = { x: x + w * 0.12, y: y + 10, w: w * 0.76, h: wall - 20 }
   drawZone(ctx, zone, win, tick)
-  fill(ctx, 'rgba(8,12,18,0.16)')
+  fill(ctx, 'rgba(159,212,255,0.08)')
   rect(ctx, win.x, win.y, win.w, win.h)
+  iceBloom(ctx, win.x, win.y, win.w * 0.3, 10)
+  iceBloom(ctx, win.x + win.w * 0.58, win.y + win.h - 12, win.w * 0.32, 10)
+  fill(ctx, 'rgba(200,230,255,0.16)')
+  ;[0.2, 0.46, 0.72].forEach(nx => {
+    rect(ctx, win.x + win.w * nx, win.y + 4, 3, win.h * 0.58)
+  })
   fill(ctx, '#1a2430')
   rect(ctx, win.x - 6, win.y - 6, win.w + 12, 6)
   rect(ctx, win.x - 6, win.y + win.h, win.w + 12, 8)
   rect(ctx, win.x - 6, win.y, 6, win.h)
   rect(ctx, win.x + win.w, win.y, 6, win.h)
+  frost(ctx, win.x - 6, win.y - 7, win.w + 12, 5)
+  rivet(ctx, win.x - 2, win.y - 4)
+  rivet(ctx, win.x + win.w - 4, win.y - 4)
+  rivet(ctx, win.x - 2, win.y + win.h - 2)
+  rivet(ctx, win.x + win.w - 4, win.y + win.h - 2)
   fill(ctx, TINT[zone] || '#65d6b4')
   rect(ctx, win.x + win.w * 0.48, win.y - 6, 8, 6)
   fill(ctx, '#243040')
   rect(ctx, x + w * 0.46, y + 2, 8, 8)
-  fill(ctx, 'rgba(255,198,92,0.35)')
+  fill(ctx, 'rgba(255,198,92,0.42)')
   rect(ctx, x + w * 0.47, y + 3, 6, 6)
   drawFloor(ctx, x, y + wall, w, h - wall)
-  fill(ctx, gfx.rgrad(ctx, x + w * 0.5, y + wall + 4, w * 0.42, [
-    [0, 'rgba(255,220,160,0.14)'],
-    [1, 'rgba(0,0,0,0)']
-  ]))
-  rect(ctx, x + w * 0.22, y + wall, w * 0.56, (h - wall) * 0.72)
+  const lx = x + w * 0.5
+  const ly = y + wall
+  fill(ctx, '#14161a')
+  rect(ctx, lx - 2, y + 2, 4, wall - 6)
   fill(ctx, '#d4a84a')
-  rect(ctx, x + w * 0.46, y + wall - 4, 14, 6)
-  fill(ctx, 'rgba(255,220,160,0.35)')
-  rect(ctx, x + w * 0.48, y + wall - 10, 8, 7)
-  fill(ctx, gfx.hgrad(ctx, x, y, 18, [
-    [0, 'rgba(0,0,0,0.28)'],
+  rect(ctx, lx - 12, ly - 6, 24, 7)
+  fill(ctx, 'rgba(255,236,190,0.72)')
+  rect(ctx, lx - 6, ly - 16, 12, 10)
+  fill(ctx, gfx.rgrad(ctx, lx, ly + 6, w * 0.5, [
+    [0, 'rgba(255,220,160,0.3)'],
+    [0.42, 'rgba(255,198,92,0.1)'],
     [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x, y, 18, h)
-  fill(ctx, gfx.hgrad(ctx, x + w - 18, y, 18, [
-    [0, 'rgba(0,0,0,0)'],
-    [1, 'rgba(0,0,0,0.32)']
+  rect(ctx, x + w * 0.16, ly, w * 0.68, (h - wall) * 0.82)
+  gfx.circle(ctx, lx, ly + 14, 28, 'rgba(255,220,160,0.18)')
+  fill(ctx, gfx.hgrad(ctx, x, y, 22, [
+    [0, 'rgba(0,0,0,0.36)'],
+    [1, 'rgba(0,0,0,0)']
   ]))
-  rect(ctx, x + w - 18, y, 18, h)
+  rect(ctx, x, y, 22, h)
+  fill(ctx, gfx.hgrad(ctx, x + w - 22, y, 22, [
+    [0, 'rgba(0,0,0,0)'],
+    [1, 'rgba(0,0,0,0.4)']
+  ]))
+  rect(ctx, x + w - 22, y, 22, h)
+  fill(ctx, '#2a3644')
+  rect(ctx, x, ly - 3, w, 5)
+  frost(ctx, x + 10, ly - 3, w - 20, 3)
   drawClutter(ctx, zone, x, y + wall, w, h - wall, tick)
 }
 

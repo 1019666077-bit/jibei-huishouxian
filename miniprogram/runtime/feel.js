@@ -83,6 +83,9 @@ function classify(prev, next, messages) {
   const all = (messages || []).join(' ')
   const fight = !!(prev && prev.fight)
   const fail = /✗ |失败|失利/.test(all)
+  if (hpDelta < 0 && prev.tutorial && (prev.step || 0) <= 2 && hpDelta >= -8) {
+    return { kind: 'scratch', label: '擦伤', sub: `${hpDelta} 生命`, hpDelta, mark: 'ok', stamp: '擦伤' }
+  }
   if (hpDelta < 0) {
     if (fight || fail) {
       return { kind: 'bad', label: '失手', sub: `${hpDelta} 生命`, hpDelta, mark: 'bad', stamp: '失手' }
@@ -123,10 +126,11 @@ function burst(kind, width, height) {
     : kind === 'extract' ? 24
     : kind === 'lever' ? 20
     : kind === 'hit' || kind === 'dead' || kind === 'bad' ? 28
+    : kind === 'scratch' ? 16
     : 12
   const color = kind === 'hit' || kind === 'dead' || kind === 'bad'
     ? '#ff6b6b'
-    : kind === 'loot' || kind === 'win' ? '#ffc65c'
+    : kind === 'loot' || kind === 'win' || kind === 'scratch' ? '#ffc65c'
     : kind === 'lever' ? '#ffe08a'
     : kind === 'extract' ? '#65a9ff' : '#65d6b4'
   const bits = []

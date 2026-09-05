@@ -147,6 +147,8 @@ module.exports = manager => ({
 
   pick(idx) {
     if (this.busy || !this.run || this.run.ended) return
+    const tutorial = !!this.run.tutorial
+    const stepBefore = this.run.step || 0
     this.busy = true
     try {
       const node = this.run.node
@@ -176,7 +178,9 @@ module.exports = manager => ({
           lootCount: lootBefore,
           fight: !!(option && option.rounds),
           levers: leversBefore,
-          extract: present.isCable(option)
+          extract: present.isCable(option),
+          tutorial,
+          step: stepBefore
         },
         this.run,
         result.messages
@@ -184,7 +188,7 @@ module.exports = manager => ({
       manager.pulse(fx.kind, fx.stamp || fx.label)
       if (fx.item) {
         this.pickup = fx.item
-        this.pickupUntil = Date.now() + 1400
+        this.pickupUntil = Date.now() + (tutorial ? 900 : 1400)
       }
       if (fx.stamp) {
         this.flashJuice(fx.mark || 'ok', fx.stamp, {
@@ -213,7 +217,7 @@ module.exports = manager => ({
       this.messages.unshift('这一步没能执行，请再点一次。')
     }
     manager.requestRender()
-    setTimeout(() => { this.busy = false }, 280)
+    setTimeout(() => { this.busy = false }, tutorial && stepBefore <= 3 ? 140 : 280)
   },
 
   useMed() {
@@ -256,7 +260,7 @@ module.exports = manager => ({
       mark: kind,
       label,
       sub: opts.sub || '',
-      until: Date.now() + 1600
+      until: Date.now() + (this.run && this.run.tutorial ? 2000 : 1500)
     }
     if (opts.silent) return
     if (typeof manager.pulse === 'function') manager.pulse(opts.kind || kind, label)
@@ -337,7 +341,7 @@ module.exports = manager => ({
       this.hintedLate = true
       this.messages.unshift('冷却舱·压缩机房可合闸')
     }
-    if (!this.hintedMid && (this.run.levers || 0) === 1 && (this.run.step || 0) >= 3) {
+    if (!this.hintedMid && (this.run.levers || 0) === 1 && (this.run.step || 0) >= 2) {
       this.hintedMid = true
       this.messages.unshift('再合闸 1/2，开索道')
     }
@@ -464,7 +468,7 @@ module.exports = manager => ({
       toX: nx,
       toY: ny,
       start: Date.now(),
-      ms: Math.max(140, Math.min(280, 140 + dist * 220)),
+      ms: Math.max(100, Math.min(this.run && this.run.tutorial ? 160 : 280, 110 + dist * 180)),
       idx: option ? option.idx : null,
       extract: !!(extra && extra.extract),
       fight: !!(option && option.rounds)
@@ -496,7 +500,7 @@ module.exports = manager => ({
       return
     }
     if (walk.fight) {
-      this.fight = { start: Date.now(), ms: 260, idx: walk.idx }
+      this.fight = { start: Date.now(), ms: this.run && this.run.tutorial ? 160 : 240, idx: walk.idx }
       feel.beep('hit')
       return
     }
@@ -546,7 +550,10 @@ module.exports = manager => ({
       fill: powerOn ? '#132820' : '#2a2410',
       stroke: powerOn ? COLORS.accent : COLORS.gold,
       color: powerOn ? COLORS.accent : COLORS.gold,
-      size: 15
+      size: 15,
+      glow: needLever
+        ? `rgba(255,198,92,${0.14 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.24))})`
+        : `rgba(101,214,180,${0.1 + 0.1 * Math.abs(Math.sin((this.tick || 0) * 0.2))})`
     })
     const late = (this.run.step || 0) >= 6
     const stepLabel = runMeta.stepText || present.stepChip(this.run)
@@ -598,16 +605,17 @@ module.exports = manager => ({
     const guide = present.leverGuide(this.run)
     if (guide) {
       const card = present.lesson(this.run)
-      ui.panel(left, next, width, 56, {
+      ui.panel(left, next, width, 64, {
         fill: '#241c0c',
         stroke: COLORS.gold,
         radius: 12,
         rim: COLORS.gold,
-        sheen: false
+        sheen: false,
+        glow: `rgba(255,198,92,${0.16 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.22))})`
       })
-      stage.drawLessonRail(ui.ctx, { x: left + 10, y: next + 8, w: width - 20, h: 22 }, card.steps, this.tick)
-      ui.text(guide, left + 12, next + 34, 13, '#ffe08a', '700', width - 24)
-      next += 66
+      stage.drawLessonRail(ui.ctx, { x: left + 14, y: next + 8, w: width - 28, h: 24 }, card.steps, this.tick)
+      ui.text(guide, left + 16, next + 38, 13, '#ffe08a', '700', width - 32)
+      next += 74
     }
     return next
   },
@@ -751,16 +759,27 @@ module.exports = manager => ({
     }
     if (this.seenNode !== node.id) this.placeActor(node)
     stage.drawRoom(ui.ctx, zone, rect, this.tick)
-    ui.panel(rect.x + 8, rect.y + 6, rect.w - 16, 42, {
-      fill: 'rgba(8,14,20,0.88)',
+    const bubble = present.fitBox({
+      x: rect.x + 10,
+      y: rect.y + 8,
+      w: rect.w - 20,
+      h: 52
+    }, rect, 8)
+    ui.panel(bubble.x, bubble.y, bubble.w, bubble.h, {
+      fill: 'rgba(8,14,20,0.92)',
       stroke: '#3d5c74',
       radius: 8,
       sheen: false
     })
-    ui.text('现场', rect.x + 16, rect.y + 10, 11, COLORS.gold, '700')
-    ui.wrapped(present.sceneLine(node), rect.x + 56, rect.y + 8, rect.w - 80, {
+    ui.chip(bubble.x + 8, bubble.y + 12, 40, 24, '现场', {
+      fill: '#2a2410',
+      stroke: COLORS.gold,
+      color: COLORS.gold,
+      size: 11
+    })
+    ui.wrapped(present.sceneLine(node), bubble.x + 56, bubble.y + 10, bubble.w - 70, {
       size: 14,
-      lineHeight: 17,
+      lineHeight: 18,
       maxLines: 2,
       weight: '700',
       color: COLORS.text
@@ -774,8 +793,8 @@ module.exports = manager => ({
     const rowH = present.OPTION_ROW_H
     const rowGap = 8
     const nOpt = (node.options || []).length
-    const listNeed = listMode ? nOpt * (rowH + rowGap) - rowGap + 10 : 0
-    const listH = listMode ? Math.min(listNeed, Math.max(200, Math.round(rect.h * 0.58))) : 0
+    const listNeed = listMode ? nOpt * (rowH + rowGap) - rowGap + 16 : 0
+    const listH = listMode ? present.listFitH(nOpt, rect.h) : 0
     const wall = stage.ROOM_WALL
     const floor = {
       x: rect.x,
@@ -812,15 +831,20 @@ module.exports = manager => ({
         return
       }
       const look = this.optionLook(option)
-      const plateY = prop.y + 24
-      ui.panel(prop.x - 66, plateY, 132, 56, {
+      const plate = present.fitBox({
+        x: prop.x - 66,
+        y: prop.y + 24,
+        w: 132,
+        h: 56
+      }, floor, 10)
+      ui.panel(plate.x, plate.y, plate.w, plate.h, {
         fill: hot || look.highlight ? look.fill : '#101820',
         stroke: option.disabled ? COLORS.line : look.color,
         radius: 8,
         glow: look.highlight ? `rgba(255,198,92,${0.16 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.28))})` : null
       })
-      stage.drawToneMark(ui.ctx, look.tone, prop.x - 62, plateY + 8, 18)
-      ui.wrapped(present.listTitle(option), prop.x - 40, plateY + 4, 100, {
+      stage.drawToneMark(ui.ctx, look.tone, plate.x + 8, plate.y + 10, 18)
+      ui.wrapped(present.listTitle(option), plate.x + 30, plate.y + 6, plate.w - 40, {
         size: 12,
         lineHeight: 16,
         maxLines: 2,
@@ -828,9 +852,9 @@ module.exports = manager => ({
         color: option.disabled ? '#6a7a88' : COLORS.text
       })
       const pip = this.pip(option)
-      ui.text(look.highlight ? '开索道' : (pip || look.label), prop.x - 40, plateY + 36, 11,
-        option.disabled ? '#6a7a88' : look.color, '700', 100)
-      ui.addHit(prop.x - 68, prop.y - 58, 136, 132, () => activate(option, prop))
+      ui.text(look.highlight ? '开索道' : (pip || look.label), plate.x + 30, plate.y + 38, 11,
+        option.disabled ? '#6a7a88' : look.color, '700', plate.w - 40)
+      ui.addHit(plate.x - 4, prop.y - 58, plate.w + 8, 132, () => activate(option, prop))
     })
     if (listMode) {
       this.renderOptionList(ui, {
@@ -865,23 +889,24 @@ module.exports = manager => ({
       radius: 12,
       sheen: false
     })
-    ui.withClip(listRect, () => {
-      let y = listRect.y + 6 - this.mainScroll.offset
+    const inner = { x: listRect.x + 8, y: listRect.y + 8, w: listRect.w - 16, h: listRect.h - 16 }
+    ui.withClip(inner, () => {
+      let y = inner.y - this.mainScroll.offset
       rows.forEach(prop => {
         const option = prop.opt
         const hot = hotIdx === option.idx
         const look = this.optionLook(option)
-        ui.panel(listRect.x + 6, y, listRect.w - 12, rowH, {
+        ui.panel(inner.x + 4, y, inner.w - 8, rowH, {
           fill: hot || look.highlight ? look.fill : '#101820',
           stroke: option.disabled ? COLORS.line : look.color,
           radius: 10,
           glow: look.highlight ? `rgba(255,198,92,${0.16 + 0.14 * Math.abs(Math.sin((this.tick || 0) * 0.28))})` : null
         })
-        stage.drawToneMark(ui.ctx, look.tone, listRect.x + 14, y + 20, 26)
+        stage.drawToneMark(ui.ctx, look.tone, inner.x + 16, y + 22, 26)
         const risky = present.dangerPip(option)
         const railW = risky ? 64 : 58
-        const textW = listRect.w - 56 - railW
-        ui.wrapped(present.listTitle(option), listRect.x + 46, y + 8, textW, {
+        const textW = inner.w - 86 - railW
+        ui.wrapped(present.listTitle(option), inner.x + 50, y + 10, textW, {
           size: 15,
           lineHeight: 20,
           maxLines: 3,
@@ -889,7 +914,7 @@ module.exports = manager => ({
           color: option.disabled ? '#6a7a88' : COLORS.text
         })
         const pip = this.pip(option)
-        const railX = listRect.x + listRect.w - railW - 14
+        const railX = inner.x + inner.w - railW - 18
         ui.chip(railX, y + 8, railW, 22, look.label, {
           fill: look.fill,
           stroke: look.color,
@@ -912,7 +937,7 @@ module.exports = manager => ({
             option.disabled ? '#6a7a88' : look.color, '700', railW)
           ui.ctx.textAlign = 'left'
         }
-        ui.addHit(listRect.x + 6, y, listRect.w - 12, rowH, () => activate(option, prop))
+        ui.addHit(inner.x + 4, y, inner.w - 8, rowH, () => activate(option, prop))
         y += rowH + gap
       })
     })
@@ -965,14 +990,14 @@ module.exports = manager => ({
       radius: 12,
       sheen: false
     })
-    ui.text('去哪', rect.x + 10, rect.y + 6, 11, COLORS.gold, '700')
+    ui.text('去哪', rect.x + 12, rect.y + 6, 11, COLORS.gold, '700')
     const row = travel.length <= 3
     if (row) {
       const gap = 8
-      const chipW = (rect.w - 20 - gap * (travel.length - 1)) / travel.length
+      const chipW = (rect.w - 24 - gap * (travel.length - 1)) / travel.length
       travel.forEach((option, i) => {
         const look = this.optionLook(option)
-        const x = rect.x + 10 + i * (chipW + gap)
+        const x = rect.x + 12 + i * (chipW + gap)
         const y = rect.y + 22
         ui.panel(x, y, chipW, 58, {
           fill: option.disabled ? '#101820' : look.fill,
@@ -980,8 +1005,8 @@ module.exports = manager => ({
           radius: 10,
           glow: look.highlight ? 'rgba(255,198,92,0.22)' : null
         })
-        ui.text(present.travelLabel(option, node), x + 8, y + 4, 14, option.disabled ? '#6a7a88' : COLORS.text, '700', chipW - 16)
-        ui.wrapped(look.highlight ? '合闸开索道' : present.listTitle(option), x + 8, y + 22, chipW - 16, {
+        ui.text(present.travelLabel(option, node), x + 10, y + 6, 14, option.disabled ? '#6a7a88' : COLORS.text, '700', chipW - 20)
+        ui.wrapped(look.highlight ? '合闸开索道' : present.listTitle(option), x + 10, y + 24, chipW - 20, {
           size: 11,
           lineHeight: 15,
           maxLines: 2,
@@ -1184,6 +1209,9 @@ module.exports = manager => ({
   },
 
   juiceLook(kind) {
+    if (kind === 'scratch') {
+      return { ok: true, fill: '#2a2410', stroke: COLORS.gold, glow: 'rgba(255,198,92,0.2)', color: COLORS.gold }
+    }
     if (kind === 'bad' || kind === 'hit' || kind === 'dead') {
       return { ok: false, fill: '#2c171b', stroke: COLORS.danger, glow: 'rgba(255,107,107,0.22)', color: '#ffd0d0' }
     }
@@ -1207,7 +1235,7 @@ module.exports = manager => ({
     const w = Math.min(fail ? 260 : 236, v.safe.right - v.safe.left - 40)
     const x = (v.width - w) / 2
     const y = v.height * 0.24
-    const h = this.juice.sub ? 96 : 80
+    const h = this.juice.sub ? 100 : 84
     ui.panel(x, y, w, h, {
       fill: look.fill,
       stroke: look.stroke,
@@ -1215,9 +1243,9 @@ module.exports = manager => ({
       glow: look.glow,
       rim: look.stroke
     })
-    stage.drawStamp(ui.ctx, this.juice.kind || this.juice.mark, x + 40, y + h / 2, (fail ? 18 : 16) * scale)
-    ui.text(this.juice.label, x + 70, y + (this.juice.sub ? 16 : 24), fail ? 28 : 22, look.color, '700', w - 88)
-    if (this.juice.sub) ui.text(this.juice.sub, x + 70, y + 52, 15, fail ? '#ffd0d0' : COLORS.body, '700', w - 88)
+    stage.drawStamp(ui.ctx, this.juice.kind || this.juice.mark, x + 44, y + h / 2, (fail ? 18 : 16) * scale)
+    ui.text(this.juice.label, x + 76, y + (this.juice.sub ? 18 : 26), fail ? 28 : 22, look.color, '700', w - 96)
+    if (this.juice.sub) ui.text(this.juice.sub, x + 76, y + 56, 15, fail ? '#ffd0d0' : COLORS.body, '700', w - 96)
   },
 
   renderLesson(ui, v) {
@@ -1235,10 +1263,10 @@ module.exports = manager => ({
       glow: 'rgba(255,198,92,0.28)',
       rim: COLORS.gold
     })
-    ui.text(card.title, x + 16, y + 12, 20, COLORS.gold, '700', w - 32)
-    ui.text(card.cue, x + 16, y + 40, 14, COLORS.text, '700', w - 32)
-    stage.drawLessonRail(ui.ctx, { x: x + 16, y: y + 68, w: w - 32, h: 28 }, card.steps, this.tick)
-    ui.button(x + 16, y + 112, w - 32, 40, card.kind === 'cable' ? '知道了，点索道' : '知道了，去合闸', () => this.dismissLesson(), {
+    ui.text(card.title, x + 20, y + 14, 20, COLORS.gold, '700', w - 40)
+    ui.text(card.cue, x + 20, y + 44, 14, COLORS.text, '700', w - 40)
+    stage.drawLessonRail(ui.ctx, { x: x + 20, y: y + 72, w: w - 40, h: 28 }, card.steps, this.tick)
+    ui.button(x + 20, y + 114, w - 40, 40, card.kind === 'cable' ? '知道了，点索道' : '知道了，去合闸', () => this.dismissLesson(), {
       fill: '#d4a017',
       stroke: '#ffe08a',
       color: '#1a1408',

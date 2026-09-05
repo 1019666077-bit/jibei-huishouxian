@@ -26,14 +26,15 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
 // 首局只擦伤：不改事件经济表，教程态把过量掉血和暴毙压住。
 function tutorialWound(state, hp) {
   if (!state || !state.tutorial || hp >= 0) return hp
-  if ((state.step || 0) > 3) return hp
-  return Math.max(hp, -10)
+  if ((state.step || 0) > 4) return hp
+  if ((state.step || 0) <= 1) return Math.max(hp, -6)
+  return Math.max(hp, -8)
 }
 
 function tutorialHit(state, dmg) {
   if (!state || !state.tutorial) return dmg
   const step = state.step || 0
-  if (step <= 1) return Math.min(dmg, 6)
+  if (step <= 1) return Math.min(dmg, 5)
   if (step <= 3) return Math.min(dmg, 8)
   if (step <= 5) return Math.min(dmg, 14)
   return dmg
@@ -41,7 +42,8 @@ function tutorialHit(state, dmg) {
 
 function tutorialGuard(state, nextHp) {
   if (!state || !state.tutorial) return nextHp
-  if ((state.step || 0) <= 4 && nextHp < 20) return 20
+  if ((state.step || 0) <= 1 && nextHp < 32) return 32
+  if ((state.step || 0) <= 4 && nextHp < 22) return 22
   return nextHp
 }
 

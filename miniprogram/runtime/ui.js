@@ -162,14 +162,15 @@ class UI {
     const ctx = this.ctx
     const size = options.size || 14
     const lineHeight = options.lineHeight || Math.round(size * 1.55)
+    const wrapW = Math.max(8, (maxWidth || 0) - 4)
     gfx.applyFont(ctx, size, options.weight || 'normal')
     ctx.fillStyle = options.color || COLORS.text
-    const lines = wrapLines(ctx, text, maxWidth)
+    const lines = wrapLines(ctx, text, wrapW)
     const limit = options.maxLines || lines.length
     lines.slice(0, limit).forEach((line, index) => {
       let shown = line
       if (index === limit - 1 && lines.length > limit) {
-        shown = ellipsize(ctx, line, maxWidth)
+        shown = ellipsize(ctx, line, wrapW)
       }
       ctx.fillText(shown, x, y + index * lineHeight)
     })
@@ -272,14 +273,15 @@ class UI {
       fill: options.fill || '#14202c',
       stroke: options.stroke || COLORS.line,
       radius: options.radius == null ? 8 : options.radius,
+      glow: options.glow || null,
       sheen: false
     })
     const size = options.size || 11
     gfx.applyFont(this.ctx, size, options.weight || '700')
     const text = copy(label)
-    const tw = Math.min(this.ctx.measureText(text).width, w - 10)
+    const tw = Math.min(this.ctx.measureText(text).width, w - 12)
     this.ctx.fillStyle = options.color || COLORS.text
-    this.ctx.fillText(text, x + (w - tw) / 2, y + (h - size) / 2 - 1, w - 10)
+    this.ctx.fillText(text, x + (w - tw) / 2, y + (h - size) / 2 - 1, w - 12)
     if (options.action) this.addHit(x, y, w, h, options.action, options.enabled !== false)
   }
 
