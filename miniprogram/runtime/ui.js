@@ -17,7 +17,7 @@ const COLORS = {
 }
 
 const THEME = {
-  radius: { panel: 12, button: 10, chip: 8, stamp: 14 },
+  radius: { panel: 12, button: 10, chip: 8, stamp: 14, well: 14 },
   fill: {
     ice: '#10202c',
     gold: '#2a2410',
@@ -25,6 +25,98 @@ const THEME = {
     ok: '#132820',
     extract: '#15273a'
   }
+}
+
+const TYPE = {
+  display: 34,
+  title: 22,
+  lead: 16,
+  body: 14,
+  caption: 12,
+  micro: 11,
+  legal: 9
+}
+
+const INK = {
+  display: '#f4f8fc',
+  lead: '#ffc65c',
+  body: '#c8d6e6',
+  mute: '#9aafc2',
+  legal: '#5d6e80',
+  legalDim: '#4e5d6d'
+}
+
+const METAL = {
+  steel: gfx.METAL_STOPS,
+  ice: '#4a6780',
+  gold: '#8a6a30',
+  ok: '#3d6a58',
+  danger: '#6a3034',
+  well: '#0a1016',
+  washTop: '#1a2a38',
+  washBot: '#0a1218'
+}
+
+function wellLook(options = {}) {
+  return Object.assign({
+    fill: METAL.well,
+    stroke: COLORS.rim,
+    material: 'well',
+    bezel: 4,
+    metal: METAL.ice,
+    depth: true,
+    sheen: false,
+    hairline: 'rgba(186,220,255,0.12)',
+    rim: COLORS.ice
+  }, options)
+}
+
+function ctaLook(kind, options = {}) {
+  const table = {
+    primary: {
+      fill: '#1a4a3c',
+      stroke: '#8ef0d0',
+      color: '#ffffff',
+      glow: 'rgba(101,214,180,0.28)',
+      metal: METAL.ok,
+      hairline: 'rgba(184,255,232,0.28)',
+      size: TYPE.title,
+      weight: '700',
+      material: 'metal',
+      depth: true,
+      bezel: 4,
+      subColor: '#d7fff0'
+    },
+    gold: {
+      fill: '#2a2410',
+      stroke: '#ffe08a',
+      color: '#1a1408',
+      glow: 'rgba(255,198,92,0.28)',
+      metal: METAL.gold,
+      hairline: 'rgba(255,220,140,0.32)',
+      size: TYPE.title,
+      weight: '700',
+      material: 'metal',
+      depth: true,
+      bezel: 4,
+      subColor: '#3a2a08'
+    },
+    ghost: {
+      fill: COLORS.panelAlt,
+      stroke: COLORS.rim,
+      color: COLORS.text,
+      glow: null,
+      metal: '#3d566c',
+      hairline: 'rgba(186,220,255,0.16)',
+      size: TYPE.body,
+      weight: '600',
+      material: 'metal',
+      depth: true,
+      bezel: 3,
+      subColor: COLORS.muted
+    }
+  }
+  return Object.assign({}, table[kind] || table.ghost, options)
 }
 
 function copy(text) {
@@ -60,12 +152,7 @@ function carve(ctx, x, y, w, h, r, options = {}) {
 function metalSkin(ctx, x, y, w, h, r, options) {
   const pad = options.bezel == null ? (h >= 56 ? 4 : 3) : options.bezel
   roundedRect(ctx, x, y, w, h, r)
-  ctx.fillStyle = options.metal || gfx.vgrad(ctx, x, y, h, [
-    [0, '#6a849c'],
-    [0.18, '#3d566c'],
-    [0.72, '#243848'],
-    [1, '#1a2a38']
-  ])
+  ctx.fillStyle = options.metal || gfx.metalGrad(ctx, x, y, h, METAL.steel)
   ctx.fill()
   const ix = x + pad
   const iy = y + pad
@@ -250,10 +337,10 @@ class UI {
     if (options.depth && w > 8 && h > 16) lift(ctx, x, y, w, h, radius)
     if (material === 'metal' || material === 'well') {
       metalSkin(ctx, x, y, w, h, radius, {
-        fill: options.fill || (material === 'well' ? '#0a1016' : COLORS.panel),
+        fill: options.fill || (material === 'well' ? METAL.well : COLORS.panel),
         metal: options.metal,
-        washTop: options.washTop,
-        washBot: options.washBot,
+        washTop: options.washTop || METAL.washTop,
+        washBot: options.washBot || METAL.washBot,
         bezel: options.bezel || (material === 'well' ? 3 : (h >= 56 ? 4 : 3)),
         seed: options.seed,
         grain: material === 'well' ? 0.05 : 0.08
@@ -306,16 +393,30 @@ class UI {
     }
   }
 
+  well(x, y, w, h, options = {}) {
+    this.panel(x, y, w, h, wellLook(options))
+  }
+
+  cta(x, y, w, h, label, action, options = {}) {
+    const look = ctaLook(options.kind || 'primary', options)
+    this.button(x, y, w, h, label, action, look)
+  }
+
   button(x, y, w, h, label, action, options = {}) {
     const enabled = options.enabled !== false
     this.panel(x, y, w, h, {
       fill: enabled ? (options.fill || COLORS.panelAlt) : '#0d141c',
       stroke: enabled ? (options.stroke || COLORS.line) : '#1b2633',
-      radius: options.radius == null ? 10 : options.radius,
+      radius: options.radius == null ? THEME.radius.button : options.radius,
       glow: options.glow || null,
       sheen: true,
       depth: options.depth != null ? options.depth : (enabled && h >= 40),
-      hairline: options.hairline || (enabled ? 'rgba(186,220,255,0.1)' : null)
+      hairline: options.hairline || (enabled ? 'rgba(186,220,255,0.1)' : null),
+      material: options.material,
+      metal: options.metal,
+      bezel: options.bezel,
+      washTop: options.washTop,
+      washBot: options.washBot
     })
     const size = options.size || 14
     const ctx = this.ctx
@@ -421,4 +522,6 @@ class UI {
   }
 }
 
-module.exports = { UI, COLORS, THEME, copy, wrapLines, tierColor }
+module.exports = {
+  UI, COLORS, THEME, TYPE, INK, METAL, copy, wrapLines, tierColor, wellLook, ctaLook
+}

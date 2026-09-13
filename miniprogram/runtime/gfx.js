@@ -161,8 +161,20 @@ function grain(ctx, x, y, w, h, seed, alpha) {
   }
 }
 
+const METAL_STOPS = [
+  [0, '#6a849c'],
+  [0.18, '#3d566c'],
+  [0.72, '#243848'],
+  [1, '#1a2a38']
+]
+
+function metalGrad(ctx, x, y, h, stops) {
+  return vgrad(ctx, x, y, h, stops || METAL_STOPS)
+}
+
 module.exports = {
   FONT,
+  METAL_STOPS,
   can,
   font,
   applyFont,
@@ -180,5 +192,6 @@ module.exports = {
   quad,
   glow,
   noGlow,
-  grain
+  grain,
+  metalGrad
 }

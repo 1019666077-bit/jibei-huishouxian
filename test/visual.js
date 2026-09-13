@@ -2,7 +2,7 @@
 const assert = require('assert')
 const present = require('../miniprogram/runtime/present')
 const stage = require('../miniprogram/runtime/stage')
-const { UI } = require('../miniprogram/runtime/ui')
+const { UI, COLORS, TYPE, INK, METAL, wellLook, ctaLook } = require('../miniprogram/runtime/ui')
 
 const ctx = new Proxy({
   fillStyle: '', strokeStyle: '', lineWidth: 1, font: '', textBaseline: '', textAlign: '',
@@ -264,6 +264,44 @@ ui.section(10, 140, 200, '路线')
 ui.button(10, 180, 120, 40, '出发', () => {}, { sub: '标准勤务组' })
 ui.text('这是一段会被窄板裁切的长标题文字', 10, 230, 12, '#fff', '700', 48)
 assert.ok(String(ctx.fillStyle || '#fff'))
+assert.ok(TYPE.display >= 32 && TYPE.title >= 20 && TYPE.lead >= 14, '字阶未抽出')
+assert.strictEqual(INK.lead, COLORS.gold)
+assert.ok(METAL.well && METAL.ok && METAL.ice, '金属井色阶未抽出')
+assert.strictEqual(wellLook().material, 'well')
+assert.strictEqual(ctaLook('primary').material, 'metal')
+assert.strictEqual(ctaLook('primary').metal, METAL.ok)
+assert.ok(typeof ui.cta === 'function' && typeof ui.well === 'function')
+ui.well(10, 260, 200, 72)
+ui.cta(10, 340, 200, 64, '出发回收', () => {})
+ui.cta(10, 410, 200, 42, '设置', () => {}, { kind: 'ghost', size: 13 })
+{
+  const lobby = require('../miniprogram/scenes/index')
+  assert.ok(typeof lobby.drawCover === 'function')
+  lobby.drawCover(ui, {
+    width: 390, height: 844,
+    safe: { left: 0, top: 44, right: 390, bottom: 810 }
+  }, 4)
+}
+{
+  const art = require('../miniprogram/runtime/art')
+  const fs = require('fs')
+  const path = require('path')
+  assert.strictEqual(art.image('lobbyCover'), null, 'Node 自检不应依赖位图已加载')
+  assert.strictEqual(art.paint(ctx, null, 0, 0, 12, 12), false)
+  const assets = path.join(__dirname, '../miniprogram/assets')
+  function pngRgba(rel) {
+    const buf = fs.readFileSync(path.join(assets, rel))
+    assert.ok(buf[0] === 0x89 && buf[1] === 0x50, `${rel} 不是 PNG`)
+    assert.strictEqual(buf[25], 6, `${rel} 必须带 alpha`)
+  }
+  ;['map/harbor.png', 'map/core.png', 'kit/knife.png', 'kit/full.png', 'item/zero_core.png'].forEach(pngRgba)
+  const jpeg = fs.readFileSync(path.join(assets, 'p0/lobby_cover.jpg'))
+  assert.ok(jpeg[0] === 0xff && jpeg[1] === 0xd8, '大厅封面应为 JPEG')
+  const share = fs.readFileSync(path.join(assets, 'p0/share_card.jpg'))
+  assert.ok(share[0] === 0xff && share[1] === 0xd8, '分享卡应为 JPEG')
+  const gameSrc = fs.readFileSync(path.join(__dirname, '../miniprogram/game.js'), 'utf8')
+  assert.ok(gameSrc.includes("imageUrl: 'assets/p0/share_card.jpg'"), '分享卡未接线')
+}
 {
   let scrolled = 80
   global.window = { scrollTo() { scrolled = 0 } }

@@ -1,6 +1,7 @@
 const SceneManager = require('./scene-manager')
 const ads = require('../utils/ads')
 const consent = require('../legal/consent')
+const art = require('./art')
 
 const factories = {
   index: require('../scenes/index'),
@@ -63,6 +64,7 @@ function createGame(options = {}) {
 
   sizeCanvas(viewport)
   const manager = new SceneManager(canvas, ctx, viewport, factories)
+  art.prime(canvas, () => manager.requestRender())
 
   wx.onTouchStart(event => {
     try {
