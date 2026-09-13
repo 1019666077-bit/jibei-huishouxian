@@ -4,6 +4,7 @@ const config = require('./config/index')
 if (typeof wx.onShareAppMessage === 'function') {
   wx.onShareAppMessage(() => ({
     title: '极夜回收线',
+    imageUrl: 'assets/p0/share_card.jpg',
     query: ''
   }))
 }

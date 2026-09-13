@@ -5,12 +5,25 @@ const { healthNotice } = require('../legal/documents')
 const { COLORS, TYPE, INK, METAL, THEME } = require('../runtime/ui')
 const stage = require('../runtime/stage')
 const gfx = require('../runtime/gfx')
+const art = require('../runtime/art')
 
 function drawCover(ui, v, tick) {
   const ctx = ui.ctx
   const w = v.width
   const h = v.height
   const t = tick || 0
+  const ground = Math.min(v.safe.bottom - 168, h * 0.58)
+  const photo = art.image('lobbyCover')
+  if (photo) {
+    art.coverFit(ctx, photo, 0, 0, w, h)
+    ctx.fillStyle = gfx.vgrad(ctx, 0, 0, h, [
+      [0, 'rgba(8,12,18,0.30)'],
+      [0.4, 'rgba(8,12,18,0.12)'],
+      [0.7, 'rgba(8,12,18,0.36)'],
+      [1, 'rgba(8,12,18,0.58)']
+    ])
+    ctx.fillRect(0, 0, w, h)
+  } else {
   ctx.fillStyle = gfx.vgrad(ctx, 0, 0, h, [
     [0, METAL.well],
     [0.28, METAL.washTop],
@@ -41,7 +54,6 @@ function drawCover(ui, v, tick) {
   ctx.fillRect(0, ridge + 8, w, 2)
   gfx.resetAlpha(ctx)
 
-  const ground = Math.min(v.safe.bottom - 168, h * 0.58)
   const towers = [
     { x: 0.03, w: 0.1, h: 0.2 },
     { x: 0.13, w: 0.07, h: 0.15 },
@@ -118,6 +130,7 @@ function drawCover(ui, v, tick) {
     [1, METAL.washBot]
   ])
   ctx.fillRect(0, ground, w, h - ground)
+  }
   ui.well(0, ground - 7, w, 16, {
     radius: 0,
     rim: COLORS.ice,
@@ -126,31 +139,35 @@ function drawCover(ui, v, tick) {
     sheen: false
   })
   const gh = h - ground
-  for (let i = 1; i < 5; i++) {
-    ctx.fillStyle = 'rgba(0,0,0,0.36)'
-    ctx.fillRect(0, ground + gh * (i / 5), w, 1)
-    ctx.fillStyle = COLORS.ice
-    gfx.setAlpha(ctx, 0.06)
-    ctx.fillRect(0, ground + gh * (i / 5) + 1, w, 1)
-    gfx.resetAlpha(ctx)
+  if (!photo) {
+    for (let i = 1; i < 5; i++) {
+      ctx.fillStyle = 'rgba(0,0,0,0.36)'
+      ctx.fillRect(0, ground + gh * (i / 5), w, 1)
+      ctx.fillStyle = COLORS.ice
+      gfx.setAlpha(ctx, 0.06)
+      ctx.fillRect(0, ground + gh * (i / 5) + 1, w, 1)
+      gfx.resetAlpha(ctx)
+    }
   }
 
-  ctx.fillStyle = INK.display
-  gfx.setAlpha(ctx, 0.5)
-  for (let i = 0; i < 32; i++) {
-    const sx = ((i * 97 + t * 2) % (w + 20)) - 10
-    const sy = ((i * 53) % Math.max(40, ground - 20)) + 8
-    ctx.fillRect(sx, sy, i % 5 === 0 ? 2 : 1, i % 5 === 0 ? 2 : 1)
+  if (!photo) {
+    ctx.fillStyle = INK.display
+    gfx.setAlpha(ctx, 0.5)
+    for (let i = 0; i < 32; i++) {
+      const sx = ((i * 97 + t * 2) % (w + 20)) - 10
+      const sy = ((i * 53) % Math.max(40, ground - 20)) + 8
+      ctx.fillRect(sx, sy, i % 5 === 0 ? 2 : 1, i % 5 === 0 ? 2 : 1)
+    }
+    ctx.fillStyle = COLORS.ice
+    gfx.setAlpha(ctx, 0.16)
+    for (let i = 0; i < 16; i++) {
+      const fx = (i * 41 + t * 3) % (w + 40) - 20
+      const fy = ground - 30 + ((i * 17 + t) % 24)
+      ctx.fillRect(fx, fy, 18 + (i % 4) * 8, 6)
+    }
+    gfx.resetAlpha(ctx)
   }
-  ctx.fillStyle = COLORS.ice
-  gfx.setAlpha(ctx, 0.16)
-  for (let i = 0; i < 16; i++) {
-    const fx = (i * 41 + t * 3) % (w + 40) - 20
-    const fy = ground - 30 + ((i * 17 + t) % 24)
-    ctx.fillRect(fx, fy, 18 + (i % 4) * 8, 6)
-  }
-  gfx.resetAlpha(ctx)
-  gfx.grain(ctx, 0, 0, w, h, 11, 0.04)
+  gfx.grain(ctx, 0, 0, w, h, 11, photo ? 0.03 : 0.04)
   ctx.fillStyle = gfx.hgrad(ctx, 0, 0, 28, [
     [0, 'rgba(0,0,0,0.32)'],
     [1, 'rgba(0,0,0,0)']

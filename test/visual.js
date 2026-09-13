@@ -283,6 +283,26 @@ ui.cta(10, 410, 200, 42, '设置', () => {}, { kind: 'ghost', size: 13 })
   }, 4)
 }
 {
+  const art = require('../miniprogram/runtime/art')
+  const fs = require('fs')
+  const path = require('path')
+  assert.strictEqual(art.image('lobbyCover'), null, 'Node 自检不应依赖位图已加载')
+  assert.strictEqual(art.paint(ctx, null, 0, 0, 12, 12), false)
+  const assets = path.join(__dirname, '../miniprogram/assets')
+  function pngRgba(rel) {
+    const buf = fs.readFileSync(path.join(assets, rel))
+    assert.ok(buf[0] === 0x89 && buf[1] === 0x50, `${rel} 不是 PNG`)
+    assert.strictEqual(buf[25], 6, `${rel} 必须带 alpha`)
+  }
+  ;['map/harbor.png', 'map/core.png', 'kit/knife.png', 'kit/full.png', 'item/zero_core.png'].forEach(pngRgba)
+  const jpeg = fs.readFileSync(path.join(assets, 'p0/lobby_cover.jpg'))
+  assert.ok(jpeg[0] === 0xff && jpeg[1] === 0xd8, '大厅封面应为 JPEG')
+  const share = fs.readFileSync(path.join(assets, 'p0/share_card.jpg'))
+  assert.ok(share[0] === 0xff && share[1] === 0xd8, '分享卡应为 JPEG')
+  const gameSrc = fs.readFileSync(path.join(__dirname, '../miniprogram/game.js'), 'utf8')
+  assert.ok(gameSrc.includes("imageUrl: 'assets/p0/share_card.jpg'"), '分享卡未接线')
+}
+{
   let scrolled = 80
   global.window = { scrollTo() { scrolled = 0 } }
   Scroll.resetView({ scrollIntoView() { scrolled = 0 } })

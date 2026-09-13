@@ -1,6 +1,7 @@
 // 局内场景：矩形+路径拼楼。缺高级接口时退回色块，模拟器也能画。
 const { ZONE_POS, ZONE_SHORT, cityLabelLayout } = require('./present')
 const gfx = require('./gfx')
+const art = require('./art')
 
 const ROOM_WALL = 0.34
 const TINT = {
@@ -237,10 +238,16 @@ function drawRoad(ctx, x, y, w, h, a, b) {
 function drawSite(ctx, key, px, py, size, state) {
   const s = size
   const dim = state.dim
-  const body = dim ? '#0e1620' : '#152433'
-  const tint = dim ? '#2a3a48' : (TINT[key] || '#65d6b4')
+  const icon = art.image('map', key)
   fill(ctx, 'rgba(0,0,0,0.35)')
   rect(ctx, px - s * 0.62, py - 4, s * 1.24, 8)
+  if (icon) {
+    const iw = s * 1.55
+    const ih = s * 1.35
+    art.paint(ctx, icon, px - iw / 2, py - ih + 2, iw, ih, dim ? 0.42 : 1)
+  } else {
+  const body = dim ? '#0e1620' : '#152433'
+  const tint = dim ? '#2a3a48' : (TINT[key] || '#65d6b4')
 
   if (key === 'harbor') {
     fill(ctx, dim ? '#163040' : 'rgba(80,130,160,0.4)')
@@ -298,6 +305,7 @@ function drawSite(ctx, key, px, py, size, state) {
     for (let i = 0; i < 3; i++) rect(ctx, px - s * 0.36 + i * s * 0.28, py - s * 0.08, 12, 5)
     fill(ctx, dim ? '#243040' : '#2a4a40')
     rect(ctx, px + s * 0.08, py - s * 0.55, s * 0.4, s * 0.36)
+  }
   }
 
   if (state.current) {
@@ -537,9 +545,16 @@ function gem(ctx, x, y, size, color) {
 }
 
 function drawItemIcon(ctx, x, y, size, item) {
+  const name = String((item && item.name) || '')
+  const bitmap = art.image('item', name)
+  if (bitmap) {
+    fill(ctx, 'rgba(8,12,18,0.45)')
+    rect(ctx, x - 2, y + size - 3, size + 4, 5)
+    art.paint(ctx, bitmap, x, y, size, size)
+    return
+  }
   const tier = (item && item.tier) || 'green'
   const color = TIER_COLOR[tier] || TIER_COLOR.green
-  const name = String((item && item.name) || '')
   fill(ctx, 'rgba(8,12,18,0.45)')
   rect(ctx, x - 2, y + size - 3, size + 4, 5)
   if (/晶核|阵列|冠|环/.test(name)) {
@@ -1320,6 +1335,11 @@ function drawLessonRail(ctx, box, steps, tick) {
 }
 
 function drawKit(ctx, x, y, size, id) {
+  const bitmap = art.image('kit', id)
+  if (bitmap) {
+    art.paint(ctx, bitmap, x, y, size, size)
+    return
+  }
   if (id === 'full') {
     fill(ctx, '#2a4a40')
     rect(ctx, x, y + 4, size, size - 8)
